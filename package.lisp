@@ -1,0 +1,3 @@
+
+(defpackage #:smuks
+  (:use #:cl))
