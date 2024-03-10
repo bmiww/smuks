@@ -1,8 +1,23 @@
 
 (in-package :smuks)
 
+(defvar *socket-file* "/tmp/smuks.socket")
+
 (defun main ()
   (main-glfw))
+
+
+(defun init-socket (window)
+  (restart-case
+      (if (probe-file *socket-file*)
+	  (error "Socket file already exists")
+	  (setf (socket window) (unix-sockets:make-unix-socket *socket-file*)))
+    (create-new-socket ()
+      :report "Create new socket"
+      (format t "Creating new socket~%")
+      (delete-file *socket-file*)
+      (setf (socket window) (unix-sockets:make-unix-socket *socket-file*))))
+  (setf (uiop/os:getenv "DISPLAY") *socket-file*))
 
 
 
@@ -10,24 +25,18 @@
 (defun main-glfw ()
   (glfw:init)
   (unwind-protect
-       (let ((window (make-instance 'window))
-             ;; (last-time (glfw:timestamp))
-             ;; (time-resolution (/ 1.0d0 (glfw:timestamp-resolution))))
-             )
-         ;; (declare (type (unsigned-byte 64) last-time))
+       (let ((window (make-instance 'window :width 800 :height 600 :title "Hello wayland")))
+	 (init-socket window)
+
          (loop until (glfw:should-close-p window)
                do (glfw:poll-events)
-                  ;; (let* ((new-time (glfw:timestamp))
-                         ;; (dt (* (- new-time last-time) time-resolution)))
-                  ;; (declare (type (unsigned-byte 64) new-time))
-                  ;; (setf last-time new-time)
 		  (glfw:swap-buffers window)))
     (glfw:shutdown)))
 
 
 
 (defclass window (glfw:window)
-  ())
+  ((socket :initform :socket :accessor socket)))
 
 (defmethod glfw:window-resized ((window window) width height)
   ;; (call-next-method)
