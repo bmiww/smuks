@@ -16,6 +16,7 @@
 	       #:unix-sockets
 	       #:alexandria
 	       #:bordeaux-threads
+	       #:glfw
 	       #:str)
   :components ((:file "package")
 	       (:file "smuks")))
