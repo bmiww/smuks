@@ -1,0 +1,28 @@
+
+* Things you changed
+** Trying to freeze to a singular MAC address
+*** Attempt number 1
+Trying to add the static mac to the interface setup config
+https://forum.pine64.org/showthread.php?tid=2078&pid=19128#pid19128
+#+BEGIN_SRC config
+# /etc/network/interfaces.d/wlan0
+auto wlan0
+iface wlan0 inet dhcp
+  hwaddress ether 02:80:E1:F5:48:0C
+#+END_SRC
+NOT MUCH lUCK
+REVERTED
+
+*** Attempt number 2
+Trying to add the static mac to my home wifi connection
+via Cloned MAC address setting
+Trying with:
+02:80:E1:F5:48:0C
+
+NOT MUCH LUCK
+REVERTED
+
+*** Notes on another possible change towards the interface itself
+Talks about converting a DTB to DTS -> Editing -> Recompiling to DTB
+https://forum.pine64.org/showthread.php?tid=2078&pid=19149#pid19149
+https://xdaforums.com/t/how-to-convert-back-qualcomms-dtb-to-dts-file-extract-kernel-config.3221223/
