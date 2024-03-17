@@ -24,8 +24,6 @@
       (setf (slot-value device 'width) (getf valid 'drm::width))
       (setf (slot-value device 'height) (getf valid 'drm::height)))))
 
-;; launch_open_device(primary, O_RDWR | O_CLOEXEC);
-
 
 ;; TODO: Check if you need to close any of the drm resources
 (defmethod close-drm ((device gbm-device))

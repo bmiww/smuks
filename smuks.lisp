@@ -2,43 +2,51 @@
 (in-package :smuks)
 
 (defvar *socket-file* "/tmp/smuks.socket")
+(defvar *socket* nil)
+(defvar *display* nil)
 (defvar *swank-server* nil)
 
-;; (defun main ()
-  ;; (print "derpa")
-  ;; (main-glfw))
 (defun main ()
   (unless *swank-server*
     (setf *swank-server* (swank:create-server :port 25252 :dont-close t)))
-  ;; (swank:create-server :port 25252)
-  (init-wayland)
-  (init-drm)
-  (init-egl)
 
+  (setf *socket* (init-socket))
+  (setf *display* (init-wayland (unix-sockets::fd *socket*)))
+  (init-drm)
+  (init-egl *display*)
+
+  (setf (uiop/os:getenv "DISPLAY") *socket-file*)
+
+
+  (wlc:wl-display-run *display*)
 
   (livesupport:continuable
     (loop while t
-	  do
-	     (livesupport:update-repl-link)
-	     (magic)
-	     )))
+	  do (livesupport:update-repl-link)
+	     (magic))
+    (cleanup-wayland *display*)))
 
 (defun magic ()
   (sleep 1))
 
-(defun init-socket (window)
+
+;; ███████╗ ██████╗  ██████╗██╗  ██╗███████╗████████╗
+;; ██╔════╝██╔═══██╗██╔════╝██║ ██╔╝██╔════╝╚══██╔══╝
+;; ███████╗██║   ██║██║     █████╔╝ █████╗     ██║
+;; ╚════██║██║   ██║██║     ██╔═██╗ ██╔══╝     ██║
+;; ███████║╚██████╔╝╚██████╗██║  ██╗███████╗   ██║
+;; ╚══════╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝   ╚═╝
+
+(defun init-socket ()
   (restart-case
       (if (probe-file *socket-file*)
 	  (error "Socket file already exists")
-	  (setf (socket window) (unix-sockets:make-unix-socket *socket-file*)))
+	  (unix-sockets:make-unix-socket *socket-file*))
     (create-new-socket ()
       :report "Create new socket"
       (format t "Creating new socket~%")
       (delete-file *socket-file*)
-      (setf (socket window) (unix-sockets:make-unix-socket *socket-file*))))
-  (setf (uiop/os:getenv "DISPLAY") *socket-file*))
-
-
+      (unix-sockets:make-unix-socket *socket-file*))))
 
 
 ;; ██╗    ██╗ █████╗ ██╗   ██╗██╗      █████╗ ███╗   ██╗██████╗
@@ -48,8 +56,15 @@
 ;; ╚███╔███╔╝██║  ██║   ██║   ███████╗██║  ██║██║ ╚████║██████╔╝
 ;;  ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝
 
-(defun init-wayland ()
-  (let* ((display (wlc:wl-display-create)))))
+(defun init-wayland (socket-fd)
+  (let* ((display (wlc:wl-display-create))
+	 (socket-status (wlc:wl-display-add-socket-fd display socket-fd)))
+    ;; TODO: Check if the typings here actually make sense
+    (unless socket-status (error "Failed to add socket fd"))
+    display))
+
+(defun cleanup-wayland (display)
+  (wlc:wl-display-destroy display))
 
 
 
@@ -68,28 +83,14 @@
 
 
 
-;;  ██████╗ ██████╗ ███╗   ███╗
-;; ██╔════╝ ██╔══██╗████╗ ████║
-;; ██║  ███╗██████╔╝██╔████╔██║
-;; ██║   ██║██╔══██╗██║╚██╔╝██║
-;; ╚██████╔╝██████╔╝██║ ╚═╝ ██║
-;;  ╚═════╝ ╚═════╝ ╚═╝     ╚═╝
-
-(defun main-drm ()
-  (print "Starting Smuks DRM backend")
-  )
-
-
-
-
-
-
 ;;  ██████╗ ██╗     ███████╗██╗    ██╗
 ;; ██╔════╝ ██║     ██╔════╝██║    ██║
 ;; ██║  ███╗██║     █████╗  ██║ █╗ ██║
 ;; ██║   ██║██║     ██╔══╝  ██║███╗██║
 ;; ╚██████╔╝███████╗██║     ╚███╔███╔╝
 ;;  ╚═════╝ ╚══════╝╚═╝      ╚══╝╚══╝
+;; TODO: Kind of forgot about this one. Maybe get back to it if you don't have the tablet around
+;; Or if you start getting into working on the desktop version
 
 (defun main-glfw ()
   (print "doooo")
