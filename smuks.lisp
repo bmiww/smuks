@@ -5,6 +5,10 @@
 (defvar *socket* nil)
 (defvar *wayland* nil)
 (defvar *swank-server* nil)
+(defvar *smuks-exit* nil)
+
+(defun kill-all-threads ()
+  (mapcar (lambda (thread) (thread:destroy-thread thread)) (thread:all-threads)))
 
 (defun main ()
   (unless *swank-server*
@@ -15,15 +19,26 @@
   (init-drm)
   (init-egl (display *wayland*))
 
-  (setf (uiop/os:getenv "DISPLAY") *socket-file*)
+  (thread:make-thread
+   (lambda ()
+     (print "Starting wayland socket listener")
+     (loop until *smuks-exit*
+	   do (let* ((client (print (unix-sockets:accept-unix-socket *socket*)))
+		     (stream (unix-sockets:unix-socket-stream client)))
+		(print "CLIENT CONNECTED")
+		(bt:make-thread (lambda ()
+				  (loop for input = (print (read-line stream))
+					until (not input)
+					do (print input))))))))
+
+  (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
 
   (thread:make-thread
    (lambda ()
      (sleep 3)
      (print "Starting an app thingy")
-     (uiop:launch-program '("echo" "hello" "world") :output *standard-output*)
-     (uiop:launch-program '("weston-terminal") :output *standard-output* :error *standard-output*)))
+     (uiop:launch-program '("weston-terminal") :output *standard-output* :error-output *standard-output*)))
 
   (wlc:wl-display-run (display *wayland*))
 
@@ -67,30 +82,30 @@
   ((display :initarg :display :accessor display)
    (event-loop :initarg :event-loop :accessor event-loop)))
 
-(cffi:defcallback handle-output-global-interface :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
+(cffi:defcallback handle-output-global :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
   (declare (ignore client data version id))
-  (print "Implement output global interface")
-  (error "Implement output global interface"))
+  (print "Implement output global")
+  (error "Implement output global"))
 
-(cffi:defcallback handle-compositor-global-interface :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
+(cffi:defcallback handle-compositor-global :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
   (declare (ignore client data version id))
-  (print "Implement compositor global interface")
-  (error "Implement compositor global interface"))
+  (print "Implement compositor global")
+  (error "Implement compositor global"))
 
-(cffi:defcallback handle-subcompositor-global-interface :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
+(cffi:defcallback handle-subcompositor-global :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
   (declare (ignore client data version id))
-  (print "Implement subcompositor global interface")
-  (error "Implement subcompositor global interface"))
+  (print "Implement subcompositor global")
+  (error "Implement subcompositor global"))
 
-(cffi:defcallback handle-shm-global-interface :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
+(cffi:defcallback handle-shm-global :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
   (declare (ignore client data version id))
-  (print "Implement shm global interface")
-  (error "Implement shm global interface"))
+  (print "Implement shm global")
+  (error "Implement shm global"))
 
-(cffi:defcallback handle-seat-global-interface :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
+(cffi:defcallback handle-seat-global :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
   (declare (ignore client data version id))
-  (print "Implement seat global interface")
-  (error "Implement seat global interface"))
+  (print "Implement seat global")
+  (error "Implement seat global"))
 
 
 (defun create-global (display interface version callback)
@@ -101,14 +116,14 @@
 	 (socket-status (wlc:wl-display-add-socket-fd display socket-fd)))
     ;; TODO: Check if the typings here actually make sense
     (unless socket-status (error "Failed to add socket fd"))
-    (create-global display wlp:wl-compositor-interface 6 'handle-compositor-global-interface)
-    (create-global display wlp:wl-subcompositor-interface 1 'handle-subcompositor-global-interface)
+    (create-global display wlp:wl-compositor-interface 6 'handle-compositor-global)
+    (create-global display wlp:wl-subcompositor-interface 1 'handle-subcompositor-global)
     ;; TODO: XDGWMBase
-    (create-global display wlp:wl-shm-interface 1 'handle-shm-global-interface)
+    (create-global display wlp:wl-shm-interface 1 'handle-shm-global)
 
-    (create-global display wlp:wl-seat-interface 9 'handle-seat-global-interface)
+    (create-global display wlp:wl-seat-interface 9 'handle-seat-global)
 
-    (create-global display wlp:wl-output-interface 4 'handle-output-global-interface)
+    (create-global display wlp:wl-output-interface 4 'handle-output-global)
     (make-instance 'wayland :display display :event-loop (wlc:wl-event-loop-get-fd display))))
 
 (defun cleanup-wayland (wayland)
