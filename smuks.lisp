@@ -2,13 +2,20 @@
 (in-package :smuks)
 
 (defvar *socket-file* "/tmp/smuks.socket")
+(defvar *swank-server* nil)
 
 ;; (defun main ()
   ;; (print "derpa")
   ;; (main-glfw))
 (defun main ()
-  (swank:create-server :port 25252 :dont-close t)
+  (unless *swank-server*
+    (setf *swank-server* (swank:create-server :port 25252 :dont-close t)))
   ;; (swank:create-server :port 25252)
+  (init-wayland)
+  (init-drm)
+  (init-egl)
+
+
   (livesupport:continuable
     (loop while t
 	  do

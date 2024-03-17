@@ -11,7 +11,12 @@
 (defpackage :drm
   (:use :cl :cffi)
   (:export
-   mode-get-resources))
+   get-resources
+
+   resources-crtcs
+
+   mode-crtc-width
+   mode-crtc-height))
 
 (in-package :drm)
 
@@ -172,3 +177,35 @@
 (defcfun ("drmHandleEvent" handle-event) :int
   (fd :int)
   (event-context (:pointer (:struct event-context))))
+
+
+
+;; ┬ ┬┌┬┐┬┬  ┌─┐
+;; │ │ │ ││  └─┐
+;; └─┘ ┴ ┴┴─┘└─┘
+
+(defstruct resources
+  (fbs nil)
+  (crtcs nil)
+  (connectors nil)
+  (encoders nil)
+  (min-width nil)
+  (max-width nil)
+  (min-height nil)
+  (max-height nil))
+
+
+(defun get-resources (fd)
+  (let ((resources (mode-get-resources fd)))
+    (with-foreign-slots ((crtcs count-crtcs connectors count-connectors fbs count-fbs encoders count-encoders min-width max-width min-height max-height) resources (:struct mode-res))
+      (make-resources
+       ;; :fbs (loop for i from 0 below count-fbs collect (mem-aref fbs i))
+       :crtcs (loop for i from 0 below count-crtcs
+		    collect (mem-ref (mode-get-crtc fd (mem-aref crtcs :uint32 i)) '(:struct mode-crtc)))
+       ;; :connectors (loop for i from 0 below count-connectors
+			 ;; collect (mode-get-connector fd (mem-aref connectors :uint32 i)))
+       ;; :encoders (loop for i from 0 below count-encoders collect (mode-get-encoder fd (mem-aref encoders :uint32 i)))
+       :min-width min-width
+       :max-width max-width
+       :min-height min-height
+       :max-height max-height))))
