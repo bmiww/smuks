@@ -12,11 +12,17 @@
   :license "GPLv3"
   :version "0.0.1"
   :depends-on (#:cl-opengl
+	       #:cl-egl
+	       #:cl-wayland
+	       #:cl-gbm
 	       #:livesupport
 	       #:unix-sockets
 	       #:alexandria
 	       #:bordeaux-threads
+	       #:swank
 	       #:glfw
 	       #:str)
   :components ((:file "package")
+	       (:file "drm-ffi")
+	       (:file "drm")
 	       (:file "smuks")))

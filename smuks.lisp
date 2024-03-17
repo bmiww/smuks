@@ -3,9 +3,21 @@
 
 (defvar *socket-file* "/tmp/smuks.socket")
 
+;; (defun main ()
+  ;; (print "derpa")
+  ;; (main-glfw))
 (defun main ()
-  (main-glfw))
+  (swank:create-server :port 25252 :dont-close t)
+  ;; (swank:create-server :port 25252)
+  (livesupport:continuable
+    (loop while t
+	  do
+	     (livesupport:update-repl-link)
+	     (magic)
+	     )))
 
+(defun magic ()
+  (sleep 1))
 
 (defun init-socket (window)
   (restart-case
@@ -22,14 +34,68 @@
 
 
 
+;; ██╗    ██╗ █████╗ ██╗   ██╗██╗      █████╗ ███╗   ██╗██████╗
+;; ██║    ██║██╔══██╗╚██╗ ██╔╝██║     ██╔══██╗████╗  ██║██╔══██╗
+;; ██║ █╗ ██║███████║ ╚████╔╝ ██║     ███████║██╔██╗ ██║██║  ██║
+;; ██║███╗██║██╔══██║  ╚██╔╝  ██║     ██╔══██║██║╚██╗██║██║  ██║
+;; ╚███╔███╔╝██║  ██║   ██║   ███████╗██║  ██║██║ ╚████║██████╔╝
+;;  ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝
+
+(defun init-wayland ()
+  (let* ((display (wlc:wl-display-create)))))
+
+
+
+;; ███████╗ ██████╗ ██╗
+;; ██╔════╝██╔════╝ ██║
+;; █████╗  ██║  ███╗██║
+;; ██╔══╝  ██║   ██║██║
+;; ███████╗╚██████╔╝███████╗
+;; ╚══════╝ ╚═════╝ ╚══════╝
+
+(defun init-egl (wayland-display-ptr)
+  (let* ((egl (egl:init-egl-wayland))
+	 (display (egl:get-display (cffi:null-pointer))))
+    (egl:bind-wayland-display display wayland-display-ptr)))
+
+
+
+
+;;  ██████╗ ██████╗ ███╗   ███╗
+;; ██╔════╝ ██╔══██╗████╗ ████║
+;; ██║  ███╗██████╔╝██╔████╔██║
+;; ██║   ██║██╔══██╗██║╚██╔╝██║
+;; ╚██████╔╝██████╔╝██║ ╚═╝ ██║
+;;  ╚═════╝ ╚═════╝ ╚═╝     ╚═╝
+
+(defun main-drm ()
+  (print "Starting Smuks DRM backend")
+  )
+
+
+
+
+
+
+;;  ██████╗ ██╗     ███████╗██╗    ██╗
+;; ██╔════╝ ██║     ██╔════╝██║    ██║
+;; ██║  ███╗██║     █████╗  ██║ █╗ ██║
+;; ██║   ██║██║     ██╔══╝  ██║███╗██║
+;; ╚██████╔╝███████╗██║     ╚███╔███╔╝
+;;  ╚═════╝ ╚══════╝╚═╝      ╚══╝╚══╝
+
 (defun main-glfw ()
+  (print "doooo")
   (glfw:init)
+  (print "nop")
   (unwind-protect
+       (print "yep")
        (let ((window (make-instance 'window :width 800 :height 600 :title "Hello wayland")))
 	 (init-socket window)
 
          (loop until (glfw:should-close-p window)
-               do (glfw:poll-events)
+               do (print "hurpa")
+		  (glfw:poll-events)
 		  (glfw:swap-buffers window)))
     (glfw:shutdown)))
 
