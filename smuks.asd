@@ -23,6 +23,7 @@
 	       #:glfw
 	       #:str)
   :components ((:file "package")
+	       (:file "wayland")
 	       (:file "drm-ffi")
 	       (:file "drm")
 	       (:file "smuks")))
