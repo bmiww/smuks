@@ -8,21 +8,21 @@
   (:use :common-lisp :xmls :split-sequence))
 (in-package :generate-wayland-classes)
 
-(defun symbolize-event (event) (read-from-string (name event)))
-
-(defun do-event (interface event) `(defmethod ,(name event) ((interface ,interface))))
+(defun ev-name (event) (format nil "evt-~a" (name event)))
+(defun symbolize-event (event) (read-from-string (ev-name event)))
+(defun do-event (interface event) `(defmethod ,(ev-name event) ((interface ,interface))))
 
 ;; TODO: Embed a request opcode as a default value in the args?
 ;; Do these "request" methods even really make sense?
 
-(defun do-request (interface request) `(defmethod ,(name request) ((interface ,interface))))
+(defun do-request (interface request) `(defmethod ,(format nil "req-~a" (name request)) ((interface ,interface))))
 (defun do-event-opcode-matchers (interface events)
   `(defmethod match-event-opcode ((interface ,interface) opcode)
      (nth opcode '(,@(mapcar 'symbolize-event events)))))
 
 (defun do-interface (interface)
   `(progn
-     (defclass ,(name interface) () (()))
+     (defclass ,(name interface) "()" "()")
      ,@(mapcar (lambda (event) (do-event (name interface) event)) (events interface))
      ,@(mapcar (lambda (request) (do-request (name interface) request)) (requests interface))
      ,(do-event-opcode-matchers (name interface) (events interface))))
