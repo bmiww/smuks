@@ -4,7 +4,7 @@ qemu-system-x86_64 \
     -m 2048 \
     -drive file=/home/toms/qemages/smuks-arch.qcow2,format=qcow2,media=disk,if=virtio \
     -vga none -device qxl-vga,vgamem_mb=64,ram_size_mb=256,vram_size_mb=128,max_outputs=1,xres=1920,yres=1200 \
-    -net user,hostfwd=tcp::10022-:22,hostfwd=tcp::10023-:10023 \
+    -net user,hostfwd=tcp::10022-:22,hostfwd=tcp::10023-:10023,hostfwd=tcp::25252-:25252 \
     -net nic,model=virtio \
     -display none -spice port=5900,addr=127.0.0.1,disable-ticketing=on \
     -chardev spicevmc,id=charchannel0,name=vdagent \
