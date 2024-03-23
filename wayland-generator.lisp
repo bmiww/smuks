@@ -9,20 +9,25 @@
 (in-package :generate-wayland-classes)
 
 (defun ev-name (event) (format nil "evt-~a" (name event)))
+(defun req-name (request) (format nil "req-~a" (name request)))
 (defun symbolize-event (event) (read-from-string (ev-name event)))
-(defun do-event (interface event) `(defmethod ,(ev-name event) ((interface ,interface))))
+(defun do-arg (arg) (name arg))
+(defun do-event (interface event)
+  `(defmethod ,(ev-name event) ((obj ,interface) ,@(mapcar 'do-arg (args event)))))
 
 ;; TODO: Embed a request opcode as a default value in the args?
 ;; Do these "request" methods even really make sense?
 
-(defun do-request (interface request) `(defmethod ,(format nil "req-~a" (name request)) ((interface ,interface))))
+(defun do-request (interface request)
+  `(defmethod ,(req-name request) ((obj ,interface) ,@(mapcar 'do-arg (args request)))))
 (defun do-event-opcode-matchers (interface events)
-  `(defmethod match-event-opcode ((interface ,interface) opcode)
+  `(defmethod match-event-opcode ((obj ,interface) opcode)
      (nth opcode '(,@(mapcar 'symbolize-event events)))))
 
 (defun do-interface (interface)
   `(progn
-     (defclass ,(name interface) "()" "()")
+     (defclass ,(name interface) "()"
+       ("(client :initarg :client :accessor client)"))
      ,@(mapcar (lambda (event) (do-event (name interface) event)) (events interface))
      ,@(mapcar (lambda (request) (do-request (name interface) request)) (requests interface))
      ,(do-event-opcode-matchers (name interface) (events interface))))

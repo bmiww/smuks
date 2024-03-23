@@ -46,11 +46,11 @@
 
 (defclass event ()
   ((name :initarg :name :accessor name)
-   (args :initarg :args)))
+   (args :initarg :args :accessor args)))
 
 (defclass request ()
   ((name :initarg :name :accessor name)
-   (args :initarg :args)))
+   (args :initarg :args :accessor args)))
 
 (defclass enum ()
   ((name :initarg :name)
