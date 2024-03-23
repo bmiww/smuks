@@ -5,4 +5,4 @@ Can be added via quicklisp:
 (ql-dist:install-dist "http://dist.shirakumo.org/shirakumo.txt")
 
 ** Command to run the whole thing
-sbcl --eval '(require "asdf")' --eval '(asdf:load-asd (merge-pathnames "repos/cl/smuks/smuks.asd" (uiop/os:getcwd)))' --eval '(asdf:load-system :smuks)' --eval '(smuks:main)' --eval '(sb-ext:quit)'
+sbcl --eval '(require "asdf")' --eval '(asdf:load-asd (merge-pathnames "repos/cl/smuks/smuks.asd" (uiop/os:getcwd)))' --eval '(asdf:load-system :smuks)' --eval '(smuks::main)' --eval '(sb-ext:quit)'
