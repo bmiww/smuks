@@ -21,15 +21,15 @@
 
   (thread:make-thread
    (lambda ()
-     (print "Starting wayland socket listener")
+     (format t "Starting wayland socket listener~%")
      (loop until *smuks-exit*
 	   do (let* ((client (print (unix-sockets:accept-unix-socket *socket*)))
 		     (stream (unix-sockets:unix-socket-stream client)))
-		(print "CLIENT CONNECTED")
+		(format t "CLIENT CONNECTED~%")
 		(bt:make-thread (lambda ()
 				  (loop until *smuks-exit*
 					do (smuks/wayland:read-wayland-message stream))
-				  (print "Exiting client")
+				  (format t "Exiting client~%")
 				  (unix-sockets:close-unix-socket client)))))))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
@@ -37,7 +37,7 @@
   (thread:make-thread
    (lambda ()
      (sleep 3)
-     (print "Starting an app thingy")
+     (format t "Starting an app thingy~%")
      (uiop:launch-program '("weston-terminal") :output *standard-output* :error-output *standard-output*)))
 
   (wlc:wl-display-run (display *wayland*))
