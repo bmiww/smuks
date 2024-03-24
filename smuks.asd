@@ -23,6 +23,7 @@
 	       #:glfw
 	       #:str)
   :components ((:file "package")
+	       (:file "wayland-server")
 	       (:file "wayland")
 	       (:file "drm-ffi")
 	       (:file "drm")
