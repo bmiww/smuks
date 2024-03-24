@@ -68,7 +68,7 @@
 
 (defun gen-lisp-code (protocol)
   (append
-   `((defpackage :wl (:use #:cl) (:export wl-object *objects* match-event-opcode match-request-opcode)))
+   `((defpackage :wl (:use #:cl) (:export wl-object *objects* match-event-opcode match-request-opcode get-request-arg-types)))
    `((in-package :wl))
    `((defvar *objects* (make-hash-table :test 'eq)))
    `((defclass wl-object () ((id :initarg :id :accessor id))))
