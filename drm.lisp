@@ -30,7 +30,7 @@
   (gbm:device-destroy (fd device)))
 
 
-(defun init-drm (&optional (card *default-card*))
+(defun init-drm ()
   (let ((card (loop for i from 0 below 32
 		    for path = (format nil "/dev/dri/card~A" i)
 		    when (probe-file path) return path)))
