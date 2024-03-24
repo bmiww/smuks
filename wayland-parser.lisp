@@ -42,7 +42,7 @@
 (defclass arg ()
   ((name :initarg :name :accessor name)
    (summary :initarg :summary :accessor summary)
-   (arg-type :initarg :arg-type)
+   (arg-type :initarg :arg-type :accessor arg-type)
    (interface :initarg :interface :accessor interface)
    (nullable :initarg :nullable :accessor nullable)))
 
@@ -76,7 +76,8 @@
      :name (name-of arg-sxml)
      :arg-type (type-of-arg arg-sxml)
      :interface (interface-of arg-sxml)
-     :nullable (allow-null arg-sxml)))
+     :nullable (allow-null arg-sxml)
+     :summary (summary-of arg-sxml)))
 
 ;; ┌─┐┌─┐┬─┐┌─┐┌─┐┬─┐┌─┐
 ;; ├─┘├─┤├┬┘└─┐├┤ ├┬┘└─┐
@@ -108,11 +109,22 @@
 		    (xmls:node-attrs arg-sxml)))
    "true"))
 
+(defun format-arg-list (arg)
+  (format nil "~A::~A: ~A"
+	  (name arg)
+	  (arg-type arg)
+	  (summary arg)))
+
+
 (defun get-description (xml)
   (let* ((description-node (find-if (lambda (entry) (of-type entry "description")) (xmls:node-children xml)))
 	 (description (first (xmls:node-children description-node)))
-	 (summary (summary-of description-node)))
-    (format nil "~A~%~%~A" summary description)))
+	 (summary (summary-of description-node))
+	 (args (read-args xml)))
+    (format nil "~A~%~%~A~%~A"
+	    summary
+	    description
+	    (if args (format nil "~%Arguments:~%~{~A~%~}" (mapcar 'format-arg-list args)) ""))))
 
 (defun read-args (roe-sxml)
   (remove nil (mapcar (lambda (entry) (when (of-type entry "arg") (make-arg entry)))

@@ -28,7 +28,8 @@
           (:DOCUMENTATION "core global object
 
 The core global object.  This is a special singleton object.  It
-      is used for internal Wayland protocol features."))
+      is used for internal Wayland protocol features.
+"))
 
 (DEFMETHOD EVT-ERROR ((OBJ WL_DISPLAY) OBJECT_ID CODE MESSAGE)
   ";; fatal error event
@@ -39,7 +40,13 @@ The error event is sent out when a fatal (non-recoverable)
 	to that object.  The code identifies the error and is defined
 	by the object interface.  As such, each interface defines its
 	own set of error codes.  The message is a brief description
-	of the error, for (debugging) convenience."
+	of the error, for (debugging) convenience.
+
+Arguments:
+object_id::object: object where the error occurred
+code::uint: error code
+message::string: error description
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-DELETE_ID ((OBJ WL_DISPLAY) ID)
@@ -49,7 +56,11 @@ This event is used internally by the object ID management
 	logic. When a client deletes an object that it had created,
 	the server will send this event to acknowledge that it has
 	seen the delete request. When the client receives this event,
-	it will know that it can safely reuse the object ID."
+	it will know that it can safely reuse the object ID.
+
+Arguments:
+id::uint: deleted object ID
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SYNC ((OBJ WL_DISPLAY) CALLBACK)
@@ -65,7 +76,11 @@ The sync request asks the server to emit the 'done' event
 	compositor after the callback is fired and as such the client must not
 	attempt to use it after that point.
 
-	The callback_data passed in the callback is the event serial."
+	The callback_data passed in the callback is the event serial.
+
+Arguments:
+callback::new_id: callback object for the sync request
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-GET_REGISTRY ((OBJ WL_DISPLAY) REGISTRY)
@@ -79,7 +94,11 @@ This request creates a registry object that allows the client
 	response to a get_registry request can only be released when the
 	client disconnects, not when the client side proxy is destroyed.
 	Therefore, clients should invoke get_registry as infrequently as
-	possible to avoid wasting memory."
+	possible to avoid wasting memory.
+
+Arguments:
+registry::new_id: global registry object
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DISPLAY) OPCODE)
@@ -117,7 +136,8 @@ The singleton global registry object.  The server has a number of
       A client can bind to a global object by using the bind
       request.  This creates a client-side handle that lets the object
       emit events to the client and lets the client invoke requests on
-      the object."))
+      the object.
+"))
 
 (DEFMETHOD EVT-GLOBAL ((OBJ WL_REGISTRY) NAME INTERFACE VERSION)
   ";; announce global object
@@ -126,7 +146,13 @@ Notify the client of global objects.
 
 	The event notifies the client that a global object with
 	the given name is now available, and it implements the
-	given version of the given interface."
+	given version of the given interface.
+
+Arguments:
+name::uint: numeric name of the global object
+interface::string: interface implemented by the object
+version::uint: interface version
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-GLOBAL_REMOVE ((OBJ WL_REGISTRY) NAME)
@@ -141,14 +167,23 @@ Notify the client of removed global objects.
 
 	The object remains valid and requests to the object will be
 	ignored until the client destroys it, to avoid races between
-	the global going away and a client sending a request to it."
+	the global going away and a client sending a request to it.
+
+Arguments:
+name::uint: numeric name of the global object
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-BIND ((OBJ WL_REGISTRY) NAME ID)
   ";; bind an object to the display
 
 Binds a new, client-created object to the server using the
-	specified name as the identifier."
+	specified name as the identifier.
+
+Arguments:
+name::uint: unique numeric name of the object
+id::new_id: bounded object
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_REGISTRY) OPCODE)
@@ -171,12 +206,17 @@ Clients can handle the 'done' event to get notified when
       the related request is done.
 
       Note, because wl_callback objects are created from multiple independent
-      factory interfaces, the wl_callback interface is frozen at version 1."))
+      factory interfaces, the wl_callback interface is frozen at version 1.
+"))
 
 (DEFMETHOD EVT-DONE ((OBJ WL_CALLBACK) CALLBACK_DATA)
   ";; done event
 
-Notify the client when the related request is done."
+Notify the client when the related request is done.
+
+Arguments:
+callback_data::uint: request-specific data for the callback
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_CALLBACK) OPCODE)
@@ -196,18 +236,27 @@ Notify the client when the related request is done."
 
 A compositor.  This object is a singleton global.  The
       compositor is in charge of combining the contents of multiple
-      surfaces into one displayable output."))
+      surfaces into one displayable output.
+"))
 
 (DEFMETHOD REQ-CREATE_SURFACE ((OBJ WL_COMPOSITOR) ID)
   ";; create new surface
 
-Ask the compositor to create a new surface."
+Ask the compositor to create a new surface.
+
+Arguments:
+id::new_id: the new surface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-CREATE_REGION ((OBJ WL_COMPOSITOR) ID)
   ";; create new region
 
-Ask the compositor to create a new region."
+Ask the compositor to create a new region.
+
+Arguments:
+id::new_id: the new region
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_COMPOSITOR) OPCODE) (NTH OPCODE 'NIL))
@@ -231,7 +280,8 @@ The wl_shm_pool object encapsulates a piece of memory shared
       All objects created through the same pool share the same
       underlying mapped memory. Reusing the mapped memory avoids the
       setup/teardown overhead and is useful when interactively resizing
-      a surface or for many small buffers."))
+      a surface or for many small buffers.
+"))
 
 (DEFMETHOD REQ-CREATE_BUFFER
            ((OBJ WL_SHM_POOL) ID OFFSET WIDTH HEIGHT STRIDE FORMAT)
@@ -247,7 +297,16 @@ Create a wl_buffer object from the pool.
 
 	A buffer will keep a reference to the pool it was created from
 	so it is valid to destroy the pool immediately after creating
-	a buffer from it."
+	a buffer from it.
+
+Arguments:
+id::new_id: buffer to create
+offset::int: buffer byte offset within the pool
+width::int: buffer width, in pixels
+height::int: buffer height, in pixels
+stride::int: number of bytes from the beginning of one row to the beginning of the next row
+format::uint: buffer pixel format
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-DESTROY ((OBJ WL_SHM_POOL))
@@ -257,7 +316,8 @@ Destroy the shared memory pool.
 
 	The mmapped memory will be released when all
 	buffers that have been created from this pool
-	are gone."
+	are gone.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-RESIZE ((OBJ WL_SHM_POOL) SIZE)
@@ -272,7 +332,11 @@ This request will cause the server to remap the backing memory
         by the server and does not touch the file corresponding to the
         file descriptor passed at creation time. It is the client's
         responsibility to ensure that the file is at least as big as
-        the new pool size."
+        the new pool size.
+
+Arguments:
+size::int: new size of the pool, in bytes
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHM_POOL) OPCODE) (NTH OPCODE 'NIL))
@@ -297,14 +361,19 @@ A singleton global object that provides support for shared
 
       On binding the wl_shm object one or more format events
       are emitted to inform clients about the valid pixel formats
-      that can be used for buffers."))
+      that can be used for buffers.
+"))
 
 (DEFMETHOD EVT-FORMAT ((OBJ WL_SHM) FORMAT)
   ";; pixel format description
 
 Informs the client about a valid pixel format that
 	can be used for buffers. Known formats include
-	argb8888 and xrgb8888."
+	argb8888 and xrgb8888.
+
+Arguments:
+format::uint: buffer pixel format
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-CREATE_POOL ((OBJ WL_SHM) ID FD SIZE)
@@ -314,7 +383,13 @@ Create a new wl_shm_pool object.
 
 	The pool can be used to create shared memory based buffer
 	objects.  The server will mmap size bytes of the passed file
-	descriptor, to use as backing memory for the pool."
+	descriptor, to use as backing memory for the pool.
+
+Arguments:
+id::new_id: pool to create
+fd::fd: file descriptor for the pool
+size::int: pool size, in bytes
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHM) OPCODE) (NTH OPCODE '(EVT-FORMAT)))
@@ -343,7 +418,8 @@ A buffer provides the content for a wl_surface. Buffers are
       specified.
 
       Note, because wl_buffer objects are created from multiple independent
-      factory interfaces, the wl_buffer interface is frozen at version 1."))
+      factory interfaces, the wl_buffer interface is frozen at version 1.
+"))
 
 (DEFMETHOD EVT-RELEASE ((OBJ WL_BUFFER))
   ";; compositor releases buffer
@@ -359,7 +435,8 @@ Sent when this wl_buffer is no longer used by the compositor.
 	second buffer for the next surface content update. Typically
 	this is possible, when the compositor maintains a copy of the
 	wl_surface contents, e.g. as a GL texture. This is an important
-	optimization for GL(ES) compositors with wl_shm clients."
+	optimization for GL(ES) compositors with wl_shm clients.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-DESTROY ((OBJ WL_BUFFER))
@@ -368,7 +445,8 @@ Sent when this wl_buffer is no longer used by the compositor.
 Destroy a buffer. If and how you need to release the backing
 	storage is defined by the buffer factory interface.
 
-	For possible side-effects to a surface, see wl_surface.attach."
+	For possible side-effects to a surface, see wl_surface.attach.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_BUFFER) OPCODE)
@@ -400,13 +478,18 @@ A wl_data_offer represents a piece of data offered for transfer
       copy-and-paste and drag-and-drop mechanisms.  The offer
       describes the different mime types that the data can be
       converted to and provides the mechanism for transferring the
-      data directly from the source client."))
+      data directly from the source client.
+"))
 
 (DEFMETHOD EVT-OFFER ((OBJ WL_DATA_OFFER) MIME_TYPE)
   ";; advertise offered mime type
 
 Sent immediately after creating the wl_data_offer object.  One
-	event per offered mime type."
+	event per offered mime type.
+
+Arguments:
+mime_type::string: offered mime type
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-SOURCE_ACTIONS ((OBJ WL_DATA_OFFER) SOURCE_ACTIONS)
@@ -415,7 +498,11 @@ Sent immediately after creating the wl_data_offer object.  One
 This event indicates the actions offered by the data source. It
 	will be sent immediately after creating the wl_data_offer object,
 	or anytime the source side changes its offered actions through
-	wl_data_source.set_actions."
+	wl_data_source.set_actions.
+
+Arguments:
+source_actions::uint: actions offered by the data source
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-ACTION ((OBJ WL_DATA_OFFER) DND_ACTION)
@@ -455,7 +542,11 @@ This event indicates the action selected by the compositor after
 	based on wl_data_offer.source_actions and finally chosen by the
 	user (e.g. popping up a menu with the available options). The
 	final wl_data_offer.set_actions and wl_data_offer.accept requests
-	must happen before the call to wl_data_offer.finish."
+	must happen before the call to wl_data_offer.finish.
+
+Arguments:
+dnd_action::uint: action selected by the compositor
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-ACCEPT ((OBJ WL_DATA_OFFER) SERIAL MIME_TYPE)
@@ -474,7 +565,12 @@ Indicate that the client can accept the given mime type, or
 	is that no mime types were accepted, the drag-and-drop operation
 	will be cancelled and the corresponding drag source will receive
 	wl_data_source.cancelled. Clients may still use this event in
-	conjunction with wl_data_source.action for feedback."
+	conjunction with wl_data_source.action for feedback.
+
+Arguments:
+serial::uint: serial number of the accept request
+mime_type::string: mime type accepted by the client
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-RECEIVE ((OBJ WL_DATA_OFFER) MIME_TYPE FD)
@@ -494,13 +590,19 @@ To transfer the offered data, the client issues this request
 	This request may happen multiple times for different mime types,
 	both before and after wl_data_device.drop. Drag-and-drop destination
 	clients may preemptively fetch data or examine it more closely to
-	determine acceptance."
+	determine acceptance.
+
+Arguments:
+mime_type::string: mime type desired by receiver
+fd::fd: file descriptor for data transfer
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-DESTROY ((OBJ WL_DATA_OFFER))
   ";; destroy data offer
 
-Destroy the data offer."
+Destroy the data offer.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-FINISH ((OBJ WL_DATA_OFFER))
@@ -519,7 +621,8 @@ Notifies the compositor that the drag destination successfully
 	wl_data_offer.action.
 
 	If wl_data_offer.finish request is received for a non drag and drop
-	operation, the invalid_finish protocol error is raised."
+	operation, the invalid_finish protocol error is raised.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_ACTIONS ((OBJ WL_DATA_OFFER) DND_ACTIONS PREFERRED_ACTION)
@@ -555,7 +658,12 @@ Sets the actions that the destination side client supports for
 	is expected to perform wl_data_offer.destroy right away.
 
 	This request can only be made on drag-and-drop offers, a protocol error
-	will be raised otherwise."
+	will be raised otherwise.
+
+Arguments:
+dnd_actions::uint: actions supported by the destination client
+preferred_action::uint: action preferred by the destination client
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_OFFER) OPCODE)
@@ -586,7 +694,8 @@ Sets the actions that the destination side client supports for
 The wl_data_source object is the source side of a wl_data_offer.
       It is created by the source client in a data transfer and
       provides a way to describe the offered data and a way to respond
-      to requests to transfer the data."))
+      to requests to transfer the data.
+"))
 
 (DEFMETHOD EVT-TARGET ((OBJ WL_DATA_SOURCE) MIME_TYPE)
   ";; a target accepts an offered mime type
@@ -594,7 +703,11 @@ The wl_data_source object is the source side of a wl_data_offer.
 Sent when a target accepts pointer_focus or motion events.  If
 	a target does not accept any of the offered types, type is NULL.
 
-	Used for feedback during drag-and-drop."
+	Used for feedback during drag-and-drop.
+
+Arguments:
+mime_type::string: mime type accepted by the target
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-SEND ((OBJ WL_DATA_SOURCE) MIME_TYPE FD)
@@ -602,7 +715,12 @@ Sent when a target accepts pointer_focus or motion events.  If
 
 Request for data from the client.  Send the data as the
 	specified mime type over the passed file descriptor, then
-	close it."
+	close it.
+
+Arguments:
+mime_type::string: mime type for the data
+fd::fd: file descriptor for the data
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-CANCELLED ((OBJ WL_DATA_SOURCE))
@@ -627,7 +745,8 @@ This data source is no longer valid. There are several reasons why
 
 	For objects of version 2 or older, wl_data_source.cancelled will
 	only be emitted if the data source was replaced by another data
-	source."
+	source.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-DND_DROP_PERFORMED ((OBJ WL_DATA_SOURCE))
@@ -641,7 +760,8 @@ The user performed the drop action. This event does not indicate
 	cancelled the drag-and-drop operation before this event could happen.
 
 	Note that the data_source may still be used in the future and should
-	not be destroyed here."
+	not be destroyed here.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-DND_FINISHED ((OBJ WL_DATA_SOURCE))
@@ -652,7 +772,8 @@ The drop destination finished interoperating with this data
 	free all associated data.
 
 	If the action used to perform the operation was \"move\", the
-	source can now delete the transferred data."
+	source can now delete the transferred data.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-ACTION ((OBJ WL_DATA_SOURCE) DND_ACTION)
@@ -682,7 +803,11 @@ This event indicates the action selected by the compositor after
 	always be applied in wl_data_offer.dnd_finished.
 
 	Clients can trigger cursor surface changes from this point, so
-	they reflect the current action."
+	they reflect the current action.
+
+Arguments:
+dnd_action::uint: action selected by the compositor
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-OFFER ((OBJ WL_DATA_SOURCE) MIME_TYPE)
@@ -690,13 +815,18 @@ This event indicates the action selected by the compositor after
 
 This request adds a mime type to the set of mime types
 	advertised to targets.  Can be called several times to offer
-	multiple types."
+	multiple types.
+
+Arguments:
+mime_type::string: mime type offered by the data source
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-DESTROY ((OBJ WL_DATA_SOURCE))
   ";; destroy the data source
 
-Destroy the data source."
+Destroy the data source.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_ACTIONS ((OBJ WL_DATA_SOURCE) DND_ACTIONS)
@@ -714,7 +844,11 @@ Sets the actions that the source side client supports for this
 	This request must be made once only, and can only be made on sources
 	used in drag-and-drop, so it must be performed before
 	wl_data_device.start_drag. Attempting to use the source other than
-	for drag-and-drop will raise a protocol error."
+	for drag-and-drop will raise a protocol error.
+
+Arguments:
+dnd_actions::uint: actions supported by the data source
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_SOURCE) OPCODE)
@@ -748,7 +882,8 @@ There is one wl_data_device per seat which can be obtained
       from the global wl_data_device_manager singleton.
 
       A wl_data_device provides access to inter-client data transfer
-      mechanisms such as copy-and-paste and drag-and-drop."))
+      mechanisms such as copy-and-paste and drag-and-drop.
+"))
 
 (DEFMETHOD EVT-DATA_OFFER ((OBJ WL_DATA_DEVICE) ID)
   ";; introduce a new wl_data_offer
@@ -759,7 +894,11 @@ The data_offer event introduces a new wl_data_offer object,
 	data_device.selection event (for selections).  Immediately
 	following the data_device.data_offer event, the new data_offer
 	object will send out data_offer.offer events to describe the
-	mime types it offers."
+	mime types it offers.
+
+Arguments:
+id::new_id: the new data_offer object
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-ENTER ((OBJ WL_DATA_DEVICE) SERIAL SURFACE X Y ID)
@@ -768,7 +907,15 @@ The data_offer event introduces a new wl_data_offer object,
 This event is sent when an active drag-and-drop pointer enters
 	a surface owned by the client.  The position of the pointer at
 	enter time is provided by the x and y arguments, in surface-local
-	coordinates."
+	coordinates.
+
+Arguments:
+serial::uint: serial number of the enter event
+surface::object: client surface entered
+x::fixed: surface-local x coordinate
+y::fixed: surface-local y coordinate
+id::object: source data_offer object
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-LEAVE ((OBJ WL_DATA_DEVICE))
@@ -776,7 +923,8 @@ This event is sent when an active drag-and-drop pointer enters
 
 This event is sent when the drag-and-drop pointer leaves the
 	surface and the session ends.  The client must destroy the
-	wl_data_offer introduced at enter time at this point."
+	wl_data_offer introduced at enter time at this point.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-MOTION ((OBJ WL_DATA_DEVICE) TIME X Y)
@@ -785,7 +933,13 @@ This event is sent when the drag-and-drop pointer leaves the
 This event is sent when the drag-and-drop pointer moves within
 	the currently focused surface. The new position of the pointer
 	is provided by the x and y arguments, in surface-local
-	coordinates."
+	coordinates.
+
+Arguments:
+time::uint: timestamp with millisecond granularity
+x::fixed: surface-local x coordinate
+y::fixed: surface-local y coordinate
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-DROP ((OBJ WL_DATA_DEVICE))
@@ -803,7 +957,8 @@ The event is sent when a drag-and-drop operation is ended
 	If the resulting action is \"ask\", the action will not be considered
 	final. The drag-and-drop destination is expected to perform one last
 	wl_data_offer.set_actions request, or wl_data_offer.destroy in order
-	to cancel the operation."
+	to cancel the operation.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-SELECTION ((OBJ WL_DATA_DEVICE) ID)
@@ -820,7 +975,11 @@ The selection event is sent out to notify the client of a new
 	or until the client loses keyboard focus.  Switching surface with
 	keyboard focus within the same client doesn't mean a new selection
 	will be sent.  The client must destroy the previous selection
-	data_offer, if any, upon receiving this event."
+	data_offer, if any, upon receiving this event.
+
+Arguments:
+id::object: selection data_offer object
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-START_DRAG ((OBJ WL_DATA_DEVICE) SOURCE ORIGIN ICON SERIAL)
@@ -850,7 +1009,14 @@ This request asks the compositor to start a drag-and-drop
 	it raises a protocol error.
 
 	The input region is ignored for wl_surfaces with the role of a
-	drag-and-drop icon."
+	drag-and-drop icon.
+
+Arguments:
+source::object: data source for the eventual transfer
+origin::object: surface where the drag originates
+icon::object: drag-and-drop icon surface
+serial::uint: serial number of the implicit grab on the origin
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_SELECTION ((OBJ WL_DATA_DEVICE) SOURCE SERIAL)
@@ -859,13 +1025,19 @@ This request asks the compositor to start a drag-and-drop
 This request asks the compositor to set the selection
 	to the data from the source on behalf of the client.
 
-	To unset the selection, set the source to NULL."
+	To unset the selection, set the source to NULL.
+
+Arguments:
+source::object: data source for the selection
+serial::uint: serial number of the event that triggered this request
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-RELEASE ((OBJ WL_DATA_DEVICE))
   ";; destroy data device
 
-This request destroys the data device."
+This request destroys the data device.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE) OPCODE)
@@ -894,18 +1066,28 @@ The wl_data_device_manager is a singleton global object that
       Depending on the version bound, the objects created from the bound
       wl_data_device_manager object will have different requirements for
       functioning properly. See wl_data_source.set_actions,
-      wl_data_offer.accept and wl_data_offer.finish for details."))
+      wl_data_offer.accept and wl_data_offer.finish for details.
+"))
 
 (DEFMETHOD REQ-CREATE_DATA_SOURCE ((OBJ WL_DATA_DEVICE_MANAGER) ID)
   ";; create a new data source
 
-Create a new data source."
+Create a new data source.
+
+Arguments:
+id::new_id: data source to create
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-GET_DATA_DEVICE ((OBJ WL_DATA_DEVICE_MANAGER) ID SEAT)
   ";; create a new data device
 
-Create a new data device for a given seat."
+Create a new data device for a given seat.
+
+Arguments:
+id::new_id: data device to create
+seat::object: seat associated with the data device
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE_MANAGER) OPCODE)
@@ -931,7 +1113,8 @@ This interface is implemented by servers that provide
 
       Note! This protocol is deprecated and not intended for production use.
       For desktop-style user interfaces, use xdg_shell. Compositors and clients
-      should not implement this interface."))
+      should not implement this interface.
+"))
 
 (DEFMETHOD REQ-GET_SHELL_SURFACE ((OBJ WL_SHELL) ID SURFACE)
   ";; create a shell surface from a surface
@@ -940,7 +1123,12 @@ Create a shell surface for an existing surface. This gives
 	the wl_surface the role of a shell surface. If the wl_surface
 	already has another role, it raises a protocol error.
 
-	Only one shell surface can be associated with a given surface."
+	Only one shell surface can be associated with a given surface.
+
+Arguments:
+id::new_id: shell surface to create
+surface::object: surface to be given the shell surface role
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL) OPCODE) (NTH OPCODE 'NIL))
@@ -981,13 +1169,18 @@ An interface that may be implemented by a wl_surface, for
       On the server side the object is automatically destroyed when
       the related wl_surface is destroyed. On the client side,
       wl_shell_surface_destroy() must be called before destroying
-      the wl_surface object."))
+      the wl_surface object.
+"))
 
 (DEFMETHOD EVT-PING ((OBJ WL_SHELL_SURFACE) SERIAL)
   ";; ping client
 
 Ping a client to check if it is receiving events and sending
-	requests. A client is expected to reply with a pong request."
+	requests. A client is expected to reply with a pong request.
+
+Arguments:
+serial::uint: serial number of the ping
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-CONFIGURE ((OBJ WL_SHELL_SURFACE) EDGES WIDTH HEIGHT)
@@ -1009,7 +1202,13 @@ The configure event asks the client to resize its surface.
 	event it received.
 
 	The width and height arguments specify the size of the window
-	in surface-local coordinates."
+	in surface-local coordinates.
+
+Arguments:
+edges::uint: how the surface was resized
+width::int: new width of the surface
+height::int: new height of the surface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-POPUP_DONE ((OBJ WL_SHELL_SURFACE))
@@ -1017,14 +1216,19 @@ The configure event asks the client to resize its surface.
 
 The popup_done event is sent out when a popup grab is broken,
 	that is, when the user clicks a surface that doesn't belong
-	to the client owning the popup surface."
+	to the client owning the popup surface.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-PONG ((OBJ WL_SHELL_SURFACE) SERIAL)
   ";; respond to a ping event
 
 A client must respond to a ping event with a pong request or
-	the client may be deemed unresponsive."
+	the client may be deemed unresponsive.
+
+Arguments:
+serial::uint: serial number of the ping event
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-MOVE ((OBJ WL_SHELL_SURFACE) SEAT SERIAL)
@@ -1034,7 +1238,12 @@ Start a pointer-driven move of the surface.
 
 	This request must be used in response to a button press event.
 	The server may ignore move requests depending on the state of
-	the surface (e.g. fullscreen or maximized)."
+	the surface (e.g. fullscreen or maximized).
+
+Arguments:
+seat::object: seat whose pointer is used
+serial::uint: serial number of the implicit grab on the pointer
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-RESIZE ((OBJ WL_SHELL_SURFACE) SEAT SERIAL EDGES)
@@ -1044,7 +1253,13 @@ Start a pointer-driven resizing of the surface.
 
 	This request must be used in response to a button press event.
 	The server may ignore resize requests depending on the state of
-	the surface (e.g. fullscreen or maximized)."
+	the surface (e.g. fullscreen or maximized).
+
+Arguments:
+seat::object: seat whose pointer is used
+serial::uint: serial number of the implicit grab on the pointer
+edges::uint: which edge or corner is being dragged
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_TOPLEVEL ((OBJ WL_SHELL_SURFACE))
@@ -1052,7 +1267,8 @@ Start a pointer-driven resizing of the surface.
 
 Map the surface as a toplevel surface.
 
-	A toplevel surface is not fullscreen, maximized or transient."
+	A toplevel surface is not fullscreen, maximized or transient.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_TRANSIENT ((OBJ WL_SHELL_SURFACE) PARENT X Y FLAGS)
@@ -1064,7 +1280,14 @@ Map the surface relative to an existing surface.
 	corner of the surface relative to the upper left corner of the
 	parent surface, in surface-local coordinates.
 
-	The flags argument controls details of the transient behaviour."
+	The flags argument controls details of the transient behaviour.
+
+Arguments:
+parent::object: parent surface
+x::int: surface-local x coordinate
+y::int: surface-local y coordinate
+flags::uint: transient surface behavior
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_FULLSCREEN ((OBJ WL_SHELL_SURFACE) METHOD FRAMERATE OUTPUT)
@@ -1102,7 +1325,13 @@ Map the surface as a fullscreen surface.
 
 	The compositor must reply to this request with a configure event
 	with the dimensions for the output on which the surface will
-	be made fullscreen."
+	be made fullscreen.
+
+Arguments:
+method::uint: method for resolving size conflict
+framerate::uint: framerate in mHz
+output::object: output on which the surface is to be fullscreen
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_POPUP ((OBJ WL_SHELL_SURFACE) SEAT SERIAL PARENT X Y FLAGS)
@@ -1126,7 +1355,16 @@ Map the surface as a popup.
 
 	The x and y arguments specify the location of the upper left
 	corner of the surface relative to the upper left corner of the
-	parent surface, in surface-local coordinates."
+	parent surface, in surface-local coordinates.
+
+Arguments:
+seat::object: seat whose pointer is used
+serial::uint: serial number of the implicit grab on the pointer
+parent::object: parent surface
+x::int: surface-local x coordinate
+y::int: surface-local y coordinate
+flags::uint: transient surface behavior
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_MAXIMIZED ((OBJ WL_SHELL_SURFACE) OUTPUT)
@@ -1149,7 +1387,11 @@ Map the surface as a maximized surface.
 	the main difference between a maximized shell surface and a
 	fullscreen shell surface.
 
-	The details depend on the compositor implementation."
+	The details depend on the compositor implementation.
+
+Arguments:
+output::object: output on which the surface is to be maximized
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_TITLE ((OBJ WL_SHELL_SURFACE) TITLE)
@@ -1161,7 +1403,11 @@ Set a short title for the surface.
 	window list, or other user interface elements provided by the
 	compositor.
 
-	The string must be encoded in UTF-8."
+	The string must be encoded in UTF-8.
+
+Arguments:
+title::string: surface title
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_CLASS ((OBJ WL_SHELL_SURFACE) CLASS_)
@@ -1172,7 +1418,11 @@ Set a class for the surface.
 	The surface class identifies the general class of applications
 	to which the surface belongs. A common convention is to use the
 	file name (or the full path if it is a non-standard location) of
-	the application's .desktop file as the class."
+	the application's .desktop file as the class.
+
+Arguments:
+class_::string: surface class
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL_SURFACE) OPCODE)
@@ -1250,7 +1500,8 @@ A surface is a rectangular area that may be displayed on zero
       z-order. It is allowed to create a wl_subsurface for the same
       wl_surface again, but it is not allowed to use the wl_surface as
       a cursor (cursor is a different role than sub-surface, and role
-      switching is not allowed)."))
+      switching is not allowed).
+"))
 
 (DEFMETHOD EVT-ENTER ((OBJ WL_SURFACE) OUTPUT)
   ";; surface enters an output
@@ -1259,7 +1510,11 @@ This is emitted whenever a surface's creation, movement, or resizing
 	results in some part of it being within the scanout region of an
 	output.
 
-	Note that a surface may be overlapping with zero or more outputs."
+	Note that a surface may be overlapping with zero or more outputs.
+
+Arguments:
+output::object: output entered by the surface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-LEAVE ((OBJ WL_SURFACE) OUTPUT)
@@ -1273,7 +1528,11 @@ This is emitted whenever a surface's creation, movement, or resizing
 	throttling purposes. The surface might be hidden even if no leave event
 	has been sent, and the compositor might expect new surface content
 	updates even if no enter event has been sent. The frame event should be
-	used instead."
+	used instead.
+
+Arguments:
+output::object: output left by the surface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-PREFERRED_BUFFER_SCALE ((OBJ WL_SURFACE) FACTOR)
@@ -1285,7 +1544,11 @@ This event indicates the preferred buffer scale for this surface. It is
 	It is intended that scaling aware clients use this event to scale their
 	content and use wl_surface.set_buffer_scale to indicate the scale they
 	have rendered with. This allows clients to supply a higher detail
-	buffer."
+	buffer.
+
+Arguments:
+factor::int: preferred scaling factor
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-PREFERRED_BUFFER_TRANSFORM ((OBJ WL_SURFACE) TRANSFORM)
@@ -1296,13 +1559,18 @@ This event indicates the preferred buffer transform for this surface.
 
 	It is intended that transform aware clients use this event to apply the
 	transform to their content and use wl_surface.set_buffer_transform to
-	indicate the transform they have rendered with."
+	indicate the transform they have rendered with.
+
+Arguments:
+transform::uint: preferred transform
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-DESTROY ((OBJ WL_SURFACE))
   ";; delete surface
 
-Deletes the surface and invalidates its object ID."
+Deletes the surface and invalidates its object ID.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-ATTACH ((OBJ WL_SURFACE) BUFFER X Y)
@@ -1364,7 +1632,13 @@ Set a buffer as the content of this surface.
 	undefined immediately.
 
 	If wl_surface.attach is sent with a NULL wl_buffer, the
-	following wl_surface.commit will remove the surface content."
+	following wl_surface.commit will remove the surface content.
+
+Arguments:
+buffer::object: buffer of surface contents
+x::int: surface-local x coordinate
+y::int: surface-local y coordinate
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-DAMAGE ((OBJ WL_SURFACE) X Y WIDTH HEIGHT)
@@ -1390,7 +1664,14 @@ This request is used to describe the regions where the pending
 
 	Note! New clients should not use this request. Instead damage can be
 	posted with wl_surface.damage_buffer which uses buffer coordinates
-	instead of surface coordinates."
+	instead of surface coordinates.
+
+Arguments:
+x::int: surface-local x coordinate
+y::int: surface-local y coordinate
+width::int: width of damage rectangle
+height::int: height of damage rectangle
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-FRAME ((OBJ WL_SURFACE) CALLBACK)
@@ -1427,7 +1708,11 @@ Request a notification when it is a good time to start drawing a new
 	attempt to use it after that point.
 
 	The callback_data passed in the callback is the current time, in
-	milliseconds, with an undefined base."
+	milliseconds, with an undefined base.
+
+Arguments:
+callback::new_id: callback object for the frame request
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_OPAQUE_REGION ((OBJ WL_SURFACE) REGION)
@@ -1456,7 +1741,11 @@ This request sets the region of the surface that contains
 	The initial value for an opaque region is empty. Setting the pending
 	opaque region has copy semantics, and the wl_region object can be
 	destroyed immediately. A NULL wl_region causes the pending opaque
-	region to be set to empty."
+	region to be set to empty.
+
+Arguments:
+region::object: opaque region of the surface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_INPUT_REGION ((OBJ WL_SURFACE) REGION)
@@ -1483,7 +1772,11 @@ This request sets the region of the surface that can receive
 	whole surface will accept input. Setting the pending input region
 	has copy semantics, and the wl_region object can be destroyed
 	immediately. A NULL wl_region causes the input region to be set
-	to infinite."
+	to infinite.
+
+Arguments:
+region::object: input region of the surface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-COMMIT ((OBJ WL_SURFACE))
@@ -1505,7 +1798,8 @@ Surface state (input, opaque, and damage regions, attached buffers,
 	All requests that need a commit to become effective are documented
 	to affect double-buffered state.
 
-	Other interfaces may add further double-buffered surface state."
+	Other interfaces may add further double-buffered surface state.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_BUFFER_TRANSFORM ((OBJ WL_SURFACE) TRANSFORM)
@@ -1539,7 +1833,11 @@ This request sets an optional transformation on how the compositor
 
 	If transform is not one of the values from the
 	wl_output.transform enum the invalid_transform protocol error
-	is raised."
+	is raised.
+
+Arguments:
+transform::int: transform for interpreting buffer contents
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_BUFFER_SCALE ((OBJ WL_SURFACE) SCALE)
@@ -1567,7 +1865,11 @@ This request sets an optional scaling factor on how the compositor
 	than the desired surface size.
 
 	If scale is not positive the invalid_scale protocol error is
-	raised."
+	raised.
+
+Arguments:
+scale::int: positive scale for interpreting buffer contents
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-DAMAGE_BUFFER ((OBJ WL_SURFACE) X Y WIDTH HEIGHT)
@@ -1604,7 +1906,14 @@ This request is used to describe the regions where the pending
 	wl_surface.commit time. Therefore, compositors wishing to take both
 	kinds of damage into account will have to accumulate damage from the
 	two requests separately and only transform from one to the other
-	after receiving the wl_surface.commit."
+	after receiving the wl_surface.commit.
+
+Arguments:
+x::int: buffer-local x coordinate
+y::int: buffer-local y coordinate
+width::int: width of damage rectangle
+height::int: height of damage rectangle
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-OFFSET ((OBJ WL_SURFACE) X Y)
@@ -1621,7 +1930,12 @@ The x and y arguments specify the location of the new pending
 
 	This request is semantically equivalent to and the replaces the x and y
 	arguments in the wl_surface.attach request in wl_surface versions prior
-	to 5. See wl_surface.attach for details."
+	to 5. See wl_surface.attach for details.
+
+Arguments:
+x::int: surface-local x coordinate
+y::int: surface-local y coordinate
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SURFACE) OPCODE)
@@ -1653,7 +1967,8 @@ The x and y arguments specify the location of the new pending
 A seat is a group of keyboards, pointer and touch devices. This
       object is published as a global during start up, or when such a
       device is hot plugged.  A seat typically has a pointer and
-      maintains a keyboard focus and a pointer focus."))
+      maintains a keyboard focus and a pointer focus.
+"))
 
 (DEFMETHOD EVT-CAPABILITIES ((OBJ WL_SEAT) CAPABILITIES)
   ";; seat capabilities changed
@@ -1681,7 +1996,11 @@ This is emitted whenever a seat gains or loses the pointer,
 	recent event notifying the client of an added pointer capability.
 
 	The above behavior also applies to wl_keyboard and wl_touch with the
-	keyboard and touch capabilities, respectively."
+	keyboard and touch capabilities, respectively.
+
+Arguments:
+capabilities::uint: capabilities of the seat
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-NAME ((OBJ WL_SEAT) NAME)
@@ -1702,7 +2021,11 @@ In a multi-seat configuration the seat name can be used by clients to
 	lifetime of the wl_seat global.
 
 	Compositors may re-use the same seat name if the wl_seat global is
-	destroyed and re-created later."
+	destroyed and re-created later.
+
+Arguments:
+name::string: seat identifier
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-GET_POINTER ((OBJ WL_SEAT) ID)
@@ -1715,7 +2038,11 @@ The ID provided will be initialized to the wl_pointer interface
 	capability, or has had the pointer capability in the past.
 	It is a protocol violation to issue this request on a seat that has
 	never had the pointer capability. The missing_capability error will
-	be sent in this case."
+	be sent in this case.
+
+Arguments:
+id::new_id: seat pointer
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-GET_KEYBOARD ((OBJ WL_SEAT) ID)
@@ -1728,7 +2055,11 @@ The ID provided will be initialized to the wl_keyboard interface
 	capability, or has had the keyboard capability in the past.
 	It is a protocol violation to issue this request on a seat that has
 	never had the keyboard capability. The missing_capability error will
-	be sent in this case."
+	be sent in this case.
+
+Arguments:
+id::new_id: seat keyboard
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-GET_TOUCH ((OBJ WL_SEAT) ID)
@@ -1741,14 +2072,19 @@ The ID provided will be initialized to the wl_touch interface
 	capability, or has had the touch capability in the past.
 	It is a protocol violation to issue this request on a seat that has
 	never had the touch capability. The missing_capability error will
-	be sent in this case."
+	be sent in this case.
+
+Arguments:
+id::new_id: seat touch interface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-RELEASE ((OBJ WL_SEAT))
   ";; release the seat object
 
 Using this request a client can tell the server that it is not going to
-	use the seat object anymore."
+	use the seat object anymore.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SEAT) OPCODE)
@@ -1787,7 +2123,8 @@ The wl_pointer interface represents one or more input devices,
       The wl_pointer interface generates motion, enter and leave
       events for the surfaces that the pointer is located over,
       and button and axis events for button presses, button releases
-      and scrolling."))
+      and scrolling.
+"))
 
 (DEFMETHOD EVT-ENTER ((OBJ WL_POINTER) SERIAL SURFACE SURFACE_X SURFACE_Y)
   ";; enter event
@@ -1797,7 +2134,14 @@ Notification that this seat's pointer is focused on a certain
 
 	When a seat's focus enters a surface, the pointer image
 	is undefined and a client should respond to this event by setting
-	an appropriate pointer image with the set_cursor request."
+	an appropriate pointer image with the set_cursor request.
+
+Arguments:
+serial::uint: serial number of the enter event
+surface::object: surface entered by the pointer
+surface_x::fixed: surface-local x coordinate
+surface_y::fixed: surface-local y coordinate
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-LEAVE ((OBJ WL_POINTER) SERIAL SURFACE)
@@ -1807,7 +2151,12 @@ Notification that this seat's pointer is no longer focused on
 	a certain surface.
 
 	The leave notification is sent before the enter notification
-	for the new focus."
+	for the new focus.
+
+Arguments:
+serial::uint: serial number of the leave event
+surface::object: surface left by the pointer
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-MOTION ((OBJ WL_POINTER) TIME SURFACE_X SURFACE_Y)
@@ -1815,7 +2164,13 @@ Notification that this seat's pointer is no longer focused on
 
 Notification of pointer location change. The arguments
 	surface_x and surface_y are the location relative to the
-	focused surface."
+	focused surface.
+
+Arguments:
+time::uint: timestamp with millisecond granularity
+surface_x::fixed: surface-local x coordinate
+surface_y::fixed: surface-local y coordinate
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-BUTTON ((OBJ WL_POINTER) SERIAL TIME BUTTON STATE)
@@ -1834,7 +2189,14 @@ Mouse button click and release notifications.
 	Any 16-bit button code value is reserved for future additions to the
 	kernel's event code list. All other button codes above 0xFFFF are
 	currently undefined but may be used in future versions of this
-	protocol."
+	protocol.
+
+Arguments:
+serial::uint: serial number of the button event
+time::uint: timestamp with millisecond granularity
+button::uint: button that produced the event
+state::uint: physical state of the button
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-AXIS ((OBJ WL_POINTER) TIME AXIS VALUE)
@@ -1855,7 +2217,13 @@ Scroll and other axis notifications.
 	equivalent to a motion event vector.
 
 	When applicable, a client can transform its content relative to the
-	scroll distance."
+	scroll distance.
+
+Arguments:
+time::uint: timestamp with millisecond granularity
+axis::uint: axis type
+value::fixed: length of vector in surface-local coordinate space
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-FRAME ((OBJ WL_POINTER))
@@ -1894,7 +2262,8 @@ Indicates the end of a set of events that logically belong together.
 	wl_pointer.enter being in the same wl_pointer.frame.
 	Compositor-specific policies may require the wl_pointer.leave and
 	wl_pointer.enter event being split across multiple wl_pointer.frame
-	groups."
+	groups.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-AXIS_SOURCE ((OBJ WL_POINTER) AXIS_SOURCE)
@@ -1924,7 +2293,11 @@ Source information for scroll and other axes.
 	Only one wl_pointer.axis_source event is permitted per frame.
 
 	The order of wl_pointer.axis_discrete and wl_pointer.axis_source is
-	not guaranteed."
+	not guaranteed.
+
+Arguments:
+axis_source::uint: source of the axis event
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-AXIS_STOP ((OBJ WL_POINTER) TIME AXIS)
@@ -1943,7 +2316,12 @@ Stop notification for scroll and other axes.
 
 	The timestamp is to be interpreted identical to the timestamp in the
 	wl_pointer.axis event. The timestamp value may be the same as a
-	preceding wl_pointer.axis event."
+	preceding wl_pointer.axis event.
+
+Arguments:
+time::uint: timestamp with millisecond granularity
+axis::uint: the axis stopped with this event
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-AXIS_DISCRETE ((OBJ WL_POINTER) AXIS DISCRETE)
@@ -1978,7 +2356,12 @@ Discrete step information for scroll and other axes.
 	axis event.
 
 	The order of wl_pointer.axis_discrete and wl_pointer.axis_source is
-	not guaranteed."
+	not guaranteed.
+
+Arguments:
+axis::uint: axis type
+discrete::int: number of steps
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-AXIS_VALUE120 ((OBJ WL_POINTER) AXIS VALUE120)
@@ -2004,7 +2387,12 @@ Discrete high-resolution scroll information.
 	wl_pointer.frame, the axis source applies to this event.
 
 	The order of wl_pointer.axis_value120 and wl_pointer.axis_source is
-	not guaranteed."
+	not guaranteed.
+
+Arguments:
+axis::uint: axis type
+value120::int: scroll distance as fraction of 120
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-AXIS_RELATIVE_DIRECTION ((OBJ WL_POINTER) AXIS DIRECTION)
@@ -2044,7 +2432,12 @@ Relative directional information of the entity causing the axis
 
 	The order of wl_pointer.axis_relative_direction,
 	wl_pointer.axis_discrete and wl_pointer.axis_source is not
-	guaranteed."
+	guaranteed.
+
+Arguments:
+axis::uint: axis type
+direction::uint: physical direction relative to axis motion
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_CURSOR ((OBJ WL_POINTER) SERIAL SURFACE HOTSPOT_X HOTSPOT_Y)
@@ -2082,7 +2475,14 @@ Set the pointer surface, i.e., the surface that contains the
 
 	The serial parameter must match the latest wl_pointer.enter
 	serial number sent to the client. Otherwise the request will be
-	ignored."
+	ignored.
+
+Arguments:
+serial::uint: serial number of the enter event
+surface::object: pointer surface
+hotspot_x::int: surface-local x coordinate
+hotspot_y::int: surface-local y coordinate
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-RELEASE ((OBJ WL_POINTER))
@@ -2092,7 +2492,8 @@ Using this request a client can tell the server that it is not going to
 	use the pointer object anymore.
 
 	This request destroys the pointer proxy object, so clients must not call
-	wl_pointer_destroy() after using this request."
+	wl_pointer_destroy() after using this request.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_POINTER) OPCODE)
@@ -2122,7 +2523,8 @@ Using this request a client can tell the server that it is not going to
           (:DOCUMENTATION "keyboard input device
 
 The wl_keyboard interface represents one or more keyboards
-      associated with a seat."))
+      associated with a seat.
+"))
 
 (DEFMETHOD EVT-KEYMAP ((OBJ WL_KEYBOARD) FORMAT FD SIZE)
   ";; keyboard mapping
@@ -2132,7 +2534,13 @@ This event provides a file descriptor to the client which can be
 	description.
 
 	From version 7 onwards, the fd must be mapped with MAP_PRIVATE by
-	the recipient, as MAP_SHARED may fail."
+	the recipient, as MAP_SHARED may fail.
+
+Arguments:
+format::uint: keymap format
+fd::fd: keymap file descriptor
+size::uint: keymap size, in bytes
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-ENTER ((OBJ WL_KEYBOARD) SERIAL SURFACE KEYS)
@@ -2142,7 +2550,13 @@ Notification that this seat's keyboard focus is on a certain
 	surface.
 
 	The compositor must send the wl_keyboard.modifiers event after this
-	event."
+	event.
+
+Arguments:
+serial::uint: serial number of the enter event
+surface::object: surface gaining keyboard focus
+keys::array: the currently pressed keys
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-LEAVE ((OBJ WL_KEYBOARD) SERIAL SURFACE)
@@ -2155,7 +2569,12 @@ Notification that this seat's keyboard focus is no longer on
 	for the new focus.
 
 	After this event client must assume that all keys, including modifiers,
-	are lifted and also it must stop key repeating if there's some going on."
+	are lifted and also it must stop key repeating if there's some going on.
+
+Arguments:
+serial::uint: serial number of the leave event
+surface::object: surface that lost keyboard focus
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-KEY ((OBJ WL_KEYBOARD) SERIAL TIME KEY STATE)
@@ -2169,7 +2588,14 @@ A key was pressed or released.
 	by feeding it to the keyboard mapping (see the keymap event).
 
 	If this event produces a change in modifiers, then the resulting
-	wl_keyboard.modifiers event must be sent after this event."
+	wl_keyboard.modifiers event must be sent after this event.
+
+Arguments:
+serial::uint: serial number of the key event
+time::uint: timestamp with millisecond granularity
+key::uint: key that produced the event
+state::uint: physical state of the key
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-MODIFIERS
@@ -2178,7 +2604,15 @@ A key was pressed or released.
   ";; modifier and group state
 
 Notifies clients that the modifier and/or group state has
-	changed, and it should update its local state."
+	changed, and it should update its local state.
+
+Arguments:
+serial::uint: serial number of the modifiers event
+mods_depressed::uint: depressed modifiers
+mods_latched::uint: latched modifiers
+mods_locked::uint: locked modifiers
+group::uint: keyboard layout
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-REPEAT_INFO ((OBJ WL_KEYBOARD) RATE DELAY)
@@ -2195,13 +2629,19 @@ Informs the client about the keyboard's repeat rate and delay.
 
 	This event can be sent later on as well with a new value if necessary,
 	so clients should continue listening for the event past the creation
-	of wl_keyboard."
+	of wl_keyboard.
+
+Arguments:
+rate::int: the rate of repeating keys in characters per second
+delay::int: delay in milliseconds since key down until repeating starts
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-RELEASE ((OBJ WL_KEYBOARD))
   ";; release the keyboard object
 
-NIL"
+NIL
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_KEYBOARD) OPCODE)
@@ -2235,7 +2675,8 @@ The wl_touch interface represents a touchscreen
       For each contact, a series of events is generated, starting
       with a down event, followed by zero or more motion events,
       and ending with an up event. Events relating to the same
-      contact point can be identified by the ID of the sequence."))
+      contact point can be identified by the ID of the sequence.
+"))
 
 (DEFMETHOD EVT-DOWN ((OBJ WL_TOUCH) SERIAL TIME SURFACE ID X Y)
   ";; touch down event and beginning of a touch sequence
@@ -2243,7 +2684,16 @@ The wl_touch interface represents a touchscreen
 A new touch point has appeared on the surface. This touch point is
 	assigned a unique ID. Future events from this touch point reference
 	this ID. The ID ceases to be valid after a touch up event and may be
-	reused in the future."
+	reused in the future.
+
+Arguments:
+serial::uint: serial number of the touch down event
+time::uint: timestamp with millisecond granularity
+surface::object: surface touched
+id::int: the unique ID of this touch point
+x::fixed: surface-local x coordinate
+y::fixed: surface-local y coordinate
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-UP ((OBJ WL_TOUCH) SERIAL TIME ID)
@@ -2251,13 +2701,26 @@ A new touch point has appeared on the surface. This touch point is
 
 The touch point has disappeared. No further events will be sent for
 	this touch point and the touch point's ID is released and may be
-	reused in a future touch down event."
+	reused in a future touch down event.
+
+Arguments:
+serial::uint: serial number of the touch up event
+time::uint: timestamp with millisecond granularity
+id::int: the unique ID of this touch point
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-MOTION ((OBJ WL_TOUCH) TIME ID X Y)
   ";; update of touch point coordinates
 
-A touch point has changed coordinates."
+A touch point has changed coordinates.
+
+Arguments:
+time::uint: timestamp with millisecond granularity
+id::int: the unique ID of this touch point
+x::fixed: surface-local x coordinate
+y::fixed: surface-local y coordinate
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-FRAME ((OBJ WL_TOUCH))
@@ -2270,7 +2733,8 @@ Indicates the end of a set of events that logically belong together.
 	A wl_touch.frame terminates at least one event but otherwise no
 	guarantee is provided about the set of events within a frame. A client
 	must assume that any state not updated in a frame is unchanged from the
-	previously known state."
+	previously known state.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-CANCEL ((OBJ WL_TOUCH))
@@ -2281,7 +2745,8 @@ Sent if the compositor decides the touch stream is a global
 	particular gesture. Touch cancellation applies to all touch points
 	currently active on this client's surface. The client is
 	responsible for finalizing the touch points, future touch points on
-	this surface may reuse the touch point ID."
+	this surface may reuse the touch point ID.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-SHAPE ((OBJ WL_TOUCH) ID MAJOR MINOR)
@@ -2311,7 +2776,13 @@ Sent when a touchpoint has changed its shape.
 
 	This event is only sent by the compositor if the touch device supports
 	shape reports. The client has to make reasonable assumptions about the
-	shape if it did not receive this event."
+	shape if it did not receive this event.
+
+Arguments:
+id::int: the unique ID of this touch point
+major::fixed: length of the major axis in surface-local coordinates
+minor::fixed: length of the minor axis in surface-local coordinates
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-ORIENTATION ((OBJ WL_TOUCH) ID ORIENTATION)
@@ -2339,13 +2810,19 @@ Sent when a touchpoint has changed its orientation.
 	90 degrees.
 
 	This event is only sent by the compositor if the touch device supports
-	orientation reports."
+	orientation reports.
+
+Arguments:
+id::int: the unique ID of this touch point
+orientation::fixed: angle between major axis and positive surface y-axis in degrees
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-RELEASE ((OBJ WL_TOUCH))
   ";; release the touch object
 
-NIL"
+NIL
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_TOUCH) OPCODE)
@@ -2377,7 +2854,8 @@ An output describes part of the compositor geometry.  The
       output corresponds to a rectangular area in that space that is
       actually visible.  This typically corresponds to a monitor that
       displays part of the compositor space.  This object is published
-      as global during start up, or when a monitor is hotplugged."))
+      as global during start up, or when a monitor is hotplugged.
+"))
 
 (DEFMETHOD EVT-GEOMETRY
            ((OBJ WL_OUTPUT) X Y PHYSICAL_WIDTH PHYSICAL_HEIGHT SUBPIXEL MAKE
@@ -2399,7 +2877,18 @@ The geometry event describes geometric properties of the output.
 	implementing a desktop-style output layout or those exposing virtual
 	outputs, might fake this information. Instead of using x and y, clients
 	should use xdg_output.logical_position. Instead of using make and model,
-	clients should use name and description."
+	clients should use name and description.
+
+Arguments:
+x::int: x position within the global compositor space
+y::int: y position within the global compositor space
+physical_width::int: width in millimeters of the output
+physical_height::int: height in millimeters of the output
+subpixel::int: subpixel orientation of the output
+make::string: textual description of the manufacturer
+model::string: textual description of the model
+transform::int: transform that maps framebuffer to output
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-MODE ((OBJ WL_OUTPUT) FLAGS WIDTH HEIGHT REFRESH)
@@ -2437,7 +2926,14 @@ The mode event describes an available mode for the output.
 
 	Note: this information is not always meaningful for all outputs. Some
 	compositors, such as those exposing virtual outputs, might fake the
-	refresh rate or the size."
+	refresh rate or the size.
+
+Arguments:
+flags::uint: bitfield of mode flags
+width::int: width of the mode in hardware units
+height::int: height of the mode in hardware units
+refresh::int: vertical refresh rate in mHz
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-DONE ((OBJ WL_OUTPUT))
@@ -2447,7 +2943,8 @@ This event is sent after all other properties have been
 	sent after binding to the output object and after any
 	other property changes done after that. This allows
 	changes to the output properties to be seen as
-	atomic, even if they happen via multiple events."
+	atomic, even if they happen via multiple events.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-SCALE ((OBJ WL_OUTPUT) FACTOR)
@@ -2472,7 +2969,11 @@ This event contains scaling geometry information
 	avoid scaling the surface, and the client can supply
 	a higher detail image.
 
-	The scale event will be followed by a done event."
+	The scale event will be followed by a done event.
+
+Arguments:
+factor::int: scaling factor of output
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-NAME ((OBJ WL_OUTPUT) NAME)
@@ -2505,7 +3006,11 @@ Many compositors will assign user-friendly names to their outputs, show
 	destroyed and re-created later. Compositors should avoid re-using the
 	same name if possible.
 
-	The name event will be followed by a done event."
+	The name event will be followed by a done event.
+
+Arguments:
+name::string: output name
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD EVT-DESCRIPTION ((OBJ WL_OUTPUT) DESCRIPTION)
@@ -2524,14 +3029,19 @@ Many compositors can produce human-readable descriptions of their
 	whenever the description changes. The description is optional, and may
 	not be sent at all.
 
-	The description event will be followed by a done event."
+	The description event will be followed by a done event.
+
+Arguments:
+description::string: output description
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-RELEASE ((OBJ WL_OUTPUT))
   ";; release the output object
 
 Using this request a client can tell the server that it is not going to
-	use the output object anymore."
+	use the output object anymore.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_OUTPUT) OPCODE)
@@ -2553,24 +3063,40 @@ Using this request a client can tell the server that it is not going to
 A region object describes an area.
 
       Region objects are used to describe the opaque and input
-      regions of a surface."))
+      regions of a surface.
+"))
 
 (DEFMETHOD REQ-DESTROY ((OBJ WL_REGION))
   ";; destroy region
 
-Destroy the region.  This will invalidate the object ID."
+Destroy the region.  This will invalidate the object ID.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-ADD ((OBJ WL_REGION) X Y WIDTH HEIGHT)
   ";; add rectangle to region
 
-Add the specified rectangle to the region."
+Add the specified rectangle to the region.
+
+Arguments:
+x::int: region-local x coordinate
+y::int: region-local y coordinate
+width::int: rectangle width
+height::int: rectangle height
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SUBTRACT ((OBJ WL_REGION) X Y WIDTH HEIGHT)
   ";; subtract rectangle from region
 
-Subtract the specified rectangle from the region."
+Subtract the specified rectangle from the region.
+
+Arguments:
+x::int: region-local x coordinate
+y::int: region-local y coordinate
+width::int: rectangle width
+height::int: rectangle height
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_REGION) OPCODE) (NTH OPCODE 'NIL))
@@ -2606,14 +3132,16 @@ The global interface exposing sub-surface compositing capabilities.
       within a window from clients to the compositor. A prime example is
       a video player with decorations and video in separate wl_surface
       objects. This should allow the compositor to pass YUV video buffer
-      processing to dedicated overlay hardware when possible."))
+      processing to dedicated overlay hardware when possible.
+"))
 
 (DEFMETHOD REQ-DESTROY ((OBJ WL_SUBCOMPOSITOR))
   ";; unbind from the subcompositor interface
 
 Informs the server that the client will not be using this
 	protocol object anymore. This does not affect any other
-	objects, wl_subsurface objects included."
+	objects, wl_subsurface objects included.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-GET_SUBSURFACE ((OBJ WL_SUBCOMPOSITOR) ID SURFACE PARENT)
@@ -2637,7 +3165,13 @@ Create a sub-surface interface for the given surface, and
 	bad_parent protocol error is raised.
 
 	This request modifies the behaviour of wl_surface.commit request on
-	the sub-surface, see the documentation on wl_subsurface interface."
+	the sub-surface, see the documentation on wl_subsurface interface.
+
+Arguments:
+id::new_id: the new sub-surface object ID
+surface::object: the surface to be turned into a sub-surface
+parent::object: the parent surface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBCOMPOSITOR) OPCODE) (NTH OPCODE 'NIL))
@@ -2707,7 +3241,8 @@ An additional interface to a wl_surface object, which has been
       and then destroy the sub-surface.
 
       If the parent wl_surface object is destroyed, the sub-surface is
-      unmapped."))
+      unmapped.
+"))
 
 (DEFMETHOD REQ-DESTROY ((OBJ WL_SUBSURFACE))
   ";; remove sub-surface interface
@@ -2715,7 +3250,8 @@ An additional interface to a wl_surface object, which has been
 The sub-surface interface is removed from the wl_surface object
 	that was turned into a sub-surface with a
 	wl_subcompositor.get_subsurface request. The wl_surface's association
-	to the parent is deleted. The wl_surface is unmapped immediately."
+	to the parent is deleted. The wl_surface is unmapped immediately.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_POSITION ((OBJ WL_SUBSURFACE) X Y)
@@ -2736,7 +3272,12 @@ This schedules a sub-surface position change.
 	the commit of the parent surface, the position of a new request always
 	replaces the scheduled position from any previous request.
 
-	The initial position is 0, 0."
+	The initial position is 0, 0.
+
+Arguments:
+x::int: x coordinate in the parent surface
+y::int: y coordinate in the parent surface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-PLACE_ABOVE ((OBJ WL_SUBSURFACE) SIBLING)
@@ -2756,14 +3297,22 @@ This sub-surface is taken from the stack, and put back just
 	wl_subsurface.set_desync for details.
 
 	A new sub-surface is initially added as the top-most in the stack
-	of its siblings and parent."
+	of its siblings and parent.
+
+Arguments:
+sibling::object: the reference surface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-PLACE_BELOW ((OBJ WL_SUBSURFACE) SIBLING)
   ";; restack the sub-surface
 
 The sub-surface is placed just below the reference surface.
-	See wl_subsurface.place_above."
+	See wl_subsurface.place_above.
+
+Arguments:
+sibling::object: the reference surface
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_SYNC ((OBJ WL_SUBSURFACE))
@@ -2781,7 +3330,8 @@ Change the commit behaviour of the sub-surface to synchronized
 	Applying the cached state will invalidate the cache, so further
 	parent surface commits do not (re-)apply old state.
 
-	See wl_subsurface for the recursive effect of this mode."
+	See wl_subsurface for the recursive effect of this mode.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD REQ-SET_DESYNC ((OBJ WL_SUBSURFACE))
@@ -2805,7 +3355,8 @@ Change the commit behaviour of the sub-surface to desynchronized
 	see wl_subsurface.
 
 	If a surface's parent surface behaves as desynchronized, then
-	the cached state is applied on set_desync."
+	the cached state is applied on set_desync.
+"
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBSURFACE) OPCODE) (NTH OPCODE 'NIL))
@@ -2814,3 +3365,4 @@ Change the commit behaviour of the sub-surface to desynchronized
   (NTH OPCODE
        '(EVT-DESTROY EVT-SET_POSITION EVT-PLACE_ABOVE EVT-PLACE_BELOW
          EVT-SET_SYNC EVT-SET_DESYNC)))
+
