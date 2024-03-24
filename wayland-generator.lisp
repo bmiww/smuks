@@ -15,19 +15,21 @@
 
 (defun do-event (interface event)
   `(defmethod ,(ev-name event) ((obj ,(read-from-string interface))
-			 ,@(mapcar 'do-arg (args event)))))
+			 ,@(mapcar 'do-arg (args event)))
+     (error "Unimplemented")))
 
 (defun do-request (interface request)
   `(defmethod ,(req-name request) ((obj ,(read-from-string interface))
-			    ,@(mapcar 'do-arg (args request)))))
+			    ,@(mapcar 'do-arg (args request)))
+     (error "Unimplemented")))
 
 
 (defun do-event-opcode-matchers (interface events)
-  `((defmethod match-event-opcode ((obj ,interface) opcode)
+  `((defmethod match-event-opcode ((obj ,(read-from-string interface)) opcode)
       (nth opcode '(,@(mapcar 'symbolize-event events))))))
 
 (defun do-request-opcode-matchers (interface requests)
-  `((defmethod match-request-opcode ((obj ,interface) opcode)
+  `((defmethod match-request-opcode ((obj ,(read-from-string interface)) opcode)
       (nth opcode '(,@(mapcar 'symbolize-event requests))))))
 
 
@@ -37,8 +39,12 @@
 
 (defun do-interface (interface)
   (append
-   `((defpackage ,(read-from-string (format nil ":~a" (name interface)))))
-   `((in-package ,(read-from-string (format nil ":~a" (name interface)))))
+   `((defpackage
+	 ,(read-from-string (format nil ":wl/~a" (name interface)))
+       (:use :cl)
+       (:export ,@(mapcar #'req-name (requests interface))
+		,@(mapcar #'ev-name (events interface)))))
+   `((in-package ,(read-from-string (format nil ":wl/~a" (name interface)))))
 
    ;; TODO: This could probably move the client to the wl-object thing
    `((defclass ,(read-from-string (name interface)) (wl:wl-object)
@@ -53,12 +59,14 @@
 ;; since their generic definitions are conflicting.
 (defun gen-lisp-code (protocol)
   (append
-   `((defpackage :wl (:use #:cl) (:export wl-object *objects*)))
+   `((defpackage :wl (:use #:cl) (:export wl-object *objects* match-event-opcode match-request-opcode)))
    `((in-package :wl))
    `((defvar *objects* (make-hash-table :test 'eq)))
    `((defclass wl-object () ((id :initarg :id :accessor id))))
-   (do-initializer "wl-object")
-   (mapcar 'do-interface protocol)))
+   `((defgeneric match-event-opcode (obj opcode)))
+   `((defgeneric match-request-opcode (obj opcode)))
+   (do-initializer 'wl-object)
+   (apply #'append (mapcar 'do-interface protocol))))
 
 
 (defun generate-wayland-classes (package xml-file)
