@@ -19,7 +19,7 @@
   (let* ((name (name-of interface))
 	 (version (version-of interface))
 	 (entries (xmls:node-children interface))
-	 (interface (make-instance 'interface :name name :version version)))
+	 (interface (make-instance 'interface :name name :version version :description (get-description interface))))
     (setf (requests interface) (mapcar 'make-request (read-entries "request" entries)))
     (setf (events interface) (mapcar 'make-event (read-entries "event" entries)))
     (setf (enums interface) (mapcar (lambda (entry) (make-enum name entry)) (read-entries "enum" entries)))
@@ -33,6 +33,7 @@
 
 (defclass interface ()
   ((name :initarg :name :accessor name)
+   (description :initarg :description :accessor description)
    (version :initarg :version :accessor version)
    (requests :initarg :requests :accessor requests)
    (events :initarg :events :accessor events)
@@ -40,16 +41,19 @@
 
 (defclass arg ()
   ((name :initarg :name :accessor name)
+   (summary :initarg :summary :accessor summary)
    (arg-type :initarg :arg-type)
    (interface :initarg :interface :accessor interface)
    (nullable :initarg :nullable :accessor nullable)))
 
 (defclass event ()
   ((name :initarg :name :accessor name)
+   (description :initarg :description :accessor description)
    (args :initarg :args :accessor args)))
 
 (defclass request ()
   ((name :initarg :name :accessor name)
+   (description :initarg :description :accessor description)
    (args :initarg :args :accessor args)))
 
 (defclass enum ()
@@ -60,13 +64,8 @@
 ;; │  │ ││││└─┐ │ ├┬┘│ ││   │ │ │├┬┘└─┐
 ;; └─┘└─┘┘└┘└─┘ ┴ ┴└─└─┘└─┘ ┴ └─┘┴└─└─┘
 
-(defun make-request (xml)
-  (let ((name (name-of xml)))
-    (make-instance 'request :name name :args (read-args xml))))
-
-(defun make-event (xml)
-  (let ((name (name-of xml)))
-    (make-instance 'event :name name :args (read-args xml))))
+(defun make-request (xml) (make-instance 'request :name (name-of xml) :args (read-args xml) :description (get-description xml)))
+(defun make-event (xml) (make-instance 'event :name (name-of xml) :args (read-args xml) :description (get-description xml)))
 
 (defun make-enum (interface-name xml)
   (let ((name (name-of xml)))
@@ -91,6 +90,10 @@
   (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "type")))
 		   (xmls:node-attrs object))))
 
+(defun summary-of (object)
+  (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "summary")))
+		   (xmls:node-attrs object))))
+
 (defun version-of (object)
   (parse-integer (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "version")))
 				  (xmls:node-attrs object)))))
@@ -104,6 +107,12 @@
    (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "allow-null")))
 		    (xmls:node-attrs arg-sxml)))
    "true"))
+
+(defun get-description (xml)
+  (let* ((description-node (find-if (lambda (entry) (of-type entry "description")) (xmls:node-children xml)))
+	 (description (first (xmls:node-children description-node)))
+	 (summary (summary-of description-node)))
+    (format nil "~A~%~%~A" summary description)))
 
 (defun read-args (roe-sxml)
   (remove nil (mapcar (lambda (entry) (when (of-type entry "arg") (make-arg entry)))

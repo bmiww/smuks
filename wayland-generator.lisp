@@ -16,11 +16,13 @@
 (defun do-event (interface event)
   `(defmethod ,(ev-name event) ((obj ,(read-from-string interface))
 			 ,@(mapcar 'do-arg (args event)))
+     ,(format nil ";; ~a" (description event))
      (error "Unimplemented")))
 
 (defun do-request (interface request)
   `(defmethod ,(req-name request) ((obj ,(read-from-string interface))
 			    ,@(mapcar 'do-arg (args request)))
+     ,(format nil ";; ~a" (description request))
      (error "Unimplemented")))
 
 
@@ -38,21 +40,26 @@
       (setf (gethash (id obj) wl:*objects*) obj))))
 
 (defun do-interface (interface)
-  (append
-   `((defpackage
-	 ,(read-from-string (format nil ":wl/~a" (name interface)))
-       (:use :cl)
-       (:export ,@(mapcar #'req-name (requests interface))
-		,@(mapcar #'ev-name (events interface)))))
-   `((in-package ,(read-from-string (format nil ":wl/~a" (name interface)))))
+  ;; (break)
+  (let ((if-name (read-from-string (format nil ":wl/~a" (name interface))))
+	(class-name (read-from-string (name interface))))
+    (append
+     `((defpackage ,if-name
+	 (:use :cl)
+	 (:export
+	  ,class-name
+	  ,@(mapcar #'req-name (requests interface))
+	  ,@(mapcar #'ev-name (events interface)))))
+     `((in-package ,if-name))
 
-   ;; TODO: This could probably move the client to the wl-object thing
-   `((defclass ,(read-from-string (name interface)) (wl:wl-object)
-       ((client :initarg :client :accessor client))))
-   (mapcar (lambda (event) (do-event (name interface) event)) (events interface))
-   (mapcar (lambda (request) (do-request (name interface) request)) (requests interface))
-   (do-event-opcode-matchers (name interface) (events interface))
-   (do-request-opcode-matchers (name interface) (requests interface))))
+    ;; TODO: This could probably move the client to the wl-object thing
+     `((defclass ,class-name (wl:wl-object)
+	 ((client :initarg :client :accessor client))
+	(:documentation ,(description interface))))
+     (mapcar (lambda (event) (do-event (name interface) event)) (events interface))
+     (mapcar (lambda (request) (do-request (name interface) request)) (requests interface))
+     (do-event-opcode-matchers (name interface) (events interface))
+     (do-request-opcode-matchers (name interface) (requests interface)))))
 
 ;; TODO: The whole packages thing is problematic. Remove it.
 ;; TODO: It seems that you might also need to prefix the methods
