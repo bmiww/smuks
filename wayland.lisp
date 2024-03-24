@@ -5,7 +5,7 @@
    read-wayland-message))
 (in-package :smuks/wayland)
 
-(defun payload-string (payload)
+(defun payload-string (stream payload)
   (let ((length (make-array 4 :initial-element nil))
 	)))
 

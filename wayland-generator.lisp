@@ -12,6 +12,7 @@
 (defun req-name (request) (read-from-string (format nil "req-~a" (name request))))
 (defun symbolize-event (event) (ev-name event))
 (defun do-arg (arg) (read-from-string (name arg)))
+(defun arg-type-symbol (arg) (read-from-string (format nil "~a" (arg-type arg))))
 
 (defun do-event (interface event)
   `(defmethod ,(ev-name event) ((obj ,(read-from-string interface))
@@ -34,13 +35,16 @@
   `((defmethod match-request-opcode ((obj ,(read-from-string interface)) opcode)
       (nth opcode '(,@(mapcar 'symbolize-event requests))))))
 
+(defun do-request-arg-types (interface requests)
+  `((defmethod get-request-arg-types ((obj ,(read-from-string interface)) opcode)
+      (nth opcode '(,@(mapcar (lambda (req) (mapcar 'arg-type-symbol (args req))) requests))))))
+
 
 (defun do-initializer (interface)
   `((defmethod initialize-instance :after ((obj ,interface) &key)
       (setf (gethash (id obj) wl:*objects*) obj))))
 
 (defun do-interface (interface)
-  ;; (break)
   (let ((if-name (read-from-string (format nil ":wl/~a" (name interface))))
 	(class-name (read-from-string (name interface))))
     (append
@@ -59,11 +63,9 @@
      (mapcar (lambda (event) (do-event (name interface) event)) (events interface))
      (mapcar (lambda (request) (do-request (name interface) request)) (requests interface))
      (do-event-opcode-matchers (name interface) (events interface))
-     (do-request-opcode-matchers (name interface) (requests interface)))))
+     (do-request-opcode-matchers (name interface) (requests interface))
+     (do-request-arg-types (name interface) (requests interface)))))
 
-;; TODO: The whole packages thing is problematic. Remove it.
-;; TODO: It seems that you might also need to prefix the methods
-;; since their generic definitions are conflicting.
 (defun gen-lisp-code (protocol)
   (append
    `((defpackage :wl (:use #:cl) (:export wl-object *objects* match-event-opcode match-request-opcode)))
@@ -72,6 +74,7 @@
    `((defclass wl-object () ((id :initarg :id :accessor id))))
    `((defgeneric match-event-opcode (obj opcode)))
    `((defgeneric match-request-opcode (obj opcode)))
+   `((defgeneric get-request-arg-types (obj opcode)))
    (do-initializer 'wl-object)
    (apply #'append (mapcar 'do-interface protocol))))
 
