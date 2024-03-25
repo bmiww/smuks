@@ -20,8 +20,23 @@
     (consume-padding stream length)
     array))
 
-;; (defun read-fixnum (stream)
-  ;; (let ))
+(defun read-fixnum (stream)
+  (let* ((int (read-n-as-number stream 3))
+	 (sign (logand int 1))
+	 (int (ash int -1)) ;; TODO: This line might be total bullshit
+	 (dec (read-n-as-number stream 1))
+	 (dec (* 0.00000001 dec)))
+    (if (= sign 1)
+	(* -1 (+ int dec))
+	(+ int dec))))
+
+(defun read-int (stream)
+  (let* ((int (read-n-as-number stream 4))
+	 (sign (logand int 1))
+	 (int (ash int -1))) ;; TODO: This line might be total bullshit
+    (if (= sign 1)
+	(- int)
+	int)))
 
 ;; NOTE: For the wire protocol details, see:
 ;; https://wayland-book.com/protocol-design/wire-protocol.html
@@ -35,8 +50,7 @@
     (dolist (arg-type arg-types)
       (push
        (case arg-type
-	 ;; TODO: This actually needs to be checked for how the sign arrives for interpreting the bytes
-	 (int (read-n-as-number stream 4))
+	 (int (read-int stream))
 	 (uint (read-n-as-number stream 4))
 	 (object (read-n-as-number stream 4))
 	 ;; TODO: Figure out if i should already allocate a new object here, or later
@@ -44,8 +58,7 @@
 	 ;; TODO: Another wire protocol document mentions that this is not just a number, but could be prepended by
 	 ;; A string identifying the interface and a uint specifying the version as well
 	 (new-id (read-n-as-number stream 4))
-	 ;; TODO: Figure out how the fixed number is represented in bytes
-	 (fixed (error "Fixed number parsing from wayland message not implemented"))
+	 (fixed (read-fixnum stream))
 	 (string (payload-string stream))
 	 (array (payload-array stream))
 	 ;; TODO: Update the unix-sockets library to allow reading the FD from the socket ancillary data
