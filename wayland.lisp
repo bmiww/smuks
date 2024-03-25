@@ -82,10 +82,6 @@
 	 (message-size (read-n-as-number stream 2))
 	 (payload (read-req-args stream message-size req-arg-types)))
 
-    ;; (setf payload (make-array message-size :initial-element nil))
-    ;; (loop for i from 0 below message-size
-	  ;; do (setf (aref payload i) (read-byte stream)))
-
     ;; Discard extra bytes - since wayland messages are always 32-bit aligned
     (consume-padding stream message-size)
 
