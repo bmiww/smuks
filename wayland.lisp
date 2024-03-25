@@ -6,15 +6,27 @@
 (in-package :smuks/wayland)
 
 (defun payload-string (stream)
-  (let ((length (read-n-as-number stream 4)))
-    ))
+  (let* ((length (read-n-as-number stream 4))
+	 (array (make-array length)))
+    (read-sequence array stream :end length)
+    (consume-padding stream length)
+    (coerce array 'string)))
 
+;; TODO: For now - this just returns an array with the bytes. It is currently up to the implementation to interpret the bytes.
 (defun payload-array (stream)
-  (let ((length (read-n-as-number stream 4)))
-    ))
+  (let* ((length (read-n-as-number stream 4))
+	 (array (make-array length)))
+    (read-sequence array stream :end length)
+    (consume-padding stream length)
+    array))
+
+;; (defun read-fixnum (stream)
+  ;; (let ))
 
 ;; NOTE: For the wire protocol details, see:
 ;; https://wayland-book.com/protocol-design/wire-protocol.html
+;; NOTE: Theres also this - which has some other clarifications/confusions:
+;; https://wayland.freedesktop.org/docs/html/ch04.html
 (defun read-req-args (stream message-size arg-types)
   ;; TODO: Maybe instead of ignoring - you could keep a counter as to how many bytes were read by each arg-type in the list
   ;; Then the difference could be discarded (wayland pads the payload to have word lengths 32bits)
@@ -29,6 +41,8 @@
 	 (object (read-n-as-number stream 4))
 	 ;; TODO: Figure out if i should already allocate a new object here, or later
 	 ;; Maybe this should be left up to the method implementation
+	 ;; TODO: Another wire protocol document mentions that this is not just a number, but could be prepended by
+	 ;; A string identifying the interface and a uint specifying the version as well
 	 (new-id (read-n-as-number stream 4))
 	 ;; TODO: Figure out how the fixed number is represented in bytes
 	 (fixed (error "Fixed number parsing from wayland message not implemented"))
@@ -60,12 +74,15 @@
 	  ;; do (setf (aref payload i) (read-byte stream)))
 
     ;; Discard extra bytes - since wayland messages are always 32-bit aligned
-    (when (> (mod message-size 4) 0)
-      (loop for i from 0 below (- 4 (mod message-size 4))
-	    do (read-byte stream)))
+    (consume-padding stream message-size)
 
     (format t "Calling ~a with ~a~%" req-method payload)
     (apply req-method payload)))
+
+(defun consume-padding (stream size)
+  (when (> (mod size 4) 0)
+    (loop for i from 0 below (- 4 (mod size 4))
+	  do (read-byte stream))))
 
 (defun read-n-as-number (stream n)
   (let ((num 0))
