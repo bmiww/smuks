@@ -38,6 +38,10 @@
 	(- int)
 	int)))
 
+(defun read-fd (stream)
+  (break) ;; TODO: Breaking here - since i'm pretty sure this ain't gonna work
+  (unix-sockets::ancillary-fd stream))
+
 ;; NOTE: For the wire protocol details, see:
 ;; https://wayland-book.com/protocol-design/wire-protocol.html
 ;; NOTE: Theres also this - which has some other clarifications/confusions:
@@ -62,15 +66,13 @@
 	 (string (payload-string stream))
 	 (array (payload-array stream))
 	 ;; TODO: Update the unix-sockets library to allow reading the FD from the socket ancillary data
-	 (fd (error "FD parsing from wayland message not implemented"))
+	 (fd (read-fd stream))
 	 ;; TODO: Need to add the enum parsing for the protocol generator thing
 	 ;; NOTE: Basically an integer, but needs to be matched against the request enum values
 	 ;; Since it could be a bitmap of the enum values (more than one flag active)
 	 (enum (error "Enum parsing from wayland message not implemented")))
        args))
     args))
-
-
 
 
 (defun read-wayland-message (stream)
