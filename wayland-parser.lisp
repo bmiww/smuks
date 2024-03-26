@@ -95,13 +95,19 @@
 ;; ├─┘├─┤├┬┘└─┐├┤ ├┬┘└─┐
 ;; ┴  ┴ ┴┴└─└─┘└─┘┴└─└─┘
 
+(defun parse-possible-number (string)
+  (if (str:starts-with? "0x" string)
+      (parse-integer (str:substring 2 t string) :radix 16)
+      (parse-integer string)))
+
+
 (defun enum-entries (xml)
   (mapcar (lambda (entry)
 	    (make-instance 'enum-entry
 	       :name (name-of entry)
-	       :value (value-of entry)
+	       :value (parse-possible-number (value-of entry))
 	       :summary (summary-of entry)))
-	  (xmls:node-children xml)))
+	  (entries-of xml)))
 
 ;; TODO: Most of these *-of could be turned into a macro or a function
 (defun name-of (object)
@@ -117,7 +123,7 @@
 		   (xmls:node-attrs object))))
 
 (defun value-of (object)
-  (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "summary")))
+  (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "value")))
 		   (xmls:node-attrs object))))
 
 (defun summary-of (object)
@@ -167,6 +173,7 @@
 		      (xmls:node-children roe-sxml))))
 
 (defun of-type (x type) (equal (xmls:node-name x) type))
+(defun entries-of (enum) (remove-if (lambda (x) (not (of-type x "entry"))) (xmls:node-children enum)))
 (defun enums-of (interface) (remove-if (lambda (x) (not (of-type x "enum"))) interface))
 (defun events-of (interface) (remove-if (lambda (x) (not (of-type x "event"))) interface))
 (defun requests-of (interface) (remove-if (lambda (x) (not (of-type x "request"))) interface))

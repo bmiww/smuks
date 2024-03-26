@@ -30,7 +30,9 @@
 (defun do-regular-enum (interface enum)
   `(defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)
      ,(format nil ";; ~a" (description enum))
-     (error "Unimplemented")))
+     (case value
+       ,@(mapcar (lambda (entry) `(,(value entry) ,(name entry))) (entries enum)))))
+       ;; ,@(mapcar (lambda (entry) `(derp)) (entries enum)))))
 
 (defun do-bitfield-enum (interface enum)
   `(defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)

@@ -114,7 +114,11 @@ registry::new_id: global registry object
 These errors are global and can be emitted in response to any
 	server request.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE
+    (0 "invalid_object")
+    (1 "invalid_method")
+    (2 "no_memory")
+    (3 "implementation")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DISPLAY) OPCODE)
   (NTH OPCODE '(EVT-ERROR EVT-DELETE_ID)))
@@ -426,7 +430,7 @@ size::int: pool size, in bytes
 
 These errors can be emitted in response to wl_shm requests.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "invalid_format") (1 "invalid_stride") (2 "invalid_fd")))
 
 (DEFMETHOD ENUM-FORMAT ((OBJ WL_SHM) VALUE)
   ";; pixel formats
@@ -444,7 +448,115 @@ This describes the memory layout of an individual pixel.
 	For all wl_shm formats and unless specified in another protocol
 	extension, pre-multiplied alpha is used for pixel values.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE
+    (0 "argb8888")
+    (1 "xrgb8888")
+    (538982467 "c8")
+    (943867730 "rgb332")
+    (944916290 "bgr233")
+    (842093144 "xrgb4444")
+    (842089048 "xbgr4444")
+    (842094674 "rgbx4444")
+    (842094658 "bgrx4444")
+    (842093121 "argb4444")
+    (842089025 "abgr4444")
+    (842088786 "rgba4444")
+    (842088770 "bgra4444")
+    (892424792 "xrgb1555")
+    (892420696 "xbgr1555")
+    (892426322 "rgbx5551")
+    (892426306 "bgrx5551")
+    (892424769 "argb1555")
+    (892420673 "abgr1555")
+    (892420434 "rgba5551")
+    (892420418 "bgra5551")
+    (909199186 "rgb565")
+    (909199170 "bgr565")
+    (875710290 "rgb888")
+    (875710274 "bgr888")
+    (875709016 "xbgr8888")
+    (875714642 "rgbx8888")
+    (875714626 "bgrx8888")
+    (875708993 "abgr8888")
+    (875708754 "rgba8888")
+    (875708738 "bgra8888")
+    (808669784 "xrgb2101010")
+    (808665688 "xbgr2101010")
+    (808671314 "rgbx1010102")
+    (808671298 "bgrx1010102")
+    (808669761 "argb2101010")
+    (808665665 "abgr2101010")
+    (808665426 "rgba1010102")
+    (808665410 "bgra1010102")
+    (1448695129 "yuyv")
+    (1431918169 "yvyu")
+    (1498831189 "uyvy")
+    (1498765654 "vyuy")
+    (1448433985 "ayuv")
+    (842094158 "nv12")
+    (825382478 "nv21")
+    (909203022 "nv16")
+    (825644622 "nv61")
+    (961959257 "yuv410")
+    (961893977 "yvu410")
+    (825316697 "yuv411")
+    (825316953 "yvu411")
+    (842093913 "yuv420")
+    (842094169 "yvu420")
+    (909202777 "yuv422")
+    (909203033 "yvu422")
+    (875713881 "yuv444")
+    (875714137 "yvu444")
+    (538982482 "r8")
+    (540422482 "r16")
+    (943212370 "rg88")
+    (943215175 "gr88")
+    (842221394 "rg1616")
+    (842224199 "gr1616")
+    (1211388504 "xrgb16161616f")
+    (1211384408 "xbgr16161616f")
+    (1211388481 "argb16161616f")
+    (1211384385 "abgr16161616f")
+    (1448434008 "xyuv8888")
+    (875713878 "vuy888")
+    (808670550 "vuy101010")
+    (808530521 "y210")
+    (842084953 "y212")
+    (909193817 "y216")
+    (808531033 "y410")
+    (842085465 "y412")
+    (909194329 "y416")
+    (808670808 "xvyu2101010")
+    (909334104 "xvyu12_16161616")
+    (942954072 "xvyu16161616")
+    (810299481 "y0l0")
+    (810299480 "x0l0")
+    (843853913 "y0l2")
+    (843853912 "x0l2")
+    (942691673 "yuv420_8bit")
+    (808539481 "yuv420_10bit")
+    (943805016 "xrgb8888_a8")
+    (943800920 "xbgr8888_a8")
+    (943806546 "rgbx8888_a8")
+    (943806530 "bgrx8888_a8")
+    (943798354 "rgb888_a8")
+    (943798338 "bgr888_a8")
+    (943797586 "rgb565_a8")
+    (943797570 "bgr565_a8")
+    (875714126 "nv24")
+    (842290766 "nv42")
+    (808530512 "p210")
+    (808530000 "p010")
+    (842084432 "p012")
+    (909193296 "p016")
+    (808534593 "axbxgxrx106106106106")
+    (892425806 "nv15")
+    (808531025 "q410")
+    (825242705 "q401")
+    (942953048 "xrgb16161616")
+    (942948952 "xbgr16161616")
+    (942953025 "argb16161616")
+    (942948929 "abgr16161616")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHM) OPCODE) (NTH OPCODE '(EVT-FORMAT)))
 
@@ -725,7 +837,13 @@ preferred_action::uint: action preferred by the destination client
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_OFFER) VALUE) ";; " (ERROR "Unimplemented"))
+(DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_OFFER) VALUE)
+  ";; "
+  (CASE VALUE
+    (0 "invalid_finish")
+    (1 "invalid_action_mask")
+    (2 "invalid_action")
+    (3 "invalid_offer")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_OFFER) OPCODE)
   (NTH OPCODE '(EVT-OFFER EVT-SOURCE_ACTIONS EVT-ACTION)))
@@ -917,7 +1035,7 @@ dnd_actions::uint: actions supported by the data source
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_SOURCE) VALUE)
   ";; "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "invalid_action_mask") (1 "invalid_source")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_SOURCE) OPCODE)
   (NTH OPCODE
@@ -1113,7 +1231,7 @@ This request destroys the data device.
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_DEVICE) VALUE)
   ";; "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "role")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE) OPCODE)
   (NTH OPCODE
@@ -1241,7 +1359,7 @@ surface::object: surface to be given the shell surface role
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD ENUM-ERROR ((OBJ WL_SHELL) VALUE) ";; " (ERROR "Unimplemented"))
+(DEFMETHOD ENUM-ERROR ((OBJ WL_SHELL) VALUE) ";; " (CASE VALUE (0 "role")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL) OPCODE) (NTH OPCODE 'NIL))
 
@@ -1565,7 +1683,7 @@ Hints to indicate to the compositor how to deal with a conflict
 	between the dimensions of the surface and the dimensions of the
 	output. The compositor is free to ignore this parameter.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "default") (1 "scale") (2 "driver") (3 "fill")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL_SURFACE) OPCODE)
   (NTH OPCODE '(EVT-PING EVT-CONFIGURE EVT-POPUP_DONE)))
@@ -2091,7 +2209,12 @@ y::int: surface-local y coordinate
 
 These errors can be emitted in response to wl_surface requests.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE
+    (0 "invalid_scale")
+    (1 "invalid_transform")
+    (2 "invalid_size")
+    (3 "invalid_offset")
+    (4 "defunct_role_object")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SURFACE) OPCODE)
   (NTH OPCODE
@@ -2260,7 +2383,7 @@ This is a bitmask of capabilities this seat has; if a member is
 
 These errors can be emitted in response to wl_seat requests.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "missing_capability")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SEAT) OPCODE)
   (NTH OPCODE '(EVT-CAPABILITIES EVT-NAME)))
@@ -2674,7 +2797,7 @@ Using this request a client can tell the server that it is not going to
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD ENUM-ERROR ((OBJ WL_POINTER) VALUE) ";; " (ERROR "Unimplemented"))
+(DEFMETHOD ENUM-ERROR ((OBJ WL_POINTER) VALUE) ";; " (CASE VALUE (0 "role")))
 
 (DEFMETHOD ENUM-BUTTON_STATE ((OBJ WL_POINTER) VALUE)
   ";; physical button state
@@ -2682,14 +2805,14 @@ Using this request a client can tell the server that it is not going to
 Describes the physical state of a button that produced the button
 	event.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "released") (1 "pressed")))
 
 (DEFMETHOD ENUM-AXIS ((OBJ WL_POINTER) VALUE)
   ";; axis types
 
 Describes the axis types of scroll events.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "vertical_scroll") (1 "horizontal_scroll")))
 
 (DEFMETHOD ENUM-AXIS_SOURCE ((OBJ WL_POINTER) VALUE)
   ";; axis source types
@@ -2711,7 +2834,7 @@ Describes the source types for axis events. This indicates to the
 	wheel but the scroll event is not caused by a rotation but a
 	(usually sideways) tilt of the wheel.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "wheel") (1 "finger") (2 "continuous") (3 "wheel_tilt")))
 
 (DEFMETHOD ENUM-AXIS_RELATIVE_DIRECTION ((OBJ WL_POINTER) VALUE)
   ";; axis relative direction
@@ -2719,7 +2842,7 @@ Describes the source types for axis events. This indicates to the
 This specifies the direction of the physical motion that caused a
 	wl_pointer.axis event, relative to the wl_pointer.axis direction.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "identical") (1 "inverted")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_POINTER) OPCODE)
   (NTH OPCODE
@@ -2878,14 +3001,14 @@ NIL
 This specifies the format of the keymap provided to the
 	client with the wl_keyboard.keymap event.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "no_keymap") (1 "xkb_v1")))
 
 (DEFMETHOD ENUM-KEY_STATE ((OBJ WL_KEYBOARD) VALUE)
   ";; physical key state
 
 Describes the physical state of a key that produced the key event.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "released") (1 "pressed")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_KEYBOARD) OPCODE)
   (NTH OPCODE
@@ -3297,7 +3420,13 @@ Using this request a client can tell the server that it is not going to
 This enumeration describes how the physical
 	pixels on an output are laid out.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE
+    (0 "unknown")
+    (1 "none")
+    (2 "horizontal_rgb")
+    (3 "horizontal_bgr")
+    (4 "vertical_rgb")
+    (5 "vertical_bgr")))
 
 (DEFMETHOD ENUM-TRANSFORM ((OBJ WL_OUTPUT) VALUE)
   ";; transform from framebuffer to output
@@ -3314,7 +3443,15 @@ This describes the transform that a compositor will apply to a
 	compositor will still be able to scan out directly from client
 	surfaces.
 "
-  (ERROR "Unimplemented"))
+  (CASE VALUE
+    (0 "normal")
+    (1 "90")
+    (2 "180")
+    (3 "270")
+    (4 "flipped")
+    (5 "flipped_90")
+    (6 "flipped_180")
+    (7 "flipped_270")))
 
 (DEFMETHOD ENUM-MODE ((OBJ WL_OUTPUT) VALUE)
   ";; mode information
@@ -3461,7 +3598,7 @@ parent::object: the parent surface
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SUBCOMPOSITOR) VALUE)
   ";; "
-  (ERROR "Unimplemented"))
+  (CASE VALUE (0 "bad_surface") (1 "bad_parent")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBCOMPOSITOR) OPCODE) (NTH OPCODE 'NIL))
 
@@ -3651,7 +3788,9 @@ Change the commit behaviour of the sub-surface to desynchronized
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD ENUM-ERROR ((OBJ WL_SUBSURFACE) VALUE) ";; " (ERROR "Unimplemented"))
+(DEFMETHOD ENUM-ERROR ((OBJ WL_SUBSURFACE) VALUE)
+  ";; "
+  (CASE VALUE (0 "bad_surface")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBSURFACE) OPCODE) (NTH OPCODE 'NIL))
 
