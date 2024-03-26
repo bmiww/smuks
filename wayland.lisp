@@ -42,6 +42,12 @@
   (break) ;; TODO: Breaking here - since i'm pretty sure this ain't gonna work
   (unix-sockets::ancillary-fd stream))
 
+(defun read-enum (stream)
+  (let ((num (read-n-as-number stream 4)))
+    ;; TODO: Maybe - depending on the protocol - it can also be made to be either list or single value
+    (error "Turn this num into a list of symbols showcasing which enum values are set")))
+
+
 ;; NOTE: For the wire protocol details, see:
 ;; https://wayland-book.com/protocol-design/wire-protocol.html
 ;; NOTE: Theres also this - which has some other clarifications/confusions:

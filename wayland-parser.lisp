@@ -44,7 +44,8 @@
    (summary :initarg :summary :accessor summary)
    (arg-type :initarg :arg-type :accessor arg-type)
    (interface :initarg :interface :accessor interface)
-   (nullable :initarg :nullable :accessor nullable)))
+   (nullable :initarg :nullable :accessor nullable)
+   (enum :initarg :enum :accessor enum)))
 
 (defclass event ()
   ((name :initarg :name :accessor name)
@@ -57,8 +58,16 @@
    (args :initarg :args :accessor args)))
 
 (defclass enum ()
-  ((name :initarg :name)
-   (interface-name :initarg :interface-name)))
+  ((name :initarg :name :accessor name)
+   (description :initarg :description :accessor description)
+   (interface-name :initarg :interface-name :accessor interface-name)
+   (is-bitfield :initarg :is-bitfield :accessor bitfield-p)
+   (entries :initarg :entries :accessor entries)))
+
+(defclass enum-entry ()
+  ((name :initarg :name :accessor name)
+   (value :initarg :value :accessor value)
+   (summary :initarg :summary :accessor summary)))
 
 ;; ┌─┐┌─┐┌┐┌┌─┐┌┬┐┬─┐┬ ┬┌─┐┌┬┐┌─┐┬─┐┌─┐
 ;; │  │ ││││└─┐ │ ├┬┘│ ││   │ │ │├┬┘└─┐
@@ -68,27 +77,47 @@
 (defun make-event (xml) (make-instance 'event :name (name-of xml) :args (read-args xml) :description (get-description xml)))
 
 (defun make-enum (interface-name xml)
-  (let ((name (name-of xml)))
-    (make-instance 'enum :name name :interface-name interface-name)))
+  (make-instance 'enum :name (name-of xml) :interface-name interface-name
+	   :is-bitfield (bitfield-of xml) :entries (enum-entries xml)
+	   :description (get-description xml)))
 
 (defun make-arg (arg-sxml)
-  (make-instance 'arg
-     :name (name-of arg-sxml)
-     :arg-type (type-of-arg arg-sxml)
-     :interface (interface-of arg-sxml)
-     :nullable (allow-null arg-sxml)
-     :summary (summary-of arg-sxml)))
+  (let ((enum (enum-of-type arg-sxml)))
+    (make-instance 'arg
+       :name (name-of arg-sxml)
+       :arg-type (if enum "uint" (type-of-arg arg-sxml))
+       :interface (interface-of arg-sxml)
+       :nullable (allow-null arg-sxml)
+       :summary (summary-of arg-sxml)
+       :enum enum)))
 
 ;; ┌─┐┌─┐┬─┐┌─┐┌─┐┬─┐┌─┐
 ;; ├─┘├─┤├┬┘└─┐├┤ ├┬┘└─┐
 ;; ┴  ┴ ┴┴└─└─┘└─┘┴└─└─┘
 
+(defun enum-entries (xml)
+  (mapcar (lambda (entry)
+	    (make-instance 'enum-entry
+	       :name (name-of entry)
+	       :value (value-of entry)
+	       :summary (summary-of entry)))
+	  (xmls:node-children xml)))
+
+;; TODO: Most of these *-of could be turned into a macro or a function
 (defun name-of (object)
   (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "name")))
 		   (xmls:node-attrs object))))
 
+(defun enum-of-type (object)
+  (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "enum")))
+		   (xmls:node-attrs object))))
+
 (defun type-of-arg (object)
   (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "type")))
+		   (xmls:node-attrs object))))
+
+(defun value-of (object)
+  (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "summary")))
 		   (xmls:node-attrs object))))
 
 (defun summary-of (object)
@@ -98,6 +127,11 @@
 (defun version-of (object)
   (parse-integer (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "version")))
 				  (xmls:node-attrs object)))))
+
+(defun bitfield-of (object)
+  (let ((bitfield (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "bitfield")))
+				   (xmls:node-attrs object)))))
+    (if (equal bitfield "true") t nil)))
 
 (defun interface-of (object)
   (second (find-if (lambda (x) (and (listp x) (stringp (first x)) (string= (first x) "interface")))
@@ -117,14 +151,16 @@
 
 
 (defun get-description (xml)
-  (let* ((description-node (find-if (lambda (entry) (of-type entry "description")) (xmls:node-children xml)))
-	 (description (first (xmls:node-children description-node)))
-	 (summary (summary-of description-node))
-	 (args (read-args xml)))
-    (format nil "~A~%~%~A~%~A"
-	    summary
-	    description
-	    (if args (format nil "~%Arguments:~%~{~A~%~}" (mapcar 'format-arg-list args)) ""))))
+  (let ((description-node (find-if (lambda (entry) (of-type entry "description")) (xmls:node-children xml))))
+    (if description-node
+	(let* ((description (first (xmls:node-children description-node)))
+	       (summary (summary-of description-node))
+	       (args (read-args xml)))
+	  (format nil "~A~%~%~A~%~A"
+		  summary
+		  description
+		  (if args (format nil "~%Arguments:~%~{~A~%~}" (mapcar 'format-arg-list args)) "")))
+	"")))
 
 (defun read-args (roe-sxml)
   (remove nil (mapcar (lambda (entry) (when (of-type entry "arg") (make-arg entry)))

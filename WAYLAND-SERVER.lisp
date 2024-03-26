@@ -108,6 +108,14 @@ registry::new_id: global registry object
 "
   (ERROR "Unimplemented"))
 
+(DEFMETHOD ENUM-ERROR ((OBJ WL_DISPLAY) VALUE)
+  ";; global error values
+
+These errors are global and can be emitted in response to any
+	server request.
+"
+  (ERROR "Unimplemented"))
+
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DISPLAY) OPCODE)
   (NTH OPCODE '(EVT-ERROR EVT-DELETE_ID)))
 
@@ -413,6 +421,31 @@ size::int: pool size, in bytes
 "
   (ERROR "Unimplemented"))
 
+(DEFMETHOD ENUM-ERROR ((OBJ WL_SHM) VALUE)
+  ";; wl_shm error values
+
+These errors can be emitted in response to wl_shm requests.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-FORMAT ((OBJ WL_SHM) VALUE)
+  ";; pixel formats
+
+This describes the memory layout of an individual pixel.
+
+	All renderers should support argb8888 and xrgb8888 but any other
+	formats are optional and may not be supported by the particular
+	renderer in use.
+
+	The drm format codes match the macros defined in drm_fourcc.h, except
+	argb8888 and xrgb8888. The formats actually supported by the compositor
+	will be reported by the format event.
+
+	For all wl_shm formats and unless specified in another protocol
+	extension, pre-multiplied alpha is used for pixel values.
+"
+  (ERROR "Unimplemented"))
+
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHM) OPCODE) (NTH OPCODE '(EVT-FORMAT)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_SHM) OPCODE)
@@ -692,6 +725,8 @@ preferred_action::uint: action preferred by the destination client
 "
   (ERROR "Unimplemented"))
 
+(DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_OFFER) VALUE) ";; " (ERROR "Unimplemented"))
+
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_OFFER) OPCODE)
   (NTH OPCODE '(EVT-OFFER EVT-SOURCE_ACTIONS EVT-ACTION)))
 
@@ -878,6 +913,10 @@ Sets the actions that the source side client supports for this
 Arguments:
 dnd_actions::uint: actions supported by the data source
 "
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_SOURCE) VALUE)
+  ";; "
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_SOURCE) OPCODE)
@@ -1072,6 +1111,10 @@ This request destroys the data device.
 "
   (ERROR "Unimplemented"))
 
+(DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_DEVICE) VALUE)
+  ";; "
+  (ERROR "Unimplemented"))
+
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE) OPCODE)
   (NTH OPCODE
        '(EVT-DATA_OFFER EVT-ENTER EVT-LEAVE EVT-MOTION EVT-DROP EVT-SELECTION)))
@@ -1125,6 +1168,35 @@ seat::object: seat associated with the data device
 "
   (ERROR "Unimplemented"))
 
+(DEFMETHOD ENUM-DND_ACTION ((OBJ WL_DATA_DEVICE_MANAGER) VALUE)
+  ";; drag and drop actions
+
+This is a bitmask of the available/preferred actions in a
+	drag-and-drop operation.
+
+	In the compositor, the selected action is a result of matching the
+	actions offered by the source and destination sides.  \"action\" events
+	with a \"none\" action will be sent to both source and destination if
+	there is no match. All further checks will effectively happen on
+	(source actions ∩ destination actions).
+
+	In addition, compositors may also pick different actions in
+	reaction to key modifiers being pressed. One common design that
+	is used in major toolkits (and the behavior recommended for
+	compositors) is:
+
+	- If no modifiers are pressed, the first match (in bit order)
+	  will be used.
+	- Pressing Shift selects \"move\", if enabled in the mask.
+	- Pressing Control selects \"copy\", if enabled in the mask.
+
+	Behavior beyond that is considered implementation-dependent.
+	Compositors may for example bind other modifiers (like Alt/Meta)
+	or drags initiated with other buttons than BTN_LEFT to specific
+	actions (e.g. \"ask\").
+"
+  (ERROR "Unimplemented"))
+
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE_MANAGER) OPCODE)
   (NTH OPCODE 'NIL))
 
@@ -1168,6 +1240,8 @@ id::new_id: shell surface to create
 surface::object: surface to be given the shell surface role
 "
   (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-ERROR ((OBJ WL_SHELL) VALUE) ";; " (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL) OPCODE) (NTH OPCODE 'NIL))
 
@@ -1463,6 +1537,33 @@ Set a class for the surface.
 
 Arguments:
 class_::string: surface class
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-RESIZE ((OBJ WL_SHELL_SURFACE) VALUE)
+  ";; edge values for resizing
+
+These values are used to indicate which edge of a surface
+	is being dragged in a resize operation. The server may
+	use this information to adapt its behavior, e.g. choose
+	an appropriate cursor image.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-TRANSIENT ((OBJ WL_SHELL_SURFACE) VALUE)
+  ";; details of transient behaviour
+
+These flags specify details of the expected behaviour
+	of transient surfaces. Used in the set_transient request.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-FULLSCREEN_METHOD ((OBJ WL_SHELL_SURFACE) VALUE)
+  ";; different method to set the surface fullscreen
+
+Hints to indicate to the compositor how to deal with a conflict
+	between the dimensions of the surface and the dimensions of the
+	output. The compositor is free to ignore this parameter.
 "
   (ERROR "Unimplemented"))
 
@@ -1883,7 +1984,7 @@ This request sets an optional transformation on how the compositor
 	is raised.
 
 Arguments:
-transform::int: transform for interpreting buffer contents
+transform::uint: transform for interpreting buffer contents
 "
   (ERROR "Unimplemented"))
 
@@ -1985,6 +2086,13 @@ y::int: surface-local y coordinate
 "
   (ERROR "Unimplemented"))
 
+(DEFMETHOD ENUM-ERROR ((OBJ WL_SURFACE) VALUE)
+  ";; wl_surface error values
+
+These errors can be emitted in response to wl_surface requests.
+"
+  (ERROR "Unimplemented"))
+
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SURFACE) OPCODE)
   (NTH OPCODE
        '(EVT-ENTER EVT-LEAVE EVT-PREFERRED_BUFFER_SCALE
@@ -1999,7 +2107,7 @@ y::int: surface-local y coordinate
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_SURFACE) OPCODE)
   (NTH OPCODE
        '(NIL (OBJECT INT INT) (INT INT INT INT) (NEW_ID) (OBJECT) (OBJECT) NIL
-         (INT) (INT) (INT INT INT INT) (INT INT))))
+         (UINT) (INT) (INT INT INT INT) (INT INT))))
 
 (DEFPACKAGE :WL/WL_SEAT
   (:USE :CL)
@@ -2136,6 +2244,21 @@ id::new_id: seat touch interface
 
 Using this request a client can tell the server that it is not going to
 	use the seat object anymore.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-CAPABILITY ((OBJ WL_SEAT) VALUE)
+  ";; seat capability bitmask
+
+This is a bitmask of capabilities this seat has; if a member is
+	set, then it is present on the seat.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-ERROR ((OBJ WL_SEAT) VALUE)
+  ";; wl_seat error values
+
+These errors can be emitted in response to wl_seat requests.
 "
   (ERROR "Unimplemented"))
 
@@ -2551,6 +2674,53 @@ Using this request a client can tell the server that it is not going to
 "
   (ERROR "Unimplemented"))
 
+(DEFMETHOD ENUM-ERROR ((OBJ WL_POINTER) VALUE) ";; " (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-BUTTON_STATE ((OBJ WL_POINTER) VALUE)
+  ";; physical button state
+
+Describes the physical state of a button that produced the button
+	event.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-AXIS ((OBJ WL_POINTER) VALUE)
+  ";; axis types
+
+Describes the axis types of scroll events.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-AXIS_SOURCE ((OBJ WL_POINTER) VALUE)
+  ";; axis source types
+
+Describes the source types for axis events. This indicates to the
+	client how an axis event was physically generated; a client may
+	adjust the user interface accordingly. For example, scroll events
+	from a \"finger\" source may be in a smooth coordinate space with
+	kinetic scrolling whereas a \"wheel\" source may be in discrete steps
+	of a number of lines.
+
+	The \"continuous\" axis source is a device generating events in a
+	continuous coordinate space, but using something other than a
+	finger. One example for this source is button-based scrolling where
+	the vertical motion of a device is converted to scroll events while
+	a button is held down.
+
+	The \"wheel tilt\" axis source indicates that the actual device is a
+	wheel but the scroll event is not caused by a rotation but a
+	(usually sideways) tilt of the wheel.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-AXIS_RELATIVE_DIRECTION ((OBJ WL_POINTER) VALUE)
+  ";; axis relative direction
+
+This specifies the direction of the physical motion that caused a
+	wl_pointer.axis event, relative to the wl_pointer.axis direction.
+"
+  (ERROR "Unimplemented"))
+
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_POINTER) OPCODE)
   (NTH OPCODE
        '(EVT-ENTER EVT-LEAVE EVT-MOTION EVT-BUTTON EVT-AXIS EVT-FRAME
@@ -2699,6 +2869,21 @@ delay::int: delay in milliseconds since key down until repeating starts
   ";; release the keyboard object
 
 NIL
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-KEYMAP_FORMAT ((OBJ WL_KEYBOARD) VALUE)
+  ";; keyboard mapping format
+
+This specifies the format of the keymap provided to the
+	client with the wl_keyboard.keymap event.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-KEY_STATE ((OBJ WL_KEYBOARD) VALUE)
+  ";; physical key state
+
+Describes the physical state of a key that produced the key event.
 "
   (ERROR "Unimplemented"))
 
@@ -2946,10 +3131,10 @@ x::int: x position within the global compositor space
 y::int: y position within the global compositor space
 physical_width::int: width in millimeters of the output
 physical_height::int: height in millimeters of the output
-subpixel::int: subpixel orientation of the output
+subpixel::uint: subpixel orientation of the output
 make::string: textual description of the manufacturer
 model::string: textual description of the model
-transform::int: transform that maps framebuffer to output
+transform::uint: transform that maps framebuffer to output
 "
   (ERROR "Unimplemented"))
 
@@ -3106,6 +3291,39 @@ Using this request a client can tell the server that it is not going to
 "
   (ERROR "Unimplemented"))
 
+(DEFMETHOD ENUM-SUBPIXEL ((OBJ WL_OUTPUT) VALUE)
+  ";; subpixel geometry information
+
+This enumeration describes how the physical
+	pixels on an output are laid out.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-TRANSFORM ((OBJ WL_OUTPUT) VALUE)
+  ";; transform from framebuffer to output
+
+This describes the transform that a compositor will apply to a
+	surface to compensate for the rotation or mirroring of an
+	output device.
+
+	The flipped values correspond to an initial flip around a
+	vertical axis followed by rotation.
+
+	The purpose is mainly to allow clients to render accordingly and
+	tell the compositor, so that for fullscreen surfaces, the
+	compositor will still be able to scan out directly from client
+	surfaces.
+"
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-MODE ((OBJ WL_OUTPUT) VALUE)
+  ";; mode information
+
+These flags describe properties of an output mode.
+	They are used in the flags bitfield of the mode event.
+"
+  (ERROR "Unimplemented"))
+
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_OUTPUT) OPCODE)
   (NTH OPCODE
        '(EVT-GEOMETRY EVT-MODE EVT-DONE EVT-SCALE EVT-NAME EVT-DESCRIPTION)))
@@ -3239,6 +3457,10 @@ id::new_id: the new sub-surface object ID
 surface::object: the surface to be turned into a sub-surface
 parent::object: the parent surface
 "
+  (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-ERROR ((OBJ WL_SUBCOMPOSITOR) VALUE)
+  ";; "
   (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBCOMPOSITOR) OPCODE) (NTH OPCODE 'NIL))
@@ -3428,6 +3650,8 @@ Change the commit behaviour of the sub-surface to desynchronized
 	the cached state is applied on set_desync.
 "
   (ERROR "Unimplemented"))
+
+(DEFMETHOD ENUM-ERROR ((OBJ WL_SUBSURFACE) VALUE) ";; " (ERROR "Unimplemented"))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBSURFACE) OPCODE) (NTH OPCODE 'NIL))
 

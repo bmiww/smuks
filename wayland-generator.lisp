@@ -10,6 +10,7 @@
 
 (defun ev-name (event) (read-from-string (format nil "evt-~a" (name event))))
 (defun req-name (request) (read-from-string (format nil "req-~a" (name request))))
+(defun enum-name (enum) (read-from-string (format nil "enum-~a" (name enum))))
 (defun symbolize-event (event) (ev-name event))
 (defun do-arg (arg) (read-from-string (name arg)))
 (defun arg-type-symbol (arg) (read-from-string (format nil "~a" (arg-type arg))))
@@ -25,6 +26,21 @@
 			    ,@(mapcar 'do-arg (args request)))
      ,(format nil ";; ~a" (description request))
      (error "Unimplemented")))
+
+(defun do-regular-enum (interface enum)
+  `(defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)
+     ,(format nil ";; ~a" (description enum))
+     (error "Unimplemented")))
+
+(defun do-bitfield-enum (interface enum)
+  `(defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)
+     ,(format nil ";; ~a" (description enum))
+     (error "Unimplemented")))
+
+(defun do-enum (interface enum)
+  (if (bitfield-p enum)
+      (do-bitfield-enum interface enum)
+      (do-regular-enum interface enum)))
 
 
 (defun do-event-opcode-matchers (interface events)
@@ -62,6 +78,7 @@
 	(:documentation ,(description interface))))
      (mapcar (lambda (event) (do-event (name interface) event)) (events interface))
      (mapcar (lambda (request) (do-request (name interface) request)) (requests interface))
+     (mapcar (lambda (enum) (do-enum (name interface) enum)) (enums interface))
      (do-event-opcode-matchers (name interface) (events interface))
      (do-request-opcode-matchers (name interface) (requests interface))
      (do-request-arg-types (name interface) (requests interface)))))
