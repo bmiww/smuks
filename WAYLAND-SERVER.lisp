@@ -1313,7 +1313,10 @@ This is a bitmask of the available/preferred actions in a
 	or drags initiated with other buttons than BTN_LEFT to specific
 	actions (e.g. \"ask\").
 "
-  (ERROR "Unimplemented"))
+  (LET ((OPTIONS '((0 . "none") (1 . "copy") (2 . "move") (4 . "ask"))))
+    (LOOP FOR (MASK NAME) IN OPTIONS
+          WHEN (LOGBITP MASK VALUE)
+          COLLECT NAME)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE_MANAGER) OPCODE)
   (NTH OPCODE 'NIL))
@@ -1666,7 +1669,13 @@ These values are used to indicate which edge of a surface
 	use this information to adapt its behavior, e.g. choose
 	an appropriate cursor image.
 "
-  (ERROR "Unimplemented"))
+  (LET ((OPTIONS
+         '((0 . "none") (1 . "top") (2 . "bottom") (4 . "left")
+           (5 . "top_left") (6 . "bottom_left") (8 . "right") (9 . "top_right")
+           (10 . "bottom_right"))))
+    (LOOP FOR (MASK NAME) IN OPTIONS
+          WHEN (LOGBITP MASK VALUE)
+          COLLECT NAME)))
 
 (DEFMETHOD ENUM-TRANSIENT ((OBJ WL_SHELL_SURFACE) VALUE)
   ";; details of transient behaviour
@@ -1674,7 +1683,10 @@ These values are used to indicate which edge of a surface
 These flags specify details of the expected behaviour
 	of transient surfaces. Used in the set_transient request.
 "
-  (ERROR "Unimplemented"))
+  (LET ((OPTIONS '((1 . "inactive"))))
+    (LOOP FOR (MASK NAME) IN OPTIONS
+          WHEN (LOGBITP MASK VALUE)
+          COLLECT NAME)))
 
 (DEFMETHOD ENUM-FULLSCREEN_METHOD ((OBJ WL_SHELL_SURFACE) VALUE)
   ";; different method to set the surface fullscreen
@@ -2376,7 +2388,10 @@ Using this request a client can tell the server that it is not going to
 This is a bitmask of capabilities this seat has; if a member is
 	set, then it is present on the seat.
 "
-  (ERROR "Unimplemented"))
+  (LET ((OPTIONS '((1 . "pointer") (2 . "keyboard") (4 . "touch"))))
+    (LOOP FOR (MASK NAME) IN OPTIONS
+          WHEN (LOGBITP MASK VALUE)
+          COLLECT NAME)))
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SEAT) VALUE)
   ";; wl_seat error values
@@ -3459,7 +3474,10 @@ This describes the transform that a compositor will apply to a
 These flags describe properties of an output mode.
 	They are used in the flags bitfield of the mode event.
 "
-  (ERROR "Unimplemented"))
+  (LET ((OPTIONS '((1 . "current") (2 . "preferred"))))
+    (LOOP FOR (MASK NAME) IN OPTIONS
+          WHEN (LOGBITP MASK VALUE)
+          COLLECT NAME)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_OUTPUT) OPCODE)
   (NTH OPCODE

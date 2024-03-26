@@ -32,12 +32,14 @@
      ,(format nil ";; ~a" (description enum))
      (case value
        ,@(mapcar (lambda (entry) `(,(value entry) ,(name entry))) (entries enum)))))
-       ;; ,@(mapcar (lambda (entry) `(derp)) (entries enum)))))
 
 (defun do-bitfield-enum (interface enum)
   `(defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)
      ,(format nil ";; ~a" (description enum))
-     (error "Unimplemented")))
+     (let ((options ',(mapcar (lambda (entry) (cons (value entry) (name entry))) (entries enum))))
+       (loop for (mask name) in options
+	     when (logbitp mask value)
+	     collect name))))
 
 (defun do-enum (interface enum)
   (if (bitfield-p enum)
