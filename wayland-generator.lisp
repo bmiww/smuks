@@ -13,7 +13,10 @@
 (defun enum-name (enum) (read-from-string (format nil "enum-~a" (name enum))))
 (defun symbolize-event (event) (ev-name event))
 (defun do-arg (arg) (read-from-string (name arg)))
-(defun arg-type-symbol (arg) (read-from-string (format nil "~a" (arg-type arg))))
+(defun arg-type-symbol (arg)
+  (if (enum arg)
+      (read-from-string (format nil "(~a ~a)" (arg-type arg) (enum arg)))
+      (read-from-string (format nil "~a" (arg-type arg)))))
 
 (defun do-event (interface event)
   `(defmethod ,(ev-name event) ((obj ,(read-from-string interface))
