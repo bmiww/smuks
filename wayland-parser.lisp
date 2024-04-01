@@ -85,7 +85,6 @@
 
 (defun make-arg (arg-sxml)
   (let ((enum (make-enum-ref (enum-of-type arg-sxml))))
-    (print enum)
     (make-instance 'arg
        :name (name-of arg-sxml)
        :arg-type (if enum "enum" (type-of-arg arg-sxml))

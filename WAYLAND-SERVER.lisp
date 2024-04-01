@@ -4,9 +4,20 @@
            *OBJECTS*
            MATCH-EVENT-OPCODE
            MATCH-REQUEST-OPCODE
-           GET-REQUEST-ARG-TYPES))
+           GET-REQUEST-ARG-TYPES
+           INT
+           UINT
+           OBJECT
+           NEW_ID
+           FIXED
+           STRING
+           ARRAY
+           FD
+           ENUM))
 
 (IN-PACKAGE :WL)
+
+(DEFVAR *ARG-TYPE-SYMBOLS* '(INT UINT OBJECT NEW_ID FIXED STRING ARRAY FD ENUM))
 
 (DEFVAR *OBJECTS* (MAKE-HASH-TABLE :TEST 'EQ))
 
@@ -25,7 +36,7 @@
   (SETF (GETHASH (ID OBJ) WL:*OBJECTS*) OBJ))
 
 (DEFPACKAGE :WL/WL_DISPLAY
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_DISPLAY REQ-SYNC REQ-GET_REGISTRY EVT-ERROR EVT-DELETE_ID))
 
 (IN-PACKAGE :WL/WL_DISPLAY)
@@ -130,7 +141,7 @@ These errors are global and can be emitted in response to any
   (NTH OPCODE '((NEW_ID) (NEW_ID))))
 
 (DEFPACKAGE :WL/WL_REGISTRY
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_REGISTRY REQ-BIND EVT-GLOBAL EVT-GLOBAL_REMOVE))
 
 (IN-PACKAGE :WL/WL_REGISTRY)
@@ -218,7 +229,7 @@ id::new_id: bounded object
   (NTH OPCODE '((UINT NEW_ID))))
 
 (DEFPACKAGE :WL/WL_CALLBACK
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_CALLBACK EVT-DONE))
 
 (IN-PACKAGE :WL/WL_CALLBACK)
@@ -252,7 +263,7 @@ callback_data::uint: request-specific data for the callback
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_CALLBACK) OPCODE) (NTH OPCODE 'NIL))
 
 (DEFPACKAGE :WL/WL_COMPOSITOR
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_COMPOSITOR REQ-CREATE_SURFACE REQ-CREATE_REGION))
 
 (IN-PACKAGE :WL/WL_COMPOSITOR)
@@ -295,7 +306,7 @@ id::new_id: the new region
   (NTH OPCODE '((NEW_ID) (NEW_ID))))
 
 (DEFPACKAGE :WL/WL_SHM_POOL
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_SHM_POOL REQ-CREATE_BUFFER REQ-DESTROY REQ-RESIZE))
 
 (IN-PACKAGE :WL/WL_SHM_POOL)
@@ -378,7 +389,7 @@ size::int: new size of the pool, in bytes
   (NTH OPCODE '((NEW_ID INT INT INT INT (ENUM (WL_SHM FORMAT))) NIL (INT))))
 
 (DEFPACKAGE :WL/WL_SHM
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_SHM REQ-CREATE_POOL EVT-FORMAT))
 
 (IN-PACKAGE :WL/WL_SHM)
@@ -567,7 +578,7 @@ This describes the memory layout of an individual pixel.
   (NTH OPCODE '((NEW_ID FD INT))))
 
 (DEFPACKAGE :WL/WL_BUFFER
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_BUFFER REQ-DESTROY EVT-RELEASE))
 
 (IN-PACKAGE :WL/WL_BUFFER)
@@ -627,7 +638,7 @@ Destroy a buffer. If and how you need to release the backing
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_BUFFER) OPCODE) (NTH OPCODE '(NIL)))
 
 (DEFPACKAGE :WL/WL_DATA_OFFER
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_DATA_OFFER
            REQ-ACCEPT
            REQ-RECEIVE
@@ -858,7 +869,7 @@ preferred_action::enum: action preferred by the destination client
           (ENUM (WL_DATA_DEVICE_MANAGER DND_ACTION))))))
 
 (DEFPACKAGE :WL/WL_DATA_SOURCE
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_DATA_SOURCE
            REQ-OFFER
            REQ-DESTROY
@@ -1052,7 +1063,7 @@ dnd_actions::enum: actions supported by the data source
   (NTH OPCODE '((STRING) NIL ((ENUM (WL_DATA_DEVICE_MANAGER DND_ACTION))))))
 
 (DEFPACKAGE :WL/WL_DATA_DEVICE
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_DATA_DEVICE
            REQ-START_DRAG
            REQ-SET_SELECTION
@@ -1245,7 +1256,7 @@ This request destroys the data device.
   (NTH OPCODE '((OBJECT OBJECT OBJECT UINT) (OBJECT UINT) NIL)))
 
 (DEFPACKAGE :WL/WL_DATA_DEVICE_MANAGER
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_DATA_DEVICE_MANAGER REQ-CREATE_DATA_SOURCE REQ-GET_DATA_DEVICE))
 
 (IN-PACKAGE :WL/WL_DATA_DEVICE_MANAGER)
@@ -1329,7 +1340,7 @@ This is a bitmask of the available/preferred actions in a
   (NTH OPCODE '((NEW_ID) (NEW_ID OBJECT))))
 
 (DEFPACKAGE :WL/WL_SHELL
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_SHELL REQ-GET_SHELL_SURFACE))
 
 (IN-PACKAGE :WL/WL_SHELL)
@@ -1374,7 +1385,7 @@ surface::object: surface to be given the shell surface role
   (NTH OPCODE '((NEW_ID OBJECT))))
 
 (DEFPACKAGE :WL/WL_SHELL_SURFACE
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_SHELL_SURFACE
            REQ-PONG
            REQ-MOVE
@@ -1715,7 +1726,7 @@ Hints to indicate to the compositor how to deal with a conflict
          (STRING))))
 
 (DEFPACKAGE :WL/WL_SURFACE
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_SURFACE
            REQ-DESTROY
            REQ-ATTACH
@@ -2247,7 +2258,7 @@ These errors can be emitted in response to wl_surface requests.
          ((ENUM (WL_OUTPUT TRANSFORM))) (INT) (INT INT INT INT) (INT INT))))
 
 (DEFPACKAGE :WL/WL_SEAT
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_SEAT
            REQ-GET_POINTER
            REQ-GET_KEYBOARD
@@ -2412,7 +2423,7 @@ These errors can be emitted in response to wl_seat requests.
   (NTH OPCODE '((NEW_ID) (NEW_ID) (NEW_ID) NIL)))
 
 (DEFPACKAGE :WL/WL_POINTER
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_POINTER
            REQ-SET_CURSOR
            REQ-RELEASE
@@ -2874,7 +2885,7 @@ This specifies the direction of the physical motion that caused a
   (NTH OPCODE '((UINT OBJECT INT INT) NIL)))
 
 (DEFPACKAGE :WL/WL_KEYBOARD
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_KEYBOARD
            REQ-RELEASE
            EVT-KEYMAP
@@ -3037,7 +3048,7 @@ Describes the physical state of a key that produced the key event.
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_KEYBOARD) OPCODE) (NTH OPCODE '(NIL)))
 
 (DEFPACKAGE :WL/WL_TOUCH
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_TOUCH
            REQ-RELEASE
            EVT-DOWN
@@ -3221,7 +3232,7 @@ NIL
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_TOUCH) OPCODE) (NTH OPCODE '(NIL)))
 
 (DEFPACKAGE :WL/WL_OUTPUT
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_OUTPUT
            REQ-RELEASE
            EVT-GEOMETRY
@@ -3491,7 +3502,7 @@ These flags describe properties of an output mode.
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_OUTPUT) OPCODE) (NTH OPCODE '(NIL)))
 
 (DEFPACKAGE :WL/WL_REGION
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_REGION REQ-DESTROY REQ-ADD REQ-SUBTRACT))
 
 (IN-PACKAGE :WL/WL_REGION)
@@ -3547,7 +3558,7 @@ height::int: rectangle height
   (NTH OPCODE '(NIL (INT INT INT INT) (INT INT INT INT))))
 
 (DEFPACKAGE :WL/WL_SUBCOMPOSITOR
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_SUBCOMPOSITOR REQ-DESTROY REQ-GET_SUBSURFACE))
 
 (IN-PACKAGE :WL/WL_SUBCOMPOSITOR)
@@ -3629,7 +3640,7 @@ parent::object: the parent surface
   (NTH OPCODE '(NIL (NEW_ID OBJECT OBJECT))))
 
 (DEFPACKAGE :WL/WL_SUBSURFACE
-  (:USE :CL)
+  (:USE :CL :WL)
   (:EXPORT WL_SUBSURFACE
            REQ-DESTROY
            REQ-SET_POSITION

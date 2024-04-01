@@ -72,7 +72,7 @@
 	(class-name (read-from-string (name interface))))
     (append
      `((defpackage ,if-name
-	 (:use :cl)
+	 (:use :cl :wl)
 	 (:export
 	  ,class-name
 	  ,@(mapcar #'req-name (requests interface))
@@ -90,17 +90,24 @@
      (do-request-opcode-matchers (name interface) (requests interface))
      (do-request-arg-types (name interface) (requests interface)))))
 
+(defvar *arg-type-symbols* '(int uint object new_id fixed string array fd enum))
+
 (defun gen-lisp-code (protocol)
-  (append
-   `((defpackage :wl (:use #:cl) (:export wl-object *objects* match-event-opcode match-request-opcode get-request-arg-types)))
-   `((in-package :wl))
-   `((defvar *objects* (make-hash-table :test 'eq)))
-   `((defclass wl-object () ((id :initarg :id :accessor id))))
-   `((defgeneric match-event-opcode (obj opcode)))
-   `((defgeneric match-request-opcode (obj opcode)))
-   `((defgeneric get-request-arg-types (obj opcode)))
-   (do-initializer 'wl-object)
-   (apply #'append (mapcar 'do-interface protocol))))
+  (let ((interfaces (apply #'append (mapcar 'do-interface protocol))))
+    (append
+     `((defpackage :wl
+	 (:use #:cl)
+	 (:export wl-object *objects* match-event-opcode match-request-opcode get-request-arg-types
+		  ,@(mapcar (lambda (a) a) *arg-type-symbols*))))
+     `((in-package :wl))
+     `((defvar *arg-type-symbols* ',*arg-type-symbols*))
+     `((defvar *objects* (make-hash-table :test 'eq)))
+     `((defclass wl-object () ((id :initarg :id :accessor id))))
+     `((defgeneric match-event-opcode (obj opcode)))
+     `((defgeneric match-request-opcode (obj opcode)))
+     `((defgeneric get-request-arg-types (obj opcode)))
+     (do-initializer 'wl-object)
+     interfaces)))
 
 
 (defun generate-wayland-classes (package xml-file)

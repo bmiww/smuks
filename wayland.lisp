@@ -62,23 +62,23 @@
       (when (listp arg-type) (setf arg-type (first arg-type)))
       (push
        (case arg-type
-	 (int (read-int stream))
-	 (uint (read-n-as-number stream 4))
-	 (object (read-n-as-number stream 4))
+	 (wl:int (read-int stream))
+	 (wl:uint (read-n-as-number stream 4))
+	 (wl:object (read-n-as-number stream 4))
 	 ;; TODO: Figure out if i should already allocate a new object here, or later
 	 ;; Maybe this should be left up to the method implementation
 	 ;; TODO: Another wire protocol document mentions that this is not just a number, but could be prepended by
 	 ;; A string identifying the interface and a uint specifying the version as well
-	 (new-id (read-n-as-number stream 4))
-	 (fixed (read-fixnum stream))
-	 (string (payload-string stream))
-	 (array (payload-array stream))
+	 (wl:new_id (read-n-as-number stream 4))
+	 (wl:fixed (read-fixnum stream))
+	 (wl:string (payload-string stream))
+	 (wl:array (payload-array stream))
 	 ;; TODO: Update the unix-sockets library to allow reading the FD from the socket ancillary data
-	 (fd (read-fd stream))
+	 (wl:fd (read-fd stream))
 	 ;; TODO: Need to add the enum parsing for the protocol generator thing
 	 ;; NOTE: Basically an integer, but needs to be matched against the request enum values
 	 ;; Since it could be a bitmap of the enum values (more than one flag active)
-	 (enum (read-enum stream (cadr arg-type)))
+	 (wl:enum (read-enum stream (cadr arg-type)))
 	 (t (error "Unknown arg-type")))
        args))
     args))
