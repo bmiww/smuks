@@ -39,7 +39,9 @@
    (lambda ()
      (sleep 3)
      (format t "Starting an app thingy~%")
-     (uiop:launch-program '("weston-terminal") :output *standard-output* :error-output *standard-output*)))
+     (let ((process (uiop:launch-program '("weston-terminal") :output :stream :error-output *standard-output*)))
+       (loop while (uiop/launch-program:process-alive-p process)
+	     do (format t "🔴 ~a~%" (uiop/stream:slurp-stream-string (uiop:process-info-output process)))))))
 
   ;; (wlc:wl-display-run (display *wayland*))
 
