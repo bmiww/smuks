@@ -7,6 +7,9 @@
 ;; ┌─┐┌┐┌┌─┐┌─┐┌┬┐┬┌┐┌┌─┐
 ;; ├┤ ││││  │ │ │││││││ ┬
 ;; └─┘┘└┘└─┘└─┘─┴┘┴┘└┘└─┘
+;; NOTE: This could be an interesting reference material.
+;; Basically its someone writing a client without libwayland, so included are the encoding functions
+;; https://gaultier.github.io/blog/wayland_from_scratch.html?fbclid=IwAR2gRvsJvilJG8GcIoiywhOZxhiqy6lA_g_yCC95wo2bwYhEz8Myo_iU0zw_aem_ASJrcFMP5q2_3xeV-bkU_HAvTDxkisMVpIfiKfx2d-Ax0oKjLpDiUzpL_uc306l2Xn42-D-sh-I0wCizA4hEedJC
 
 ;; TODO: Copilot generated this.
 ;; On first look it seems alright. Needs testing
@@ -46,6 +49,7 @@
 ;; that could correspond to the wayland types
 (defun write-event-args (stream obj-id opcode &rest args)
   (format t "📨 obj:~a op:~a with ~a~%" obj-id opcode args)
+  (format t "📨 message size: ~a~%" (calculate-message-size args))
 
   (write-number-bytes stream obj-id 4)
   (write-number-bytes stream opcode 2)

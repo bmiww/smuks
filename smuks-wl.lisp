@@ -42,6 +42,8 @@
     (consume-padding stream message-size)
 
     (format t "📥 ~a with ~a~%" req-method payload)
+    ;; TODO: Message sizes are very very wrong. which makes me believe that the read-as-number might be wrong
+    (format t "Message size was ~a~%" message-size)
     (apply req-method `(,object ,client ,@payload))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
@@ -50,7 +52,7 @@
 (defclass client ()
   ((socket :initarg :socket :accessor socket)
    (callbacks :initform nil :accessor callbacks)
-   (serial :initform 0 :accessor serial)))
+   (serial :initform 1 :accessor serial)))
 
 (defmethod sock-stream ((client client))
   (unix-sockets:unix-socket-stream (socket client)))
