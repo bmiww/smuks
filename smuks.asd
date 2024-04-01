@@ -26,7 +26,6 @@
 	       (:file "WAYLAND-SERVER")
 	       (:file "wl-wire")
 	       (:file "smuks-wl")
-	       (:file "wayland")
 	       (:file "drm-ffi")
 	       (:file "drm")
 	       (:file "smuks")))

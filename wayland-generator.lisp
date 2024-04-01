@@ -29,6 +29,8 @@
 
 (defun do-request (interface request)
   `(defmethod ,(req-name request) ((obj ,(read-from-string interface))
+			    ;; NOTE: Requiring a client object whatever it may be. This is up to the implementation.
+			    client
 			    ,@(mapcar 'do-arg (args request)))
      ,(format nil ";; ~a" (description request))
      (error "Unimplemented")))

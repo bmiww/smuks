@@ -4,7 +4,6 @@
 (defvar *socket-file* "/tmp/smuks.socket")
 (defvar *socket* nil)
 (defvar *wayland* nil)
-(defvar *swank-server* nil)
 (defvar *smuks-exit* nil)
 
 (defvar *client-thread* nil)
@@ -21,12 +20,8 @@
   ;; TODO: Maybe add a "restart" to set *smuks-exit* to true
   ;; (mapcar (lambda (signal) (sb-sys:enable-interrupt signal (lambda () (setf *smuks-exit* t)))) '(SIGINT SIGTERM))
 
-
-  (unless *swank-server*
-    (setf *swank-server* (swank:create-server :port 25252 :dont-close t)))
-
   (setf *socket* (init-socket))
-  (setf *wayland* (make-instance 'smuks/wayland:wayland))
+  (setf *wayland* (make-instance 'smuks-wl:wayland))
   (init-drm)
   ;; (init-egl (display *wayland*))
 
@@ -36,7 +31,7 @@
 	   (format t "Starting wayland socket listener~%")
 	   (loop until *smuks-exit*
 		 do (let* ((client (unix-sockets:accept-unix-socket *socket*)))
-		      (smuks/wayland:add-client wayland client))))))
+		      (smuks-wl:add-client *wayland* client))))))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
@@ -51,8 +46,7 @@
   (livesupport:continuable
     (loop while t
 	  do (livesupport:update-repl-link)
-	     (magic))
-    (cleanup-wayland *wayland*)))
+	     (magic))))
 
 (defun magic ()
   (sleep 1))
@@ -74,67 +68,6 @@
       (format t "Creating new socket~%")
       (delete-file *socket-file*)
       (unix-sockets:make-unix-socket *socket-file*))))
-
-
-;; ██╗    ██╗ █████╗ ██╗   ██╗██╗      █████╗ ███╗   ██╗██████╗
-;; ██║    ██║██╔══██╗╚██╗ ██╔╝██║     ██╔══██╗████╗  ██║██╔══██╗
-;; ██║ █╗ ██║███████║ ╚████╔╝ ██║     ███████║██╔██╗ ██║██║  ██║
-;; ██║███╗██║██╔══██║  ╚██╔╝  ██║     ██╔══██║██║╚██╗██║██║  ██║
-;; ╚███╔███╔╝██║  ██║   ██║   ███████╗██║  ██║██║ ╚████║██████╔╝
-;;  ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝
-;; TODO: This whole thing is pretty much unused, get rid of it
-
-(defclass wayland ()
-  ((display :initarg :display :accessor display)
-   (event-loop :initarg :event-loop :accessor event-loop)))
-
-(cffi:defcallback handle-output-global :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
-  (declare (ignore client data version id))
-  (print "Implement output global")
-  (error "Implement output global"))
-
-(cffi:defcallback handle-compositor-global :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
-  (declare (ignore client data version id))
-  (print "Implement compositor global")
-  (error "Implement compositor global"))
-
-(cffi:defcallback handle-subcompositor-global :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
-  (declare (ignore client data version id))
-  (print "Implement subcompositor global")
-  (error "Implement subcompositor global"))
-
-(cffi:defcallback handle-shm-global :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
-  (declare (ignore client data version id))
-  (print "Implement shm global")
-  (error "Implement shm global"))
-
-(cffi:defcallback handle-seat-global :void ((client :pointer) (data :pointer) (version :int32) (id :int32))
-  (declare (ignore client data version id))
-  (print "Implement seat global")
-  (error "Implement seat global"))
-
-
-(defun create-global (display interface version callback)
-  (wlc:wl-global-create display interface version (cffi:null-pointer) (cffi:get-callback callback)))
-
-(defun init-wayland (socket-fd)
-  (let* ((display (wlc:wl-display-create))
-	 (socket-status (wlc:wl-display-add-socket-fd display socket-fd)))
-    ;; TODO: Check if the typings here actually make sense
-    (unless socket-status (error "Failed to add socket fd"))
-    (create-global display wlp:wl-compositor-interface 6 'handle-compositor-global)
-    (create-global display wlp:wl-subcompositor-interface 1 'handle-subcompositor-global)
-    ;; TODO: XDGWMBase
-    (create-global display wlp:wl-shm-interface 1 'handle-shm-global)
-
-    (create-global display wlp:wl-seat-interface 9 'handle-seat-global)
-
-    (create-global display wlp:wl-output-interface 4 'handle-output-global)
-    (make-instance 'wayland :display display :event-loop (wlc:wl-event-loop-get-fd display))))
-
-(defun cleanup-wayland (wayland)
-  (wlc:wl-display-destroy (display wayland)))
-
 
 
 ;; ███████╗ ██████╗ ██╗

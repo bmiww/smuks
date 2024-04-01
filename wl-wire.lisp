@@ -1,6 +1,7 @@
 
 (defpackage :wl-wire
-  (:use :cl))
+  (:use :cl)
+  (:export consume-padding write-event-args read-req-args read-n-as-number))
 (in-package :wl-wire)
 
 
@@ -19,7 +20,7 @@
 
 (defun calculate-message-size (args)
   (let ((message-size 0))
-    (dolist arg args
+    (dolist (arg args)
       (let* ((type (car arg))
 	     (value (cadr arg)))
 	(case type
@@ -27,7 +28,7 @@
 	  (wl:uint (incf *message-size* 4))
 	  (wl:fixed (incf *message-size* 4))
 	  (wl:object (incf *message-size* 4))
-	  (wl:new-id (incf *message-size* 4))
+	  (wl:new_id (incf *message-size* 4))
 
 	  ;; TODO: FD does not really increase the payload size, but there are other considerations
 	  ;; Although - i'm unsure if an FD ever is an argument in a wayland event.
@@ -59,9 +60,9 @@
 	;; TODO: You still need to figure out the proper parsing of fixnums, let alone encoding them
 	(wl:fixed (write-number-bytes stream value 4))
 	(wl:object (write-number-bytes stream value 4))
-	(wl:new-id (write-number-bytes stream value 4))
+	(wl:new_id (write-number-bytes stream value 4))
 	(wl:fd (error "FD through ancillary not implemented"))
-	(wl:string (write-string stream value))
+	(wl:string (write-a-string stream value))
 	(wl:array (write-array stream value))
 	;; TODO: Enum might be wrong. It's possible that bitfields are a possibility in which case i would need to
 	;; Generate proper numbers from multiple symbols
@@ -164,7 +165,7 @@
       (setf (ldb (byte 8 (* i 8)) num) (read-byte stream)))
     num))
 
-(defun write-string (stream string)
+(defun write-a-string (stream string)
   (let ((length (length string)))
     (write-sequence (coerce string 'vector) stream)
     ;; TODO: Copilot generated 0 padding. Check at runtime if it works

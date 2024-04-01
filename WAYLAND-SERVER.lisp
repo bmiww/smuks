@@ -82,7 +82,7 @@ id::uint: deleted object ID
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-SYNC ((OBJ WL_DISPLAY) CALLBACK)
+(DEFMETHOD REQ-SYNC ((OBJ WL_DISPLAY) CLIENT CALLBACK)
   ";; asynchronous roundtrip
 
 The sync request asks the server to emit the 'done' event
@@ -102,7 +102,7 @@ callback::new_id: callback object for the sync request
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-GET_REGISTRY ((OBJ WL_DISPLAY) REGISTRY)
+(DEFMETHOD REQ-GET_REGISTRY ((OBJ WL_DISPLAY) CLIENT REGISTRY)
   ";; get global registry object
 
 This request creates a registry object that allows the client
@@ -209,7 +209,7 @@ name::uint: numeric name of the global object
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-BIND ((OBJ WL_REGISTRY) NAME ID)
+(DEFMETHOD REQ-BIND ((OBJ WL_REGISTRY) CLIENT NAME ID)
   ";; bind an object to the display
 
 Binds a new, client-created object to the server using the
@@ -279,7 +279,7 @@ A compositor.  This object is a singleton global.  The
       surfaces into one displayable output.
 "))
 
-(DEFMETHOD REQ-CREATE_SURFACE ((OBJ WL_COMPOSITOR) ID)
+(DEFMETHOD REQ-CREATE_SURFACE ((OBJ WL_COMPOSITOR) CLIENT ID)
   ";; create new surface
 
 Ask the compositor to create a new surface.
@@ -289,7 +289,7 @@ id::new_id: the new surface
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-CREATE_REGION ((OBJ WL_COMPOSITOR) ID)
+(DEFMETHOD REQ-CREATE_REGION ((OBJ WL_COMPOSITOR) CLIENT ID)
   ";; create new region
 
 Ask the compositor to create a new region.
@@ -326,7 +326,7 @@ The wl_shm_pool object encapsulates a piece of memory shared
 "))
 
 (DEFMETHOD REQ-CREATE_BUFFER
-           ((OBJ WL_SHM_POOL) ID OFFSET WIDTH HEIGHT STRIDE FORMAT)
+           ((OBJ WL_SHM_POOL) CLIENT ID OFFSET WIDTH HEIGHT STRIDE FORMAT)
   ";; create a buffer from the pool
 
 Create a wl_buffer object from the pool.
@@ -351,7 +351,7 @@ format::enum: buffer pixel format
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-DESTROY ((OBJ WL_SHM_POOL))
+(DEFMETHOD REQ-DESTROY ((OBJ WL_SHM_POOL) CLIENT)
   ";; destroy the pool
 
 Destroy the shared memory pool.
@@ -362,7 +362,7 @@ Destroy the shared memory pool.
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-RESIZE ((OBJ WL_SHM_POOL) SIZE)
+(DEFMETHOD REQ-RESIZE ((OBJ WL_SHM_POOL) CLIENT SIZE)
   ";; change the size of the pool mapping
 
 This request will cause the server to remap the backing memory
@@ -422,7 +422,7 @@ format::enum: buffer pixel format
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-CREATE_POOL ((OBJ WL_SHM) ID FD SIZE)
+(DEFMETHOD REQ-CREATE_POOL ((OBJ WL_SHM) CLIENT ID FD SIZE)
   ";; create a shm pool
 
 Create a new wl_shm_pool object.
@@ -622,7 +622,7 @@ Sent when this wl_buffer is no longer used by the compositor.
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-DESTROY ((OBJ WL_BUFFER))
+(DEFMETHOD REQ-DESTROY ((OBJ WL_BUFFER) CLIENT)
   ";; destroy a buffer
 
 Destroy a buffer. If and how you need to release the backing
@@ -737,7 +737,7 @@ dnd_action::enum: action selected by the compositor
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-ACCEPT ((OBJ WL_DATA_OFFER) SERIAL MIME_TYPE)
+(DEFMETHOD REQ-ACCEPT ((OBJ WL_DATA_OFFER) CLIENT SERIAL MIME_TYPE)
   ";; accept one of the offered mime types
 
 Indicate that the client can accept the given mime type, or
@@ -761,7 +761,7 @@ mime_type::string: mime type accepted by the client
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-RECEIVE ((OBJ WL_DATA_OFFER) MIME_TYPE FD)
+(DEFMETHOD REQ-RECEIVE ((OBJ WL_DATA_OFFER) CLIENT MIME_TYPE FD)
   ";; request that the data is transferred
 
 To transfer the offered data, the client issues this request
@@ -786,14 +786,14 @@ fd::fd: file descriptor for data transfer
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-DESTROY ((OBJ WL_DATA_OFFER))
+(DEFMETHOD REQ-DESTROY ((OBJ WL_DATA_OFFER) CLIENT)
   ";; destroy data offer
 
 Destroy the data offer.
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-FINISH ((OBJ WL_DATA_OFFER))
+(DEFMETHOD REQ-FINISH ((OBJ WL_DATA_OFFER) CLIENT)
   ";; the offer will no longer be used
 
 Notifies the compositor that the drag destination successfully
@@ -813,7 +813,8 @@ Notifies the compositor that the drag destination successfully
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_ACTIONS ((OBJ WL_DATA_OFFER) DND_ACTIONS PREFERRED_ACTION)
+(DEFMETHOD REQ-SET_ACTIONS
+           ((OBJ WL_DATA_OFFER) CLIENT DND_ACTIONS PREFERRED_ACTION)
   ";; set the available/preferred drag-and-drop actions
 
 Sets the actions that the destination side client supports for
@@ -1018,7 +1019,7 @@ dnd_action::enum: action selected by the compositor
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-OFFER ((OBJ WL_DATA_SOURCE) MIME_TYPE)
+(DEFMETHOD REQ-OFFER ((OBJ WL_DATA_SOURCE) CLIENT MIME_TYPE)
   ";; add an offered mime type
 
 This request adds a mime type to the set of mime types
@@ -1030,14 +1031,14 @@ mime_type::string: mime type offered by the data source
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-DESTROY ((OBJ WL_DATA_SOURCE))
+(DEFMETHOD REQ-DESTROY ((OBJ WL_DATA_SOURCE) CLIENT)
   ";; destroy the data source
 
 Destroy the data source.
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_ACTIONS ((OBJ WL_DATA_SOURCE) DND_ACTIONS)
+(DEFMETHOD REQ-SET_ACTIONS ((OBJ WL_DATA_SOURCE) CLIENT DND_ACTIONS)
   ";; set the available drag-and-drop actions
 
 Sets the actions that the source side client supports for this
@@ -1207,7 +1208,8 @@ id::object: selection data_offer object
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-START_DRAG ((OBJ WL_DATA_DEVICE) SOURCE ORIGIN ICON SERIAL)
+(DEFMETHOD REQ-START_DRAG
+           ((OBJ WL_DATA_DEVICE) CLIENT SOURCE ORIGIN ICON SERIAL)
   ";; start drag-and-drop operation
 
 This request asks the compositor to start a drag-and-drop
@@ -1244,7 +1246,7 @@ serial::uint: serial number of the implicit grab on the origin
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_SELECTION ((OBJ WL_DATA_DEVICE) SOURCE SERIAL)
+(DEFMETHOD REQ-SET_SELECTION ((OBJ WL_DATA_DEVICE) CLIENT SOURCE SERIAL)
   ";; copy data to the selection
 
 This request asks the compositor to set the selection
@@ -1258,7 +1260,7 @@ serial::uint: serial number of the event that triggered this request
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-RELEASE ((OBJ WL_DATA_DEVICE))
+(DEFMETHOD REQ-RELEASE ((OBJ WL_DATA_DEVICE) CLIENT)
   ";; destroy data device
 
 This request destroys the data device.
@@ -1304,7 +1306,7 @@ The wl_data_device_manager is a singleton global object that
       wl_data_offer.accept and wl_data_offer.finish for details.
 "))
 
-(DEFMETHOD REQ-CREATE_DATA_SOURCE ((OBJ WL_DATA_DEVICE_MANAGER) ID)
+(DEFMETHOD REQ-CREATE_DATA_SOURCE ((OBJ WL_DATA_DEVICE_MANAGER) CLIENT ID)
   ";; create a new data source
 
 Create a new data source.
@@ -1314,7 +1316,7 @@ id::new_id: data source to create
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-GET_DATA_DEVICE ((OBJ WL_DATA_DEVICE_MANAGER) ID SEAT)
+(DEFMETHOD REQ-GET_DATA_DEVICE ((OBJ WL_DATA_DEVICE_MANAGER) CLIENT ID SEAT)
   ";; create a new data device
 
 Create a new data device for a given seat.
@@ -1388,7 +1390,7 @@ This interface is implemented by servers that provide
       should not implement this interface.
 "))
 
-(DEFMETHOD REQ-GET_SHELL_SURFACE ((OBJ WL_SHELL) ID SURFACE)
+(DEFMETHOD REQ-GET_SHELL_SURFACE ((OBJ WL_SHELL) CLIENT ID SURFACE)
   ";; create a shell surface from a surface
 
 Create a shell surface for an existing surface. This gives
@@ -1500,7 +1502,7 @@ The popup_done event is sent out when a popup grab is broken,
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-PONG ((OBJ WL_SHELL_SURFACE) SERIAL)
+(DEFMETHOD REQ-PONG ((OBJ WL_SHELL_SURFACE) CLIENT SERIAL)
   ";; respond to a ping event
 
 A client must respond to a ping event with a pong request or
@@ -1511,7 +1513,7 @@ serial::uint: serial number of the ping event
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-MOVE ((OBJ WL_SHELL_SURFACE) SEAT SERIAL)
+(DEFMETHOD REQ-MOVE ((OBJ WL_SHELL_SURFACE) CLIENT SEAT SERIAL)
   ";; start an interactive move
 
 Start a pointer-driven move of the surface.
@@ -1526,7 +1528,7 @@ serial::uint: serial number of the implicit grab on the pointer
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-RESIZE ((OBJ WL_SHELL_SURFACE) SEAT SERIAL EDGES)
+(DEFMETHOD REQ-RESIZE ((OBJ WL_SHELL_SURFACE) CLIENT SEAT SERIAL EDGES)
   ";; start an interactive resize
 
 Start a pointer-driven resizing of the surface.
@@ -1542,7 +1544,7 @@ edges::enum: which edge or corner is being dragged
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_TOPLEVEL ((OBJ WL_SHELL_SURFACE))
+(DEFMETHOD REQ-SET_TOPLEVEL ((OBJ WL_SHELL_SURFACE) CLIENT)
   ";; make the surface a toplevel surface
 
 Map the surface as a toplevel surface.
@@ -1551,7 +1553,7 @@ Map the surface as a toplevel surface.
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_TRANSIENT ((OBJ WL_SHELL_SURFACE) PARENT X Y FLAGS)
+(DEFMETHOD REQ-SET_TRANSIENT ((OBJ WL_SHELL_SURFACE) CLIENT PARENT X Y FLAGS)
   ";; make the surface a transient surface
 
 Map the surface relative to an existing surface.
@@ -1570,7 +1572,8 @@ flags::enum: transient surface behavior
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_FULLSCREEN ((OBJ WL_SHELL_SURFACE) METHOD FRAMERATE OUTPUT)
+(DEFMETHOD REQ-SET_FULLSCREEN
+           ((OBJ WL_SHELL_SURFACE) CLIENT METHOD FRAMERATE OUTPUT)
   ";; make the surface a fullscreen surface
 
 Map the surface as a fullscreen surface.
@@ -1614,7 +1617,8 @@ output::object: output on which the surface is to be fullscreen
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_POPUP ((OBJ WL_SHELL_SURFACE) SEAT SERIAL PARENT X Y FLAGS)
+(DEFMETHOD REQ-SET_POPUP
+           ((OBJ WL_SHELL_SURFACE) CLIENT SEAT SERIAL PARENT X Y FLAGS)
   ";; make the surface a popup surface
 
 Map the surface as a popup.
@@ -1647,7 +1651,7 @@ flags::enum: transient surface behavior
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_MAXIMIZED ((OBJ WL_SHELL_SURFACE) OUTPUT)
+(DEFMETHOD REQ-SET_MAXIMIZED ((OBJ WL_SHELL_SURFACE) CLIENT OUTPUT)
   ";; make the surface a maximized surface
 
 Map the surface as a maximized surface.
@@ -1674,7 +1678,7 @@ output::object: output on which the surface is to be maximized
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_TITLE ((OBJ WL_SHELL_SURFACE) TITLE)
+(DEFMETHOD REQ-SET_TITLE ((OBJ WL_SHELL_SURFACE) CLIENT TITLE)
   ";; set surface title
 
 Set a short title for the surface.
@@ -1690,7 +1694,7 @@ title::string: surface title
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_CLASS ((OBJ WL_SHELL_SURFACE) CLASS_)
+(DEFMETHOD REQ-SET_CLASS ((OBJ WL_SHELL_SURFACE) CLIENT CLASS_)
   ";; set surface class
 
 Set a class for the surface.
@@ -1895,14 +1899,14 @@ transform::enum: preferred transform
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-DESTROY ((OBJ WL_SURFACE))
+(DEFMETHOD REQ-DESTROY ((OBJ WL_SURFACE) CLIENT)
   ";; delete surface
 
 Deletes the surface and invalidates its object ID.
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-ATTACH ((OBJ WL_SURFACE) BUFFER X Y)
+(DEFMETHOD REQ-ATTACH ((OBJ WL_SURFACE) CLIENT BUFFER X Y)
   ";; set the surface contents
 
 Set a buffer as the content of this surface.
@@ -1970,7 +1974,7 @@ y::int: surface-local y coordinate
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-DAMAGE ((OBJ WL_SURFACE) X Y WIDTH HEIGHT)
+(DEFMETHOD REQ-DAMAGE ((OBJ WL_SURFACE) CLIENT X Y WIDTH HEIGHT)
   ";; mark part of the surface damaged
 
 This request is used to describe the regions where the pending
@@ -2003,7 +2007,7 @@ height::int: height of damage rectangle
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-FRAME ((OBJ WL_SURFACE) CALLBACK)
+(DEFMETHOD REQ-FRAME ((OBJ WL_SURFACE) CLIENT CALLBACK)
   ";; request a frame throttling hint
 
 Request a notification when it is a good time to start drawing a new
@@ -2044,7 +2048,7 @@ callback::new_id: callback object for the frame request
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_OPAQUE_REGION ((OBJ WL_SURFACE) REGION)
+(DEFMETHOD REQ-SET_OPAQUE_REGION ((OBJ WL_SURFACE) CLIENT REGION)
   ";; set opaque region
 
 This request sets the region of the surface that contains
@@ -2077,7 +2081,7 @@ region::object: opaque region of the surface
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_INPUT_REGION ((OBJ WL_SURFACE) REGION)
+(DEFMETHOD REQ-SET_INPUT_REGION ((OBJ WL_SURFACE) CLIENT REGION)
   ";; set input region
 
 This request sets the region of the surface that can receive
@@ -2108,7 +2112,7 @@ region::object: input region of the surface
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-COMMIT ((OBJ WL_SURFACE))
+(DEFMETHOD REQ-COMMIT ((OBJ WL_SURFACE) CLIENT)
   ";; commit pending surface state
 
 Surface state (input, opaque, and damage regions, attached buffers,
@@ -2131,7 +2135,7 @@ Surface state (input, opaque, and damage regions, attached buffers,
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_BUFFER_TRANSFORM ((OBJ WL_SURFACE) TRANSFORM)
+(DEFMETHOD REQ-SET_BUFFER_TRANSFORM ((OBJ WL_SURFACE) CLIENT TRANSFORM)
   ";; sets the buffer transformation
 
 This request sets an optional transformation on how the compositor
@@ -2169,7 +2173,7 @@ transform::enum: transform for interpreting buffer contents
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_BUFFER_SCALE ((OBJ WL_SURFACE) SCALE)
+(DEFMETHOD REQ-SET_BUFFER_SCALE ((OBJ WL_SURFACE) CLIENT SCALE)
   ";; sets the buffer scaling factor
 
 This request sets an optional scaling factor on how the compositor
@@ -2201,7 +2205,7 @@ scale::int: positive scale for interpreting buffer contents
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-DAMAGE_BUFFER ((OBJ WL_SURFACE) X Y WIDTH HEIGHT)
+(DEFMETHOD REQ-DAMAGE_BUFFER ((OBJ WL_SURFACE) CLIENT X Y WIDTH HEIGHT)
   ";; mark part of the surface damaged using buffer coordinates
 
 This request is used to describe the regions where the pending
@@ -2245,7 +2249,7 @@ height::int: height of damage rectangle
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-OFFSET ((OBJ WL_SURFACE) X Y)
+(DEFMETHOD REQ-OFFSET ((OBJ WL_SURFACE) CLIENT X Y)
   ";; set the surface contents offset
 
 The x and y arguments specify the location of the new pending
@@ -2378,7 +2382,7 @@ name::string: seat identifier
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-GET_POINTER ((OBJ WL_SEAT) ID)
+(DEFMETHOD REQ-GET_POINTER ((OBJ WL_SEAT) CLIENT ID)
   ";; return pointer object
 
 The ID provided will be initialized to the wl_pointer interface
@@ -2395,7 +2399,7 @@ id::new_id: seat pointer
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-GET_KEYBOARD ((OBJ WL_SEAT) ID)
+(DEFMETHOD REQ-GET_KEYBOARD ((OBJ WL_SEAT) CLIENT ID)
   ";; return keyboard object
 
 The ID provided will be initialized to the wl_keyboard interface
@@ -2412,7 +2416,7 @@ id::new_id: seat keyboard
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-GET_TOUCH ((OBJ WL_SEAT) ID)
+(DEFMETHOD REQ-GET_TOUCH ((OBJ WL_SEAT) CLIENT ID)
   ";; return touch object
 
 The ID provided will be initialized to the wl_touch interface
@@ -2429,7 +2433,7 @@ id::new_id: seat touch interface
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-RELEASE ((OBJ WL_SEAT))
+(DEFMETHOD REQ-RELEASE ((OBJ WL_SEAT) CLIENT)
   ";; release the seat object
 
 Using this request a client can tell the server that it is not going to
@@ -2824,7 +2828,8 @@ direction::enum: physical direction relative to axis motion
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-SET_CURSOR ((OBJ WL_POINTER) SERIAL SURFACE HOTSPOT_X HOTSPOT_Y)
+(DEFMETHOD REQ-SET_CURSOR
+           ((OBJ WL_POINTER) CLIENT SERIAL SURFACE HOTSPOT_X HOTSPOT_Y)
   ";; set the pointer surface
 
 Set the pointer surface, i.e., the surface that contains the
@@ -2869,7 +2874,7 @@ hotspot_y::int: surface-local y coordinate
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-RELEASE ((OBJ WL_POINTER))
+(DEFMETHOD REQ-RELEASE ((OBJ WL_POINTER) CLIENT)
   ";; release the pointer object
 
 Using this request a client can tell the server that it is not going to
@@ -3084,7 +3089,7 @@ delay::int: delay in milliseconds since key down until repeating starts
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-RELEASE ((OBJ WL_KEYBOARD))
+(DEFMETHOD REQ-RELEASE ((OBJ WL_KEYBOARD) CLIENT)
   ";; release the keyboard object
 
 NIL
@@ -3294,7 +3299,7 @@ orientation::fixed: angle between major axis and positive surface y-axis in degr
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-RELEASE ((OBJ WL_TOUCH))
+(DEFMETHOD REQ-RELEASE ((OBJ WL_TOUCH) CLIENT)
   ";; release the touch object
 
 NIL
@@ -3525,7 +3530,7 @@ description::string: output description
 "
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD REQ-RELEASE ((OBJ WL_OUTPUT))
+(DEFMETHOD REQ-RELEASE ((OBJ WL_OUTPUT) CLIENT)
   ";; release the output object
 
 Using this request a client can tell the server that it is not going to
@@ -3614,14 +3619,14 @@ A region object describes an area.
       regions of a surface.
 "))
 
-(DEFMETHOD REQ-DESTROY ((OBJ WL_REGION))
+(DEFMETHOD REQ-DESTROY ((OBJ WL_REGION) CLIENT)
   ";; destroy region
 
 Destroy the region.  This will invalidate the object ID.
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-ADD ((OBJ WL_REGION) X Y WIDTH HEIGHT)
+(DEFMETHOD REQ-ADD ((OBJ WL_REGION) CLIENT X Y WIDTH HEIGHT)
   ";; add rectangle to region
 
 Add the specified rectangle to the region.
@@ -3634,7 +3639,7 @@ height::int: rectangle height
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SUBTRACT ((OBJ WL_REGION) X Y WIDTH HEIGHT)
+(DEFMETHOD REQ-SUBTRACT ((OBJ WL_REGION) CLIENT X Y WIDTH HEIGHT)
   ";; subtract rectangle from region
 
 Subtract the specified rectangle from the region.
@@ -3686,7 +3691,7 @@ The global interface exposing sub-surface compositing capabilities.
       processing to dedicated overlay hardware when possible.
 "))
 
-(DEFMETHOD REQ-DESTROY ((OBJ WL_SUBCOMPOSITOR))
+(DEFMETHOD REQ-DESTROY ((OBJ WL_SUBCOMPOSITOR) CLIENT)
   ";; unbind from the subcompositor interface
 
 Informs the server that the client will not be using this
@@ -3695,7 +3700,7 @@ Informs the server that the client will not be using this
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-GET_SUBSURFACE ((OBJ WL_SUBCOMPOSITOR) ID SURFACE PARENT)
+(DEFMETHOD REQ-GET_SUBSURFACE ((OBJ WL_SUBCOMPOSITOR) CLIENT ID SURFACE PARENT)
   ";; give a surface the role sub-surface
 
 Create a sub-surface interface for the given surface, and
@@ -3802,7 +3807,7 @@ An additional interface to a wl_surface object, which has been
       unmapped.
 "))
 
-(DEFMETHOD REQ-DESTROY ((OBJ WL_SUBSURFACE))
+(DEFMETHOD REQ-DESTROY ((OBJ WL_SUBSURFACE) CLIENT)
   ";; remove sub-surface interface
 
 The sub-surface interface is removed from the wl_surface object
@@ -3812,7 +3817,7 @@ The sub-surface interface is removed from the wl_surface object
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_POSITION ((OBJ WL_SUBSURFACE) X Y)
+(DEFMETHOD REQ-SET_POSITION ((OBJ WL_SUBSURFACE) CLIENT X Y)
   ";; reposition the sub-surface
 
 This schedules a sub-surface position change.
@@ -3838,7 +3843,7 @@ y::int: y coordinate in the parent surface
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-PLACE_ABOVE ((OBJ WL_SUBSURFACE) SIBLING)
+(DEFMETHOD REQ-PLACE_ABOVE ((OBJ WL_SUBSURFACE) CLIENT SIBLING)
   ";; restack the sub-surface
 
 This sub-surface is taken from the stack, and put back just
@@ -3862,7 +3867,7 @@ sibling::object: the reference surface
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-PLACE_BELOW ((OBJ WL_SUBSURFACE) SIBLING)
+(DEFMETHOD REQ-PLACE_BELOW ((OBJ WL_SUBSURFACE) CLIENT SIBLING)
   ";; restack the sub-surface
 
 The sub-surface is placed just below the reference surface.
@@ -3873,7 +3878,7 @@ sibling::object: the reference surface
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_SYNC ((OBJ WL_SUBSURFACE))
+(DEFMETHOD REQ-SET_SYNC ((OBJ WL_SUBSURFACE) CLIENT)
   ";; set sub-surface to synchronized mode
 
 Change the commit behaviour of the sub-surface to synchronized
@@ -3892,7 +3897,7 @@ Change the commit behaviour of the sub-surface to synchronized
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD REQ-SET_DESYNC ((OBJ WL_SUBSURFACE))
+(DEFMETHOD REQ-SET_DESYNC ((OBJ WL_SUBSURFACE) CLIENT)
   ";; set sub-surface to desynchronized mode
 
 Change the commit behaviour of the sub-surface to desynchronized
