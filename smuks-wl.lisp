@@ -41,30 +41,27 @@
     ;; Discard extra bytes - since wayland messages are always 32-bit aligned
     (consume-padding stream message-size)
 
-    (format t "Calling ~a with ~a~%" req-method payload)
+    (format t "📥 ~a with ~a~%" req-method payload)
     (apply req-method `(,object ,client ,@payload))))
-
-;; (defun write-wayland-message (client &rest args)
-  ;; (let* ((stream (sock-stream client))
-	 ;; ()
-	 ;; (object (first args))
-	 ;; (opcode (second args))
-	 ;; (message-size (third args))
-	 ;; (payload (fourth args)))
-    ;; (write-n-as-number stream (wl:id object) 4)
-    ;; (write-n-as-number stream opcode 2)
-    ;; (write-n-as-number stream message-size 2)
-    ;; (write-req-args stream payload)))
-
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │
 ;; └─┘┴─┘┴└─┘┘└┘ ┴
 (defclass client ()
-  ((socket :initarg :socket :accessor socket)))
+  ((socket :initarg :socket :accessor socket)
+   (callbacks :initform nil :accessor callbacks)
+   (serial :initform 0 :accessor serial)))
 
 (defmethod sock-stream ((client client))
   (unix-sockets:unix-socket-stream (socket client)))
+
+;; TODO: Maybe this might need some way to track what kind of dependencies the callback has?
+(defmethod add-callback ((client client) callback)
+  (push callback (callbacks client)))
+
+(defmethod next-serial ((client client))
+  (prog1 (serial client)
+    (incf (serial client))))
 
 ;; ┌┬┐┬┌─┐┌─┐┬  ┌─┐┬ ┬
 ;;  │││└─┐├─┘│  ├─┤└┬┘
@@ -75,13 +72,17 @@
 
 ;; TODO: Registry needs to be cleaned up once the client disconnects.
 (defmethod wl/wl_display::req-get_registry ((display display) client new-id)
-  (format t "NEW ID REQUESTED FOR REGISTRY: ~a~%" new-id)
+  ;; (format t "NEW ID REQUESTED FOR REGISTRY: ~a~%" new-id)
   (let* ((registry (make-instance 'registry :id new-id)))
     (push registry (registries display))))
 
 (defmethod wl/wl_display::req-sync ((display display) client callback-id)
-  ;; ()
-  (format t "SYNC REQUESTED: ~a" callback-id))
+  ;; (format t "SYNC REQUESTED: ~a" callback-id)
+  (let* ((callback (make-instance 'callback :id callback-id)))
+
+    ;; TODO: For now - not tracking callbacks, just directly invoking it
+    ;; (add-callback client callback-id)))
+    (wl/wl_callback::done callback (sock-stream client) (next-serial client))))
 
 
 ;; ┬─┐┌─┐┌─┐┬┌─┐┌┬┐┬─┐┬ ┬
@@ -97,5 +98,5 @@
 (defclass callback (wl/wl_callback::wl_callback)
   ())
 
-;; (defmethod wl/wl_callback::done ((callback callback) stream callback-data)
-  ;; ())
+(defmethod wl/wl_callback::done ((callback callback) stream callback-data)
+  (write-event-args stream (wl::id callback) (match-event-opcode callback 'wl/wl_callback::evt-done) `(uint ,callback-data)))

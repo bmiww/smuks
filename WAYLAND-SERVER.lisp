@@ -258,7 +258,7 @@ callback_data::uint: request-specific data for the callback
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_CALLBACK) EVENT)
-  (CASE EVENT (EVT-DONE 0)))
+  (CASE EVENT (EVT-DONE 0) (t (error "Unknown event opcode"))))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_CALLBACK) OPCODE) (NTH OPCODE 'NIL))
 
@@ -3935,4 +3935,3 @@ Change the commit behaviour of the sub-surface to desynchronized
 
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_SUBSURFACE) OPCODE)
   (NTH OPCODE '(NIL (INT INT) (OBJECT) (OBJECT) NIL NIL)))
-

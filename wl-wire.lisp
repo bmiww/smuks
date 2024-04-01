@@ -17,7 +17,7 @@
 	(+ size (- 4 aligned-size)))))
 
 (defun calculate-message-size (args)
-  (let ((message-size 0))
+  (let ((*message-size* 0))
     (dolist (arg args)
       (let* ((type (car arg))
 	     (value (cadr arg)))
@@ -39,11 +39,14 @@
 	  ;; which afaik should be uint array, so i can assume that i can just multiply by 4
 	  (wl:array (incf *message-size* (* 4 (length value))))
 
-	  (wl:enum (incf *message-size* 4)))))))
+	  (wl:enum (incf *message-size* 4)))))
+    *message-size*))
 
 ;; TODO: Depending on how much you can be arsed - you might want to define encoders for several lisp types
 ;; that could correspond to the wayland types
 (defun write-event-args (stream obj-id opcode &rest args)
+  (format t "📨 obj:~a op:~a with ~a" obj-id opcode args)
+
   (write-number-bytes stream obj-id 4)
   (write-number-bytes stream opcode 2)
   (write-number-bytes stream (calculate-message-size args) 2)
