@@ -45,7 +45,7 @@
 ;; TODO: Depending on how much you can be arsed - you might want to define encoders for several lisp types
 ;; that could correspond to the wayland types
 (defun write-event-args (stream obj-id opcode &rest args)
-  (format t "📨 obj:~a op:~a with ~a" obj-id opcode args)
+  (format t "📨 obj:~a op:~a with ~a~%" obj-id opcode args)
 
   (write-number-bytes stream obj-id 4)
   (write-number-bytes stream opcode 2)
