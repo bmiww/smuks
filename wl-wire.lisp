@@ -4,8 +4,6 @@
   (:export consume-padding write-event-args read-req-args read-n-as-number))
 (in-package :wl-wire)
 
-
-
 ;; ┌─┐┌┐┌┌─┐┌─┐┌┬┐┬┌┐┌┌─┐
 ;; ├┤ ││││  │ │ │││││││ ┬
 ;; └─┘┘└┘└─┘└─┘─┴┘┴┘└┘└─┘

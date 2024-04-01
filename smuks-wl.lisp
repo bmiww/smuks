@@ -21,10 +21,7 @@
     (push client (clients (display wayland)))
     (format t "CLIENT CONNECTED~%")
     (bt:make-thread (lambda ()
-		      ;; TODO: *smuks-exit* is probably not available here
-		      ;; TODO: *smuks-exit* is probably not the most sensible check here anyways
-		      (loop until *smuks-exit*
-			    do (read-wayland-message wayland client stream))
+		      (loop (read-wayland-message wayland client stream))
 		      (format t "Exiting client~%")
 		      (unix-sockets:close-unix-socket (socket client))))))
 
@@ -45,7 +42,7 @@
     (consume-padding stream message-size)
 
     (format t "Calling ~a with ~a~%" req-method payload)
-    (apply req-method `(,object ,@payload))))
+    (apply req-method `(,object ,client ,@payload))))
 
 ;; (defun write-wayland-message (client &rest args)
   ;; (let* ((stream (sock-stream client))
@@ -64,12 +61,10 @@
 ;; │  │  │├┤ │││ │
 ;; └─┘┴─┘┴└─┘┘└┘ ┴
 (defclass client ()
-  ((socket :initarg :socket :accessor socket)
-   (stream :reader sock-stream)))
+  ((socket :initarg :socket :accessor socket)))
 
-(defmethod intialize-instance :after ((client client) &key)
-  (setf (slot-value client 'stream) (unix-sockets:unix-socket-stream (socket client))))
-
+(defmethod sock-stream ((client client))
+  (unix-sockets:unix-socket-stream (socket client)))
 
 ;; ┌┬┐┬┌─┐┌─┐┬  ┌─┐┬ ┬
 ;;  │││└─┐├─┘│  ├─┤└┬┘
