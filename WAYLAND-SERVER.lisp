@@ -335,7 +335,7 @@ offset::int: buffer byte offset within the pool
 width::int: buffer width, in pixels
 height::int: buffer height, in pixels
 stride::int: number of bytes from the beginning of one row to the beginning of the next row
-format::uint: buffer pixel format
+format::enum: buffer pixel format
 "
   (ERROR "Unimplemented"))
 
@@ -375,7 +375,7 @@ size::int: new size of the pool, in bytes
   (NTH OPCODE '(EVT-CREATE_BUFFER EVT-DESTROY EVT-RESIZE)))
 
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_SHM_POOL) OPCODE)
-  (NTH OPCODE '((NEW_ID INT INT INT INT (UINT WL_SHM.FORMAT)) NIL (INT))))
+  (NTH OPCODE '((NEW_ID INT INT INT INT (ENUM (WL_SHM FORMAT))) NIL (INT))))
 
 (DEFPACKAGE :WL/WL_SHM
   (:USE :CL)
@@ -405,7 +405,7 @@ Informs the client about a valid pixel format that
 	argb8888 and xrgb8888.
 
 Arguments:
-format::uint: buffer pixel format
+format::enum: buffer pixel format
 "
   (ERROR "Unimplemented"))
 
@@ -672,7 +672,7 @@ This event indicates the actions offered by the data source. It
 	wl_data_source.set_actions.
 
 Arguments:
-source_actions::uint: actions offered by the data source
+source_actions::enum: actions offered by the data source
 "
   (ERROR "Unimplemented"))
 
@@ -716,7 +716,7 @@ This event indicates the action selected by the compositor after
 	must happen before the call to wl_data_offer.finish.
 
 Arguments:
-dnd_action::uint: action selected by the compositor
+dnd_action::enum: action selected by the compositor
 "
   (ERROR "Unimplemented"))
 
@@ -832,8 +832,8 @@ Sets the actions that the destination side client supports for
 	will be raised otherwise.
 
 Arguments:
-dnd_actions::uint: actions supported by the destination client
-preferred_action::uint: action preferred by the destination client
+dnd_actions::enum: actions supported by the destination client
+preferred_action::enum: action preferred by the destination client
 "
   (ERROR "Unimplemented"))
 
@@ -854,8 +854,8 @@ preferred_action::uint: action preferred by the destination client
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_DATA_OFFER) OPCODE)
   (NTH OPCODE
        '((UINT STRING) (STRING FD) NIL NIL
-         ((UINT WL_DATA_DEVICE_MANAGER.DND_ACTION)
-          (UINT WL_DATA_DEVICE_MANAGER.DND_ACTION)))))
+         ((ENUM (WL_DATA_DEVICE_MANAGER DND_ACTION))
+          (ENUM (WL_DATA_DEVICE_MANAGER DND_ACTION))))))
 
 (DEFPACKAGE :WL/WL_DATA_SOURCE
   (:USE :CL)
@@ -991,7 +991,7 @@ This event indicates the action selected by the compositor after
 	they reflect the current action.
 
 Arguments:
-dnd_action::uint: action selected by the compositor
+dnd_action::enum: action selected by the compositor
 "
   (ERROR "Unimplemented"))
 
@@ -1032,7 +1032,7 @@ Sets the actions that the source side client supports for this
 	for drag-and-drop will raise a protocol error.
 
 Arguments:
-dnd_actions::uint: actions supported by the data source
+dnd_actions::enum: actions supported by the data source
 "
   (ERROR "Unimplemented"))
 
@@ -1049,7 +1049,7 @@ dnd_actions::uint: actions supported by the data source
   (NTH OPCODE '(EVT-OFFER EVT-DESTROY EVT-SET_ACTIONS)))
 
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_DATA_SOURCE) OPCODE)
-  (NTH OPCODE '((STRING) NIL ((UINT WL_DATA_DEVICE_MANAGER.DND_ACTION)))))
+  (NTH OPCODE '((STRING) NIL ((ENUM (WL_DATA_DEVICE_MANAGER DND_ACTION))))))
 
 (DEFPACKAGE :WL/WL_DATA_DEVICE
   (:USE :CL)
@@ -1442,7 +1442,7 @@ The configure event asks the client to resize its surface.
 	in surface-local coordinates.
 
 Arguments:
-edges::uint: how the surface was resized
+edges::enum: how the surface was resized
 width::int: new width of the surface
 height::int: new height of the surface
 "
@@ -1495,7 +1495,7 @@ Start a pointer-driven resizing of the surface.
 Arguments:
 seat::object: seat whose pointer is used
 serial::uint: serial number of the implicit grab on the pointer
-edges::uint: which edge or corner is being dragged
+edges::enum: which edge or corner is being dragged
 "
   (ERROR "Unimplemented"))
 
@@ -1523,7 +1523,7 @@ Arguments:
 parent::object: parent surface
 x::int: surface-local x coordinate
 y::int: surface-local y coordinate
-flags::uint: transient surface behavior
+flags::enum: transient surface behavior
 "
   (ERROR "Unimplemented"))
 
@@ -1565,7 +1565,7 @@ Map the surface as a fullscreen surface.
 	be made fullscreen.
 
 Arguments:
-method::uint: method for resolving size conflict
+method::enum: method for resolving size conflict
 framerate::uint: framerate in mHz
 output::object: output on which the surface is to be fullscreen
 "
@@ -1600,7 +1600,7 @@ serial::uint: serial number of the implicit grab on the pointer
 parent::object: parent surface
 x::int: surface-local x coordinate
 y::int: surface-local y coordinate
-flags::uint: transient surface behavior
+flags::enum: transient surface behavior
 "
   (ERROR "Unimplemented"))
 
@@ -1708,10 +1708,10 @@ Hints to indicate to the compositor how to deal with a conflict
 
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_SHELL_SURFACE) OPCODE)
   (NTH OPCODE
-       '((UINT) (OBJECT UINT) (OBJECT UINT (UINT RESIZE)) NIL
-         (OBJECT INT INT (UINT TRANSIENT))
-         ((UINT FULLSCREEN_METHOD) UINT OBJECT)
-         (OBJECT UINT OBJECT INT INT (UINT TRANSIENT)) (OBJECT) (STRING)
+       '((UINT) (OBJECT UINT) (OBJECT UINT (ENUM (RESIZE))) NIL
+         (OBJECT INT INT (ENUM (TRANSIENT)))
+         ((ENUM (FULLSCREEN_METHOD)) UINT OBJECT)
+         (OBJECT UINT OBJECT INT INT (ENUM (TRANSIENT))) (OBJECT) (STRING)
          (STRING))))
 
 (DEFPACKAGE :WL/WL_SURFACE
@@ -1842,7 +1842,7 @@ This event indicates the preferred buffer transform for this surface.
 	indicate the transform they have rendered with.
 
 Arguments:
-transform::uint: preferred transform
+transform::enum: preferred transform
 "
   (ERROR "Unimplemented"))
 
@@ -2116,7 +2116,7 @@ This request sets an optional transformation on how the compositor
 	is raised.
 
 Arguments:
-transform::uint: transform for interpreting buffer contents
+transform::enum: transform for interpreting buffer contents
 "
   (ERROR "Unimplemented"))
 
@@ -2244,7 +2244,7 @@ These errors can be emitted in response to wl_surface requests.
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_SURFACE) OPCODE)
   (NTH OPCODE
        '(NIL (OBJECT INT INT) (INT INT INT INT) (NEW_ID) (OBJECT) (OBJECT) NIL
-         ((UINT WL_OUTPUT.TRANSFORM)) (INT) (INT INT INT INT) (INT INT))))
+         ((ENUM (WL_OUTPUT TRANSFORM))) (INT) (INT INT INT INT) (INT INT))))
 
 (DEFPACKAGE :WL/WL_SEAT
   (:USE :CL)
@@ -2296,7 +2296,7 @@ This is emitted whenever a seat gains or loses the pointer,
 	keyboard and touch capabilities, respectively.
 
 Arguments:
-capabilities::uint: capabilities of the seat
+capabilities::enum: capabilities of the seat
 "
   (ERROR "Unimplemented"))
 
@@ -2513,7 +2513,7 @@ Arguments:
 serial::uint: serial number of the button event
 time::uint: timestamp with millisecond granularity
 button::uint: button that produced the event
-state::uint: physical state of the button
+state::enum: physical state of the button
 "
   (ERROR "Unimplemented"))
 
@@ -2539,7 +2539,7 @@ Scroll and other axis notifications.
 
 Arguments:
 time::uint: timestamp with millisecond granularity
-axis::uint: axis type
+axis::enum: axis type
 value::fixed: length of vector in surface-local coordinate space
 "
   (ERROR "Unimplemented"))
@@ -2614,7 +2614,7 @@ Source information for scroll and other axes.
 	not guaranteed.
 
 Arguments:
-axis_source::uint: source of the axis event
+axis_source::enum: source of the axis event
 "
   (ERROR "Unimplemented"))
 
@@ -2638,7 +2638,7 @@ Stop notification for scroll and other axes.
 
 Arguments:
 time::uint: timestamp with millisecond granularity
-axis::uint: the axis stopped with this event
+axis::enum: the axis stopped with this event
 "
   (ERROR "Unimplemented"))
 
@@ -2677,7 +2677,7 @@ Discrete step information for scroll and other axes.
 	not guaranteed.
 
 Arguments:
-axis::uint: axis type
+axis::enum: axis type
 discrete::int: number of steps
 "
   (ERROR "Unimplemented"))
@@ -2708,7 +2708,7 @@ Discrete high-resolution scroll information.
 	not guaranteed.
 
 Arguments:
-axis::uint: axis type
+axis::enum: axis type
 value120::int: scroll distance as fraction of 120
 "
   (ERROR "Unimplemented"))
@@ -2753,8 +2753,8 @@ Relative directional information of the entity causing the axis
 	guaranteed.
 
 Arguments:
-axis::uint: axis type
-direction::uint: physical direction relative to axis motion
+axis::enum: axis type
+direction::enum: physical direction relative to axis motion
 "
   (ERROR "Unimplemented"))
 
@@ -2905,7 +2905,7 @@ This event provides a file descriptor to the client which can be
 	the recipient, as MAP_SHARED may fail.
 
 Arguments:
-format::uint: keymap format
+format::enum: keymap format
 fd::fd: keymap file descriptor
 size::uint: keymap size, in bytes
 "
@@ -2962,7 +2962,7 @@ Arguments:
 serial::uint: serial number of the key event
 time::uint: timestamp with millisecond granularity
 key::uint: key that produced the event
-state::uint: physical state of the key
+state::enum: physical state of the key
 "
   (ERROR "Unimplemented"))
 
@@ -3271,10 +3271,10 @@ x::int: x position within the global compositor space
 y::int: y position within the global compositor space
 physical_width::int: width in millimeters of the output
 physical_height::int: height in millimeters of the output
-subpixel::uint: subpixel orientation of the output
+subpixel::enum: subpixel orientation of the output
 make::string: textual description of the manufacturer
 model::string: textual description of the model
-transform::uint: transform that maps framebuffer to output
+transform::enum: transform that maps framebuffer to output
 "
   (ERROR "Unimplemented"))
 
@@ -3316,7 +3316,7 @@ The mode event describes an available mode for the output.
 	refresh rate or the size.
 
 Arguments:
-flags::uint: bitfield of mode flags
+flags::enum: bitfield of mode flags
 width::int: width of the mode in hardware units
 height::int: height of the mode in hardware units
 refresh::int: vertical refresh rate in mHz

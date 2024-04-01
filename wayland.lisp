@@ -42,11 +42,12 @@
   (break) ;; TODO: Breaking here - since i'm pretty sure this ain't gonna work
   (unix-sockets::ancillary-fd stream))
 
-(defun read-enum (stream)
-  (let ((num (read-n-as-number stream 4)))
-    ;; TODO: Maybe - depending on the protocol - it can also be made to be either list or single value
-    (error "Turn this num into a list of symbols showcasing which enum values are set")))
-
+(defun read-enum (stream enum-ref)
+  (let* ((num (read-n-as-number stream 4))
+	 (package-name (car enum-ref))
+	 (enum-name (cadr enum-ref))
+	 (enum (find-symbol (format nil "~A::~A" package-name enum-name))))
+    (funcall enum num)))
 
 ;; NOTE: For the wire protocol details, see:
 ;; https://wayland-book.com/protocol-design/wire-protocol.html
@@ -58,6 +59,7 @@
   (declare (ignore message-size))
   (let ((args nil))
     (dolist (arg-type arg-types)
+      (when (listp arg-type) (setf arg-type (first arg-type)))
       (push
        (case arg-type
 	 (int (read-int stream))
@@ -76,7 +78,8 @@
 	 ;; TODO: Need to add the enum parsing for the protocol generator thing
 	 ;; NOTE: Basically an integer, but needs to be matched against the request enum values
 	 ;; Since it could be a bitmap of the enum values (more than one flag active)
-	 (enum (error "Enum parsing from wayland message not implemented")))
+	 (enum (read-enum stream (cadr arg-type)))
+	 (t (error "Unknown arg-type")))
        args))
     args))
 

@@ -81,11 +81,14 @@
 	   :is-bitfield (bitfield-of xml) :entries (enum-entries xml)
 	   :description (get-description xml)))
 
+(defun make-enum-ref (enum-name) (if enum-name (str:split "." enum-name) nil))
+
 (defun make-arg (arg-sxml)
-  (let ((enum (enum-of-type arg-sxml)))
+  (let ((enum (make-enum-ref (enum-of-type arg-sxml))))
+    (print enum)
     (make-instance 'arg
        :name (name-of arg-sxml)
-       :arg-type (if enum "uint" (type-of-arg arg-sxml))
+       :arg-type (if enum "enum" (type-of-arg arg-sxml))
        :interface (interface-of arg-sxml)
        :nullable (allow-null arg-sxml)
        :summary (summary-of arg-sxml)
