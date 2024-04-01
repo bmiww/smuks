@@ -25,7 +25,7 @@
 			 ,@(mapcar 'do-arg (args event)))
      (let ((opcode (match-event-opcode obj ,(symbolize-event event))))
        ,(format nil ";; ~a" (description event))
-       (smuks/wayland ))))
+       (error "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))))
 
 (defun do-request (interface request)
   `(defmethod ,(req-name request) ((obj ,(read-from-string interface))

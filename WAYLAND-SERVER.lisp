@@ -48,8 +48,9 @@ The core global object.  This is a special singleton object.  It
       is used for internal Wayland protocol features.
 "))
 
-(DEFMETHOD EVT-ERROR ((OBJ WL_DISPLAY) OBJECT_ID CODE MESSAGE)
-  ";; fatal error event
+(DEFMETHOD EVT-ERROR ((OBJ WL_DISPLAY) STREAM OBJECT_ID CODE MESSAGE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-ERROR)))
+    ";; fatal error event
 
 The error event is sent out when a fatal (non-recoverable)
 	error has occurred.  The object_id argument is the object
@@ -64,10 +65,11 @@ object_id::object: object where the error occurred
 code::uint: error code
 message::string: error description
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-DELETE_ID ((OBJ WL_DISPLAY) ID)
-  ";; acknowledge object ID deletion
+(DEFMETHOD EVT-DELETE_ID ((OBJ WL_DISPLAY) STREAM ID)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-DELETE_ID)))
+    ";; acknowledge object ID deletion
 
 This event is used internally by the object ID management
 	logic. When a client deletes an object that it had created,
@@ -78,7 +80,7 @@ This event is used internally by the object ID management
 Arguments:
 id::uint: deleted object ID
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-SYNC ((OBJ WL_DISPLAY) CALLBACK)
   ";; asynchronous roundtrip
@@ -130,8 +132,8 @@ These errors are global and can be emitted in response to any
     (2 'NO_MEMORY)
     (3 'IMPLEMENTATION)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DISPLAY) OPCODE)
-  (NTH OPCODE '(EVT-ERROR EVT-DELETE_ID)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DISPLAY) EVENT)
+  (CASE EVENT (EVT-ERROR 0) (EVT-DELETE_ID 1)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_DISPLAY) OPCODE)
   (NTH OPCODE '(REQ-SYNC REQ-GET_REGISTRY)))
@@ -170,8 +172,9 @@ The singleton global registry object.  The server has a number of
       the object.
 "))
 
-(DEFMETHOD EVT-GLOBAL ((OBJ WL_REGISTRY) NAME INTERFACE VERSION)
-  ";; announce global object
+(DEFMETHOD EVT-GLOBAL ((OBJ WL_REGISTRY) STREAM NAME INTERFACE VERSION)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-GLOBAL)))
+    ";; announce global object
 
 Notify the client of global objects.
 
@@ -184,10 +187,11 @@ name::uint: numeric name of the global object
 interface::string: interface implemented by the object
 version::uint: interface version
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-GLOBAL_REMOVE ((OBJ WL_REGISTRY) NAME)
-  ";; announce removal of global object
+(DEFMETHOD EVT-GLOBAL_REMOVE ((OBJ WL_REGISTRY) STREAM NAME)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-GLOBAL_REMOVE)))
+    ";; announce removal of global object
 
 Notify the client of removed global objects.
 
@@ -203,7 +207,7 @@ Notify the client of removed global objects.
 Arguments:
 name::uint: numeric name of the global object
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-BIND ((OBJ WL_REGISTRY) NAME ID)
   ";; bind an object to the display
@@ -217,8 +221,8 @@ id::new_id: bounded object
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_REGISTRY) OPCODE)
-  (NTH OPCODE '(EVT-GLOBAL EVT-GLOBAL_REMOVE)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_REGISTRY) EVENT)
+  (CASE EVENT (EVT-GLOBAL 0) (EVT-GLOBAL_REMOVE 1)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_REGISTRY) OPCODE)
   (NTH OPCODE '(REQ-BIND)))
@@ -242,18 +246,19 @@ Clients can handle the 'done' event to get notified when
       factory interfaces, the wl_callback interface is frozen at version 1.
 "))
 
-(DEFMETHOD EVT-DONE ((OBJ WL_CALLBACK) CALLBACK_DATA)
-  ";; done event
+(DEFMETHOD EVT-DONE ((OBJ WL_CALLBACK) STREAM CALLBACK_DATA)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-DONE)))
+    ";; done event
 
 Notify the client when the related request is done.
 
 Arguments:
 callback_data::uint: request-specific data for the callback
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_CALLBACK) OPCODE)
-  (NTH OPCODE '(EVT-DONE)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_CALLBACK) EVENT)
+  (CASE EVENT (EVT-DONE 0)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_CALLBACK) OPCODE) (NTH OPCODE 'NIL))
 
@@ -294,7 +299,7 @@ id::new_id: the new region
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_COMPOSITOR) OPCODE) (NTH OPCODE 'NIL))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_COMPOSITOR) EVENT) (CASE EVENT))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_COMPOSITOR) OPCODE)
   (NTH OPCODE '(REQ-CREATE_SURFACE REQ-CREATE_REGION)))
@@ -376,7 +381,7 @@ size::int: new size of the pool, in bytes
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHM_POOL) OPCODE) (NTH OPCODE 'NIL))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHM_POOL) EVENT) (CASE EVENT))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_SHM_POOL) OPCODE)
   (NTH OPCODE '(REQ-CREATE_BUFFER REQ-DESTROY REQ-RESIZE)))
@@ -404,8 +409,9 @@ A singleton global object that provides support for shared
       that can be used for buffers.
 "))
 
-(DEFMETHOD EVT-FORMAT ((OBJ WL_SHM) FORMAT)
-  ";; pixel format description
+(DEFMETHOD EVT-FORMAT ((OBJ WL_SHM) STREAM FORMAT)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-FORMAT)))
+    ";; pixel format description
 
 Informs the client about a valid pixel format that
 	can be used for buffers. Known formats include
@@ -414,7 +420,7 @@ Informs the client about a valid pixel format that
 Arguments:
 format::enum: buffer pixel format
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-CREATE_POOL ((OBJ WL_SHM) ID FD SIZE)
   ";; create a shm pool
@@ -565,7 +571,7 @@ This describes the memory layout of an individual pixel.
     (942953025 'ARGB16161616)
     (942948929 'ABGR16161616)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHM) OPCODE) (NTH OPCODE '(EVT-FORMAT)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHM) EVENT) (CASE EVENT (EVT-FORMAT 0)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_SHM) OPCODE)
   (NTH OPCODE '(REQ-CREATE_POOL)))
@@ -597,8 +603,9 @@ A buffer provides the content for a wl_surface. Buffers are
       factory interfaces, the wl_buffer interface is frozen at version 1.
 "))
 
-(DEFMETHOD EVT-RELEASE ((OBJ WL_BUFFER))
-  ";; compositor releases buffer
+(DEFMETHOD EVT-RELEASE ((OBJ WL_BUFFER) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-RELEASE)))
+    ";; compositor releases buffer
 
 Sent when this wl_buffer is no longer used by the compositor.
 	The client is now free to reuse or destroy this buffer and its
@@ -613,7 +620,7 @@ Sent when this wl_buffer is no longer used by the compositor.
 	wl_surface contents, e.g. as a GL texture. This is an important
 	optimization for GL(ES) compositors with wl_shm clients.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-DESTROY ((OBJ WL_BUFFER))
   ";; destroy a buffer
@@ -625,8 +632,8 @@ Destroy a buffer. If and how you need to release the backing
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_BUFFER) OPCODE)
-  (NTH OPCODE '(EVT-RELEASE)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_BUFFER) EVENT)
+  (CASE EVENT (EVT-RELEASE 0)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_BUFFER) OPCODE)
   (NTH OPCODE '(REQ-DESTROY)))
@@ -659,8 +666,9 @@ A wl_data_offer represents a piece of data offered for transfer
       data directly from the source client.
 "))
 
-(DEFMETHOD EVT-OFFER ((OBJ WL_DATA_OFFER) MIME_TYPE)
-  ";; advertise offered mime type
+(DEFMETHOD EVT-OFFER ((OBJ WL_DATA_OFFER) STREAM MIME_TYPE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-OFFER)))
+    ";; advertise offered mime type
 
 Sent immediately after creating the wl_data_offer object.  One
 	event per offered mime type.
@@ -668,10 +676,11 @@ Sent immediately after creating the wl_data_offer object.  One
 Arguments:
 mime_type::string: offered mime type
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-SOURCE_ACTIONS ((OBJ WL_DATA_OFFER) SOURCE_ACTIONS)
-  ";; notify the source-side available actions
+(DEFMETHOD EVT-SOURCE_ACTIONS ((OBJ WL_DATA_OFFER) STREAM SOURCE_ACTIONS)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-SOURCE_ACTIONS)))
+    ";; notify the source-side available actions
 
 This event indicates the actions offered by the data source. It
 	will be sent immediately after creating the wl_data_offer object,
@@ -681,10 +690,11 @@ This event indicates the actions offered by the data source. It
 Arguments:
 source_actions::enum: actions offered by the data source
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-ACTION ((OBJ WL_DATA_OFFER) DND_ACTION)
-  ";; notify the selected action
+(DEFMETHOD EVT-ACTION ((OBJ WL_DATA_OFFER) STREAM DND_ACTION)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-ACTION)))
+    ";; notify the selected action
 
 This event indicates the action selected by the compositor after
 	matching the source/destination side actions. Only one action (or
@@ -725,7 +735,7 @@ This event indicates the action selected by the compositor after
 Arguments:
 dnd_action::enum: action selected by the compositor
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-ACCEPT ((OBJ WL_DATA_OFFER) SERIAL MIME_TYPE)
   ";; accept one of the offered mime types
@@ -852,8 +862,8 @@ preferred_action::enum: action preferred by the destination client
     (2 'INVALID_ACTION)
     (3 'INVALID_OFFER)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_OFFER) OPCODE)
-  (NTH OPCODE '(EVT-OFFER EVT-SOURCE_ACTIONS EVT-ACTION)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_OFFER) EVENT)
+  (CASE EVENT (EVT-OFFER 0) (EVT-SOURCE_ACTIONS 1) (EVT-ACTION 2)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_DATA_OFFER) OPCODE)
   (NTH OPCODE '(REQ-ACCEPT REQ-RECEIVE REQ-DESTROY REQ-FINISH REQ-SET_ACTIONS)))
@@ -889,8 +899,9 @@ The wl_data_source object is the source side of a wl_data_offer.
       to requests to transfer the data.
 "))
 
-(DEFMETHOD EVT-TARGET ((OBJ WL_DATA_SOURCE) MIME_TYPE)
-  ";; a target accepts an offered mime type
+(DEFMETHOD EVT-TARGET ((OBJ WL_DATA_SOURCE) STREAM MIME_TYPE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-TARGET)))
+    ";; a target accepts an offered mime type
 
 Sent when a target accepts pointer_focus or motion events.  If
 	a target does not accept any of the offered types, type is NULL.
@@ -900,10 +911,11 @@ Sent when a target accepts pointer_focus or motion events.  If
 Arguments:
 mime_type::string: mime type accepted by the target
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-SEND ((OBJ WL_DATA_SOURCE) MIME_TYPE FD)
-  ";; send the data
+(DEFMETHOD EVT-SEND ((OBJ WL_DATA_SOURCE) STREAM MIME_TYPE FD)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-SEND)))
+    ";; send the data
 
 Request for data from the client.  Send the data as the
 	specified mime type over the passed file descriptor, then
@@ -913,10 +925,11 @@ Arguments:
 mime_type::string: mime type for the data
 fd::fd: file descriptor for the data
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-CANCELLED ((OBJ WL_DATA_SOURCE))
-  ";; selection was cancelled
+(DEFMETHOD EVT-CANCELLED ((OBJ WL_DATA_SOURCE) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-CANCELLED)))
+    ";; selection was cancelled
 
 This data source is no longer valid. There are several reasons why
 	this could happen:
@@ -939,10 +952,11 @@ This data source is no longer valid. There are several reasons why
 	only be emitted if the data source was replaced by another data
 	source.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-DND_DROP_PERFORMED ((OBJ WL_DATA_SOURCE))
-  ";; the drag-and-drop operation physically finished
+(DEFMETHOD EVT-DND_DROP_PERFORMED ((OBJ WL_DATA_SOURCE) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-DND_DROP_PERFORMED)))
+    ";; the drag-and-drop operation physically finished
 
 The user performed the drop action. This event does not indicate
 	acceptance, wl_data_source.cancelled may still be emitted afterwards
@@ -954,10 +968,11 @@ The user performed the drop action. This event does not indicate
 	Note that the data_source may still be used in the future and should
 	not be destroyed here.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-DND_FINISHED ((OBJ WL_DATA_SOURCE))
-  ";; the drag-and-drop operation concluded
+(DEFMETHOD EVT-DND_FINISHED ((OBJ WL_DATA_SOURCE) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-DND_FINISHED)))
+    ";; the drag-and-drop operation concluded
 
 The drop destination finished interoperating with this data
 	source, so the client is now free to destroy this data source and
@@ -966,10 +981,11 @@ The drop destination finished interoperating with this data
 	If the action used to perform the operation was \"move\", the
 	source can now delete the transferred data.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-ACTION ((OBJ WL_DATA_SOURCE) DND_ACTION)
-  ";; notify the selected action
+(DEFMETHOD EVT-ACTION ((OBJ WL_DATA_SOURCE) STREAM DND_ACTION)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-ACTION)))
+    ";; notify the selected action
 
 This event indicates the action selected by the compositor after
 	matching the source/destination side actions. Only one action (or
@@ -1000,7 +1016,7 @@ This event indicates the action selected by the compositor after
 Arguments:
 dnd_action::enum: action selected by the compositor
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-OFFER ((OBJ WL_DATA_SOURCE) MIME_TYPE)
   ";; add an offered mime type
@@ -1047,10 +1063,14 @@ dnd_actions::enum: actions supported by the data source
   ";; "
   (CASE VALUE (0 'INVALID_ACTION_MASK) (1 'INVALID_SOURCE)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_SOURCE) OPCODE)
-  (NTH OPCODE
-       '(EVT-TARGET EVT-SEND EVT-CANCELLED EVT-DND_DROP_PERFORMED
-         EVT-DND_FINISHED EVT-ACTION)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_SOURCE) EVENT)
+  (CASE EVENT
+    (EVT-TARGET 0)
+    (EVT-SEND 1)
+    (EVT-CANCELLED 2)
+    (EVT-DND_DROP_PERFORMED 3)
+    (EVT-DND_FINISHED 4)
+    (EVT-ACTION 5)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_DATA_SOURCE) OPCODE)
   (NTH OPCODE '(REQ-OFFER REQ-DESTROY REQ-SET_ACTIONS)))
@@ -1084,8 +1104,9 @@ There is one wl_data_device per seat which can be obtained
       mechanisms such as copy-and-paste and drag-and-drop.
 "))
 
-(DEFMETHOD EVT-DATA_OFFER ((OBJ WL_DATA_DEVICE) ID)
-  ";; introduce a new wl_data_offer
+(DEFMETHOD EVT-DATA_OFFER ((OBJ WL_DATA_DEVICE) STREAM ID)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-DATA_OFFER)))
+    ";; introduce a new wl_data_offer
 
 The data_offer event introduces a new wl_data_offer object,
 	which will subsequently be used in either the
@@ -1098,10 +1119,11 @@ The data_offer event introduces a new wl_data_offer object,
 Arguments:
 id::new_id: the new data_offer object
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-ENTER ((OBJ WL_DATA_DEVICE) SERIAL SURFACE X Y ID)
-  ";; initiate drag-and-drop session
+(DEFMETHOD EVT-ENTER ((OBJ WL_DATA_DEVICE) STREAM SERIAL SURFACE X Y ID)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-ENTER)))
+    ";; initiate drag-and-drop session
 
 This event is sent when an active drag-and-drop pointer enters
 	a surface owned by the client.  The position of the pointer at
@@ -1115,19 +1137,21 @@ x::fixed: surface-local x coordinate
 y::fixed: surface-local y coordinate
 id::object: source data_offer object
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-LEAVE ((OBJ WL_DATA_DEVICE))
-  ";; end drag-and-drop session
+(DEFMETHOD EVT-LEAVE ((OBJ WL_DATA_DEVICE) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-LEAVE)))
+    ";; end drag-and-drop session
 
 This event is sent when the drag-and-drop pointer leaves the
 	surface and the session ends.  The client must destroy the
 	wl_data_offer introduced at enter time at this point.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-MOTION ((OBJ WL_DATA_DEVICE) TIME X Y)
-  ";; drag-and-drop session motion
+(DEFMETHOD EVT-MOTION ((OBJ WL_DATA_DEVICE) STREAM TIME X Y)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-MOTION)))
+    ";; drag-and-drop session motion
 
 This event is sent when the drag-and-drop pointer moves within
 	the currently focused surface. The new position of the pointer
@@ -1139,10 +1163,11 @@ time::uint: timestamp with millisecond granularity
 x::fixed: surface-local x coordinate
 y::fixed: surface-local y coordinate
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-DROP ((OBJ WL_DATA_DEVICE))
-  ";; end drag-and-drop session successfully
+(DEFMETHOD EVT-DROP ((OBJ WL_DATA_DEVICE) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-DROP)))
+    ";; end drag-and-drop session successfully
 
 The event is sent when a drag-and-drop operation is ended
 	because the implicit grab is removed.
@@ -1158,10 +1183,11 @@ The event is sent when a drag-and-drop operation is ended
 	wl_data_offer.set_actions request, or wl_data_offer.destroy in order
 	to cancel the operation.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-SELECTION ((OBJ WL_DATA_DEVICE) ID)
-  ";; advertise new selection
+(DEFMETHOD EVT-SELECTION ((OBJ WL_DATA_DEVICE) STREAM ID)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-SELECTION)))
+    ";; advertise new selection
 
 The selection event is sent out to notify the client of a new
 	wl_data_offer for the selection for this device.  The
@@ -1179,7 +1205,7 @@ The selection event is sent out to notify the client of a new
 Arguments:
 id::object: selection data_offer object
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-START_DRAG ((OBJ WL_DATA_DEVICE) SOURCE ORIGIN ICON SERIAL)
   ";; start drag-and-drop operation
@@ -1241,9 +1267,14 @@ This request destroys the data device.
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_DEVICE) VALUE) ";; " (CASE VALUE (0 'ROLE)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE) OPCODE)
-  (NTH OPCODE
-       '(EVT-DATA_OFFER EVT-ENTER EVT-LEAVE EVT-MOTION EVT-DROP EVT-SELECTION)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE) EVENT)
+  (CASE EVENT
+    (EVT-DATA_OFFER 0)
+    (EVT-ENTER 1)
+    (EVT-LEAVE 2)
+    (EVT-MOTION 3)
+    (EVT-DROP 4)
+    (EVT-SELECTION 5)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_DATA_DEVICE) OPCODE)
   (NTH OPCODE '(REQ-START_DRAG REQ-SET_SELECTION REQ-RELEASE)))
@@ -1329,8 +1360,7 @@ This is a bitmask of the available/preferred actions in a
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE_MANAGER) OPCODE)
-  (NTH OPCODE 'NIL))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE_MANAGER) EVENT) (CASE EVENT))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_DATA_DEVICE_MANAGER) OPCODE)
   (NTH OPCODE '(REQ-CREATE_DATA_SOURCE REQ-GET_DATA_DEVICE)))
@@ -1375,7 +1405,7 @@ surface::object: surface to be given the shell surface role
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SHELL) VALUE) ";; " (CASE VALUE (0 'ROLE)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL) OPCODE) (NTH OPCODE 'NIL))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL) EVENT) (CASE EVENT))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_SHELL) OPCODE)
   (NTH OPCODE '(REQ-GET_SHELL_SURFACE)))
@@ -1419,8 +1449,9 @@ An interface that may be implemented by a wl_surface, for
       the wl_surface object.
 "))
 
-(DEFMETHOD EVT-PING ((OBJ WL_SHELL_SURFACE) SERIAL)
-  ";; ping client
+(DEFMETHOD EVT-PING ((OBJ WL_SHELL_SURFACE) STREAM SERIAL)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-PING)))
+    ";; ping client
 
 Ping a client to check if it is receiving events and sending
 	requests. A client is expected to reply with a pong request.
@@ -1428,10 +1459,11 @@ Ping a client to check if it is receiving events and sending
 Arguments:
 serial::uint: serial number of the ping
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-CONFIGURE ((OBJ WL_SHELL_SURFACE) EDGES WIDTH HEIGHT)
-  ";; suggest resize
+(DEFMETHOD EVT-CONFIGURE ((OBJ WL_SHELL_SURFACE) STREAM EDGES WIDTH HEIGHT)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-CONFIGURE)))
+    ";; suggest resize
 
 The configure event asks the client to resize its surface.
 
@@ -1456,16 +1488,17 @@ edges::enum: how the surface was resized
 width::int: new width of the surface
 height::int: new height of the surface
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-POPUP_DONE ((OBJ WL_SHELL_SURFACE))
-  ";; popup interaction is done
+(DEFMETHOD EVT-POPUP_DONE ((OBJ WL_SHELL_SURFACE) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-POPUP_DONE)))
+    ";; popup interaction is done
 
 The popup_done event is sent out when a popup grab is broken,
 	that is, when the user clicks a surface that doesn't belong
 	to the client owning the popup surface.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-PONG ((OBJ WL_SHELL_SURFACE) SERIAL)
   ";; respond to a ping event
@@ -1710,8 +1743,8 @@ Hints to indicate to the compositor how to deal with a conflict
 "
   (CASE VALUE (0 'DEFAULT) (1 'SCALE) (2 'DRIVER) (3 'FILL)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL_SURFACE) OPCODE)
-  (NTH OPCODE '(EVT-PING EVT-CONFIGURE EVT-POPUP_DONE)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL_SURFACE) EVENT)
+  (CASE EVENT (EVT-PING 0) (EVT-CONFIGURE 1) (EVT-POPUP_DONE 2)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_SHELL_SURFACE) OPCODE)
   (NTH OPCODE
@@ -1795,8 +1828,9 @@ A surface is a rectangular area that may be displayed on zero
       switching is not allowed).
 "))
 
-(DEFMETHOD EVT-ENTER ((OBJ WL_SURFACE) OUTPUT)
-  ";; surface enters an output
+(DEFMETHOD EVT-ENTER ((OBJ WL_SURFACE) STREAM OUTPUT)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-ENTER)))
+    ";; surface enters an output
 
 This is emitted whenever a surface's creation, movement, or resizing
 	results in some part of it being within the scanout region of an
@@ -1807,10 +1841,11 @@ This is emitted whenever a surface's creation, movement, or resizing
 Arguments:
 output::object: output entered by the surface
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-LEAVE ((OBJ WL_SURFACE) OUTPUT)
-  ";; surface leaves an output
+(DEFMETHOD EVT-LEAVE ((OBJ WL_SURFACE) STREAM OUTPUT)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-LEAVE)))
+    ";; surface leaves an output
 
 This is emitted whenever a surface's creation, movement, or resizing
 	results in it no longer having any part of it within the scanout region
@@ -1825,10 +1860,11 @@ This is emitted whenever a surface's creation, movement, or resizing
 Arguments:
 output::object: output left by the surface
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-PREFERRED_BUFFER_SCALE ((OBJ WL_SURFACE) FACTOR)
-  ";; preferred buffer scale for the surface
+(DEFMETHOD EVT-PREFERRED_BUFFER_SCALE ((OBJ WL_SURFACE) STREAM FACTOR)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-PREFERRED_BUFFER_SCALE)))
+    ";; preferred buffer scale for the surface
 
 This event indicates the preferred buffer scale for this surface. It is
 	sent whenever the compositor's preference changes.
@@ -1841,10 +1877,11 @@ This event indicates the preferred buffer scale for this surface. It is
 Arguments:
 factor::int: preferred scaling factor
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-PREFERRED_BUFFER_TRANSFORM ((OBJ WL_SURFACE) TRANSFORM)
-  ";; preferred buffer transform for the surface
+(DEFMETHOD EVT-PREFERRED_BUFFER_TRANSFORM ((OBJ WL_SURFACE) STREAM TRANSFORM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-PREFERRED_BUFFER_TRANSFORM)))
+    ";; preferred buffer transform for the surface
 
 This event indicates the preferred buffer transform for this surface.
 	It is sent whenever the compositor's preference changes.
@@ -1856,7 +1893,7 @@ This event indicates the preferred buffer transform for this surface.
 Arguments:
 transform::enum: preferred transform
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-DESTROY ((OBJ WL_SURFACE))
   ";; delete surface
@@ -2242,10 +2279,12 @@ These errors can be emitted in response to wl_surface requests.
     (3 'INVALID_OFFSET)
     (4 'DEFUNCT_ROLE_OBJECT)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SURFACE) OPCODE)
-  (NTH OPCODE
-       '(EVT-ENTER EVT-LEAVE EVT-PREFERRED_BUFFER_SCALE
-         EVT-PREFERRED_BUFFER_TRANSFORM)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SURFACE) EVENT)
+  (CASE EVENT
+    (EVT-ENTER 0)
+    (EVT-LEAVE 1)
+    (EVT-PREFERRED_BUFFER_SCALE 2)
+    (EVT-PREFERRED_BUFFER_TRANSFORM 3)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_SURFACE) OPCODE)
   (NTH OPCODE
@@ -2279,8 +2318,9 @@ A seat is a group of keyboards, pointer and touch devices. This
       maintains a keyboard focus and a pointer focus.
 "))
 
-(DEFMETHOD EVT-CAPABILITIES ((OBJ WL_SEAT) CAPABILITIES)
-  ";; seat capabilities changed
+(DEFMETHOD EVT-CAPABILITIES ((OBJ WL_SEAT) STREAM CAPABILITIES)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-CAPABILITIES)))
+    ";; seat capabilities changed
 
 This is emitted whenever a seat gains or loses the pointer,
 	keyboard or touch capabilities.  The argument is a capability
@@ -2310,10 +2350,11 @@ This is emitted whenever a seat gains or loses the pointer,
 Arguments:
 capabilities::enum: capabilities of the seat
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-NAME ((OBJ WL_SEAT) NAME)
-  ";; unique identifier for this seat
+(DEFMETHOD EVT-NAME ((OBJ WL_SEAT) STREAM NAME)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-NAME)))
+    ";; unique identifier for this seat
 
 In a multi-seat configuration the seat name can be used by clients to
 	help identify which physical devices the seat represents.
@@ -2335,7 +2376,7 @@ In a multi-seat configuration the seat name can be used by clients to
 Arguments:
 name::string: seat identifier
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-GET_POINTER ((OBJ WL_SEAT) ID)
   ";; return pointer object
@@ -2416,8 +2457,8 @@ These errors can be emitted in response to wl_seat requests.
 "
   (CASE VALUE (0 'MISSING_CAPABILITY)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SEAT) OPCODE)
-  (NTH OPCODE '(EVT-CAPABILITIES EVT-NAME)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SEAT) EVENT)
+  (CASE EVENT (EVT-CAPABILITIES 0) (EVT-NAME 1)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_SEAT) OPCODE)
   (NTH OPCODE '(REQ-GET_POINTER REQ-GET_KEYBOARD REQ-GET_TOUCH REQ-RELEASE)))
@@ -2457,8 +2498,10 @@ The wl_pointer interface represents one or more input devices,
       and scrolling.
 "))
 
-(DEFMETHOD EVT-ENTER ((OBJ WL_POINTER) SERIAL SURFACE SURFACE_X SURFACE_Y)
-  ";; enter event
+(DEFMETHOD EVT-ENTER
+           ((OBJ WL_POINTER) STREAM SERIAL SURFACE SURFACE_X SURFACE_Y)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-ENTER)))
+    ";; enter event
 
 Notification that this seat's pointer is focused on a certain
 	surface.
@@ -2473,10 +2516,11 @@ surface::object: surface entered by the pointer
 surface_x::fixed: surface-local x coordinate
 surface_y::fixed: surface-local y coordinate
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-LEAVE ((OBJ WL_POINTER) SERIAL SURFACE)
-  ";; leave event
+(DEFMETHOD EVT-LEAVE ((OBJ WL_POINTER) STREAM SERIAL SURFACE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-LEAVE)))
+    ";; leave event
 
 Notification that this seat's pointer is no longer focused on
 	a certain surface.
@@ -2488,10 +2532,11 @@ Arguments:
 serial::uint: serial number of the leave event
 surface::object: surface left by the pointer
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-MOTION ((OBJ WL_POINTER) TIME SURFACE_X SURFACE_Y)
-  ";; pointer motion event
+(DEFMETHOD EVT-MOTION ((OBJ WL_POINTER) STREAM TIME SURFACE_X SURFACE_Y)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-MOTION)))
+    ";; pointer motion event
 
 Notification of pointer location change. The arguments
 	surface_x and surface_y are the location relative to the
@@ -2502,10 +2547,11 @@ time::uint: timestamp with millisecond granularity
 surface_x::fixed: surface-local x coordinate
 surface_y::fixed: surface-local y coordinate
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-BUTTON ((OBJ WL_POINTER) SERIAL TIME BUTTON STATE)
-  ";; pointer button event
+(DEFMETHOD EVT-BUTTON ((OBJ WL_POINTER) STREAM SERIAL TIME BUTTON STATE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-BUTTON)))
+    ";; pointer button event
 
 Mouse button click and release notifications.
 
@@ -2528,10 +2574,11 @@ time::uint: timestamp with millisecond granularity
 button::uint: button that produced the event
 state::enum: physical state of the button
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-AXIS ((OBJ WL_POINTER) TIME AXIS VALUE)
-  ";; axis event
+(DEFMETHOD EVT-AXIS ((OBJ WL_POINTER) STREAM TIME AXIS VALUE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-AXIS)))
+    ";; axis event
 
 Scroll and other axis notifications.
 
@@ -2555,10 +2602,11 @@ time::uint: timestamp with millisecond granularity
 axis::enum: axis type
 value::fixed: length of vector in surface-local coordinate space
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-FRAME ((OBJ WL_POINTER))
-  ";; end of a pointer event sequence
+(DEFMETHOD EVT-FRAME ((OBJ WL_POINTER) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-FRAME)))
+    ";; end of a pointer event sequence
 
 Indicates the end of a set of events that logically belong together.
 	A client is expected to accumulate the data in all events within the
@@ -2595,10 +2643,11 @@ Indicates the end of a set of events that logically belong together.
 	wl_pointer.enter event being split across multiple wl_pointer.frame
 	groups.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-AXIS_SOURCE ((OBJ WL_POINTER) AXIS_SOURCE)
-  ";; axis source event
+(DEFMETHOD EVT-AXIS_SOURCE ((OBJ WL_POINTER) STREAM AXIS_SOURCE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-AXIS_SOURCE)))
+    ";; axis source event
 
 Source information for scroll and other axes.
 
@@ -2629,10 +2678,11 @@ Source information for scroll and other axes.
 Arguments:
 axis_source::enum: source of the axis event
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-AXIS_STOP ((OBJ WL_POINTER) TIME AXIS)
-  ";; axis stop event
+(DEFMETHOD EVT-AXIS_STOP ((OBJ WL_POINTER) STREAM TIME AXIS)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-AXIS_STOP)))
+    ";; axis stop event
 
 Stop notification for scroll and other axes.
 
@@ -2653,10 +2703,11 @@ Arguments:
 time::uint: timestamp with millisecond granularity
 axis::enum: the axis stopped with this event
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-AXIS_DISCRETE ((OBJ WL_POINTER) AXIS DISCRETE)
-  ";; axis click event
+(DEFMETHOD EVT-AXIS_DISCRETE ((OBJ WL_POINTER) STREAM AXIS DISCRETE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-AXIS_DISCRETE)))
+    ";; axis click event
 
 Discrete step information for scroll and other axes.
 
@@ -2693,10 +2744,11 @@ Arguments:
 axis::enum: axis type
 discrete::int: number of steps
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-AXIS_VALUE120 ((OBJ WL_POINTER) AXIS VALUE120)
-  ";; axis high-resolution scroll event
+(DEFMETHOD EVT-AXIS_VALUE120 ((OBJ WL_POINTER) STREAM AXIS VALUE120)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-AXIS_VALUE120)))
+    ";; axis high-resolution scroll event
 
 Discrete high-resolution scroll information.
 
@@ -2724,10 +2776,11 @@ Arguments:
 axis::enum: axis type
 value120::int: scroll distance as fraction of 120
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-AXIS_RELATIVE_DIRECTION ((OBJ WL_POINTER) AXIS DIRECTION)
-  ";; axis relative physical direction event
+(DEFMETHOD EVT-AXIS_RELATIVE_DIRECTION ((OBJ WL_POINTER) STREAM AXIS DIRECTION)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-AXIS_RELATIVE_DIRECTION)))
+    ";; axis relative physical direction event
 
 Relative directional information of the entity causing the axis
 	motion.
@@ -2769,7 +2822,7 @@ Arguments:
 axis::enum: axis type
 direction::enum: physical direction relative to axis motion
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-SET_CURSOR ((OBJ WL_POINTER) SERIAL SURFACE HOTSPOT_X HOTSPOT_Y)
   ";; set the pointer surface
@@ -2874,11 +2927,19 @@ This specifies the direction of the physical motion that caused a
 "
   (CASE VALUE (0 'IDENTICAL) (1 'INVERTED)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_POINTER) OPCODE)
-  (NTH OPCODE
-       '(EVT-ENTER EVT-LEAVE EVT-MOTION EVT-BUTTON EVT-AXIS EVT-FRAME
-         EVT-AXIS_SOURCE EVT-AXIS_STOP EVT-AXIS_DISCRETE EVT-AXIS_VALUE120
-         EVT-AXIS_RELATIVE_DIRECTION)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_POINTER) EVENT)
+  (CASE EVENT
+    (EVT-ENTER 0)
+    (EVT-LEAVE 1)
+    (EVT-MOTION 2)
+    (EVT-BUTTON 3)
+    (EVT-AXIS 4)
+    (EVT-FRAME 5)
+    (EVT-AXIS_SOURCE 6)
+    (EVT-AXIS_STOP 7)
+    (EVT-AXIS_DISCRETE 8)
+    (EVT-AXIS_VALUE120 9)
+    (EVT-AXIS_RELATIVE_DIRECTION 10)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_POINTER) OPCODE)
   (NTH OPCODE '(REQ-SET_CURSOR REQ-RELEASE)))
@@ -2906,8 +2967,9 @@ The wl_keyboard interface represents one or more keyboards
       associated with a seat.
 "))
 
-(DEFMETHOD EVT-KEYMAP ((OBJ WL_KEYBOARD) FORMAT FD SIZE)
-  ";; keyboard mapping
+(DEFMETHOD EVT-KEYMAP ((OBJ WL_KEYBOARD) STREAM FORMAT FD SIZE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-KEYMAP)))
+    ";; keyboard mapping
 
 This event provides a file descriptor to the client which can be
 	memory-mapped in read-only mode to provide a keyboard mapping
@@ -2921,10 +2983,11 @@ format::enum: keymap format
 fd::fd: keymap file descriptor
 size::uint: keymap size, in bytes
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-ENTER ((OBJ WL_KEYBOARD) SERIAL SURFACE KEYS)
-  ";; enter event
+(DEFMETHOD EVT-ENTER ((OBJ WL_KEYBOARD) STREAM SERIAL SURFACE KEYS)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-ENTER)))
+    ";; enter event
 
 Notification that this seat's keyboard focus is on a certain
 	surface.
@@ -2937,10 +3000,11 @@ serial::uint: serial number of the enter event
 surface::object: surface gaining keyboard focus
 keys::array: the currently pressed keys
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-LEAVE ((OBJ WL_KEYBOARD) SERIAL SURFACE)
-  ";; leave event
+(DEFMETHOD EVT-LEAVE ((OBJ WL_KEYBOARD) STREAM SERIAL SURFACE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-LEAVE)))
+    ";; leave event
 
 Notification that this seat's keyboard focus is no longer on
 	a certain surface.
@@ -2955,10 +3019,11 @@ Arguments:
 serial::uint: serial number of the leave event
 surface::object: surface that lost keyboard focus
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-KEY ((OBJ WL_KEYBOARD) SERIAL TIME KEY STATE)
-  ";; key event
+(DEFMETHOD EVT-KEY ((OBJ WL_KEYBOARD) STREAM SERIAL TIME KEY STATE)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-KEY)))
+    ";; key event
 
 A key was pressed or released.
 	The time argument is a timestamp with millisecond
@@ -2976,12 +3041,13 @@ time::uint: timestamp with millisecond granularity
 key::uint: key that produced the event
 state::enum: physical state of the key
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD EVT-MODIFIERS
-           ((OBJ WL_KEYBOARD) SERIAL MODS_DEPRESSED MODS_LATCHED MODS_LOCKED
-            GROUP)
-  ";; modifier and group state
+           ((OBJ WL_KEYBOARD) STREAM SERIAL MODS_DEPRESSED MODS_LATCHED
+            MODS_LOCKED GROUP)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-MODIFIERS)))
+    ";; modifier and group state
 
 Notifies clients that the modifier and/or group state has
 	changed, and it should update its local state.
@@ -2993,10 +3059,11 @@ mods_latched::uint: latched modifiers
 mods_locked::uint: locked modifiers
 group::uint: keyboard layout
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-REPEAT_INFO ((OBJ WL_KEYBOARD) RATE DELAY)
-  ";; repeat rate and delay
+(DEFMETHOD EVT-REPEAT_INFO ((OBJ WL_KEYBOARD) STREAM RATE DELAY)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-REPEAT_INFO)))
+    ";; repeat rate and delay
 
 Informs the client about the keyboard's repeat rate and delay.
 
@@ -3015,7 +3082,7 @@ Arguments:
 rate::int: the rate of repeating keys in characters per second
 delay::int: delay in milliseconds since key down until repeating starts
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-RELEASE ((OBJ WL_KEYBOARD))
   ";; release the keyboard object
@@ -3039,9 +3106,14 @@ Describes the physical state of a key that produced the key event.
 "
   (CASE VALUE (0 'RELEASED) (1 'PRESSED)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_KEYBOARD) OPCODE)
-  (NTH OPCODE
-       '(EVT-KEYMAP EVT-ENTER EVT-LEAVE EVT-KEY EVT-MODIFIERS EVT-REPEAT_INFO)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_KEYBOARD) EVENT)
+  (CASE EVENT
+    (EVT-KEYMAP 0)
+    (EVT-ENTER 1)
+    (EVT-LEAVE 2)
+    (EVT-KEY 3)
+    (EVT-MODIFIERS 4)
+    (EVT-REPEAT_INFO 5)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_KEYBOARD) OPCODE)
   (NTH OPCODE '(REQ-RELEASE)))
@@ -3075,8 +3147,9 @@ The wl_touch interface represents a touchscreen
       contact point can be identified by the ID of the sequence.
 "))
 
-(DEFMETHOD EVT-DOWN ((OBJ WL_TOUCH) SERIAL TIME SURFACE ID X Y)
-  ";; touch down event and beginning of a touch sequence
+(DEFMETHOD EVT-DOWN ((OBJ WL_TOUCH) STREAM SERIAL TIME SURFACE ID X Y)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-DOWN)))
+    ";; touch down event and beginning of a touch sequence
 
 A new touch point has appeared on the surface. This touch point is
 	assigned a unique ID. Future events from this touch point reference
@@ -3091,10 +3164,11 @@ id::int: the unique ID of this touch point
 x::fixed: surface-local x coordinate
 y::fixed: surface-local y coordinate
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-UP ((OBJ WL_TOUCH) SERIAL TIME ID)
-  ";; end of a touch event sequence
+(DEFMETHOD EVT-UP ((OBJ WL_TOUCH) STREAM SERIAL TIME ID)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-UP)))
+    ";; end of a touch event sequence
 
 The touch point has disappeared. No further events will be sent for
 	this touch point and the touch point's ID is released and may be
@@ -3105,10 +3179,11 @@ serial::uint: serial number of the touch up event
 time::uint: timestamp with millisecond granularity
 id::int: the unique ID of this touch point
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-MOTION ((OBJ WL_TOUCH) TIME ID X Y)
-  ";; update of touch point coordinates
+(DEFMETHOD EVT-MOTION ((OBJ WL_TOUCH) STREAM TIME ID X Y)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-MOTION)))
+    ";; update of touch point coordinates
 
 A touch point has changed coordinates.
 
@@ -3118,10 +3193,11 @@ id::int: the unique ID of this touch point
 x::fixed: surface-local x coordinate
 y::fixed: surface-local y coordinate
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-FRAME ((OBJ WL_TOUCH))
-  ";; end of touch frame event
+(DEFMETHOD EVT-FRAME ((OBJ WL_TOUCH) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-FRAME)))
+    ";; end of touch frame event
 
 Indicates the end of a set of events that logically belong together.
 	A client is expected to accumulate the data in all events within the
@@ -3132,10 +3208,11 @@ Indicates the end of a set of events that logically belong together.
 	must assume that any state not updated in a frame is unchanged from the
 	previously known state.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-CANCEL ((OBJ WL_TOUCH))
-  ";; touch session cancelled
+(DEFMETHOD EVT-CANCEL ((OBJ WL_TOUCH) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-CANCEL)))
+    ";; touch session cancelled
 
 Sent if the compositor decides the touch stream is a global
 	gesture. No further events are sent to the clients from that
@@ -3144,10 +3221,11 @@ Sent if the compositor decides the touch stream is a global
 	responsible for finalizing the touch points, future touch points on
 	this surface may reuse the touch point ID.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-SHAPE ((OBJ WL_TOUCH) ID MAJOR MINOR)
-  ";; update shape of touch point
+(DEFMETHOD EVT-SHAPE ((OBJ WL_TOUCH) STREAM ID MAJOR MINOR)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-SHAPE)))
+    ";; update shape of touch point
 
 Sent when a touchpoint has changed its shape.
 
@@ -3180,10 +3258,11 @@ id::int: the unique ID of this touch point
 major::fixed: length of the major axis in surface-local coordinates
 minor::fixed: length of the minor axis in surface-local coordinates
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-ORIENTATION ((OBJ WL_TOUCH) ID ORIENTATION)
-  ";; update orientation of touch point
+(DEFMETHOD EVT-ORIENTATION ((OBJ WL_TOUCH) STREAM ID ORIENTATION)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-ORIENTATION)))
+    ";; update orientation of touch point
 
 Sent when a touchpoint has changed its orientation.
 
@@ -3213,7 +3292,7 @@ Arguments:
 id::int: the unique ID of this touch point
 orientation::fixed: angle between major axis and positive surface y-axis in degrees
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-RELEASE ((OBJ WL_TOUCH))
   ";; release the touch object
@@ -3222,10 +3301,15 @@ NIL
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_TOUCH) OPCODE)
-  (NTH OPCODE
-       '(EVT-DOWN EVT-UP EVT-MOTION EVT-FRAME EVT-CANCEL EVT-SHAPE
-         EVT-ORIENTATION)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_TOUCH) EVENT)
+  (CASE EVENT
+    (EVT-DOWN 0)
+    (EVT-UP 1)
+    (EVT-MOTION 2)
+    (EVT-FRAME 3)
+    (EVT-CANCEL 4)
+    (EVT-SHAPE 5)
+    (EVT-ORIENTATION 6)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_TOUCH) OPCODE)
   (NTH OPCODE '(REQ-RELEASE)))
@@ -3257,9 +3341,10 @@ An output describes part of the compositor geometry.  The
 "))
 
 (DEFMETHOD EVT-GEOMETRY
-           ((OBJ WL_OUTPUT) X Y PHYSICAL_WIDTH PHYSICAL_HEIGHT SUBPIXEL MAKE
-            MODEL TRANSFORM)
-  ";; properties of the output
+           ((OBJ WL_OUTPUT) STREAM X Y PHYSICAL_WIDTH PHYSICAL_HEIGHT SUBPIXEL
+            MAKE MODEL TRANSFORM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-GEOMETRY)))
+    ";; properties of the output
 
 The geometry event describes geometric properties of the output.
 	The event is sent when binding to the output object and whenever
@@ -3288,10 +3373,11 @@ make::string: textual description of the manufacturer
 model::string: textual description of the model
 transform::enum: transform that maps framebuffer to output
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-MODE ((OBJ WL_OUTPUT) FLAGS WIDTH HEIGHT REFRESH)
-  ";; advertise available modes for the output
+(DEFMETHOD EVT-MODE ((OBJ WL_OUTPUT) STREAM FLAGS WIDTH HEIGHT REFRESH)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-MODE)))
+    ";; advertise available modes for the output
 
 The mode event describes an available mode for the output.
 
@@ -3333,10 +3419,11 @@ width::int: width of the mode in hardware units
 height::int: height of the mode in hardware units
 refresh::int: vertical refresh rate in mHz
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-DONE ((OBJ WL_OUTPUT))
-  ";; sent all information about output
+(DEFMETHOD EVT-DONE ((OBJ WL_OUTPUT) STREAM)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-DONE)))
+    ";; sent all information about output
 
 This event is sent after all other properties have been
 	sent after binding to the output object and after any
@@ -3344,10 +3431,11 @@ This event is sent after all other properties have been
 	changes to the output properties to be seen as
 	atomic, even if they happen via multiple events.
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-SCALE ((OBJ WL_OUTPUT) FACTOR)
-  ";; output scaling properties
+(DEFMETHOD EVT-SCALE ((OBJ WL_OUTPUT) STREAM FACTOR)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-SCALE)))
+    ";; output scaling properties
 
 This event contains scaling geometry information
 	that is not in the geometry event. It may be sent after
@@ -3373,10 +3461,11 @@ This event contains scaling geometry information
 Arguments:
 factor::int: scaling factor of output
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-NAME ((OBJ WL_OUTPUT) NAME)
-  ";; name of this output
+(DEFMETHOD EVT-NAME ((OBJ WL_OUTPUT) STREAM NAME)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-NAME)))
+    ";; name of this output
 
 Many compositors will assign user-friendly names to their outputs, show
 	them to the user, allow the user to refer to an output, etc. The client
@@ -3410,10 +3499,11 @@ Many compositors will assign user-friendly names to their outputs, show
 Arguments:
 name::string: output name
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
-(DEFMETHOD EVT-DESCRIPTION ((OBJ WL_OUTPUT) DESCRIPTION)
-  ";; human-readable description of this output
+(DEFMETHOD EVT-DESCRIPTION ((OBJ WL_OUTPUT) STREAM DESCRIPTION)
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-DESCRIPTION)))
+    ";; human-readable description of this output
 
 Many compositors can produce human-readable descriptions of their
 	outputs. The client may wish to know this description as well, e.g. for
@@ -3433,7 +3523,7 @@ Many compositors can produce human-readable descriptions of their
 Arguments:
 description::string: output description
 "
-  (ERROR "Unimplemented"))
+    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD REQ-RELEASE ((OBJ WL_OUTPUT))
   ";; release the output object
@@ -3495,9 +3585,14 @@ These flags describe properties of an output mode.
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_OUTPUT) OPCODE)
-  (NTH OPCODE
-       '(EVT-GEOMETRY EVT-MODE EVT-DONE EVT-SCALE EVT-NAME EVT-DESCRIPTION)))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_OUTPUT) EVENT)
+  (CASE EVENT
+    (EVT-GEOMETRY 0)
+    (EVT-MODE 1)
+    (EVT-DONE 2)
+    (EVT-SCALE 3)
+    (EVT-NAME 4)
+    (EVT-DESCRIPTION 5)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_OUTPUT) OPCODE)
   (NTH OPCODE '(REQ-RELEASE)))
@@ -3552,7 +3647,7 @@ height::int: rectangle height
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_REGION) OPCODE) (NTH OPCODE 'NIL))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_REGION) EVENT) (CASE EVENT))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_REGION) OPCODE)
   (NTH OPCODE '(REQ-DESTROY REQ-ADD REQ-SUBTRACT)))
@@ -3634,7 +3729,7 @@ parent::object: the parent surface
   ";; "
   (CASE VALUE (0 'BAD_SURFACE) (1 'BAD_PARENT)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBCOMPOSITOR) OPCODE) (NTH OPCODE 'NIL))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBCOMPOSITOR) EVENT) (CASE EVENT))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_SUBCOMPOSITOR) OPCODE)
   (NTH OPCODE '(REQ-DESTROY REQ-GET_SUBSURFACE)))
@@ -3826,7 +3921,7 @@ Change the commit behaviour of the sub-surface to desynchronized
   ";; "
   (CASE VALUE (0 'BAD_SURFACE)))
 
-(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBSURFACE) OPCODE) (NTH OPCODE 'NIL))
+(DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBSURFACE) EVENT) (CASE EVENT))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_SUBSURFACE) OPCODE)
   (NTH OPCODE
@@ -3835,3 +3930,4 @@ Change the commit behaviour of the sub-surface to desynchronized
 
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_SUBSURFACE) OPCODE)
   (NTH OPCODE '(NIL (INT INT) (OBJECT) (OBJECT) NIL NIL)))
+

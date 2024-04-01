@@ -1,6 +1,6 @@
 
 (defpackage #:smuks/wayland
-  (:use #:cl #:wl-decode)
+  (:use #:cl #:wl-wire)
   (:export
    read-wayland-message
    wayland
@@ -49,19 +49,14 @@
     (format t "Calling ~a with ~a~%" req-method payload)
     (apply req-method `(,object ,@payload))))
 
-;; (defun write-wayland-message () )
-
-
-;; ┬ ┬┌┬┐┬┬
-;; │ │ │ ││
-;; └─┘ ┴ ┴┴─┘
-(defun consume-padding (stream size)
-  (when (> (mod size 4) 0)
-    (loop for i from 0 below (- 4 (mod size 4))
-	  do (read-byte stream))))
-
-(defun read-n-as-number (stream n)
-  (let ((num 0))
-    (dotimes (i n)
-      (setf (ldb (byte 8 (* i 8)) num) (read-byte stream)))
-    num))
+(defun write-wayland-message (client &rest args)
+  (let* ((stream (sock-stream client))
+	 ()
+	 (object (first args))
+	 (opcode (second args))
+	 (message-size (third args))
+	 (payload (fourth args)))
+    (write-n-as-number stream (wl:id object) 4)
+    (write-n-as-number stream opcode 2)
+    (write-n-as-number stream message-size 2)
+    (write-req-args stream payload)))
