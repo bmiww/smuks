@@ -21,9 +21,11 @@
 
 (defun do-event (interface event)
   `(defmethod ,(ev-name event) ((obj ,(read-from-string interface))
+			 stream
 			 ,@(mapcar 'do-arg (args event)))
-     ,(format nil ";; ~a" (description event))
-     (error "Unimplemented")))
+     (let ((opcode (match-event-opcode obj ,(symbolize-event event))))
+       ,(format nil ";; ~a" (description event))
+       (smuks/wayland ))))
 
 (defun do-request (interface request)
   `(defmethod ,(req-name request) ((obj ,(read-from-string interface))
@@ -52,8 +54,12 @@
 
 
 (defun do-event-opcode-matchers (interface events)
-  `((defmethod match-event-opcode ((obj ,(read-from-string interface)) opcode)
-      (nth opcode '(,@(mapcar 'symbolize-event events))))))
+  `((defmethod match-event-opcode ((obj ,(read-from-string interface)) event)
+      (case event
+	,@(loop for event in events
+		;; TODO: Check if 0 indexed or 1 indexed
+		for i from 0
+		collect `(,(symbolize-event event) ,i))))))
 
 (defun do-request-opcode-matchers (interface requests)
   `((defmethod match-request-opcode ((obj ,(read-from-string interface)) opcode)

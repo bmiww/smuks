@@ -30,18 +30,13 @@
   (init-drm)
   ;; (init-egl (display *wayland*))
 
-  (setf *client-thread* (bt:make-thread
-   (lambda ()
-     (format t "Starting wayland socket listener~%")
-     (loop until *smuks-exit*
-	   do (let* ((client (print (unix-sockets:accept-unix-socket *socket*)))
-		     (stream (unix-sockets:unix-socket-stream client)))
-		(format t "CLIENT CONNECTED~%")
-		(bt:make-thread (lambda ()
-				  (loop until *smuks-exit*
-					do (smuks/wayland:read-wayland-message *wayland* stream))
-				  (format t "Exiting client~%")
-				  (unix-sockets:close-unix-socket client))))))))
+  (setf *client-thread*
+	(bt:make-thread
+	 (lambda ()
+	   (format t "Starting wayland socket listener~%")
+	   (loop until *smuks-exit*
+		 do (let* ((client (unix-sockets:accept-unix-socket *socket*)))
+		      (smuks/wayland:add-client wayland client))))))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
