@@ -15,9 +15,10 @@
     (setf *swank-server* (swank:create-server :port 25252 :dont-close t)))
 
   (setf *socket* (init-socket))
-  (setf *wayland* (init-wayland (unix-sockets::fd *socket*)))
+  ;; (setf *wayland* (init-wayland (unix-sockets::fd *socket*)))
+  (setf *wayland* (make-instance 'wl/wl_display:wl_display :id 1))
   (init-drm)
-  (init-egl (display *wayland*))
+  ;; (init-egl (display *wayland*))
 
   (thread:make-thread
    (lambda ()
@@ -40,7 +41,7 @@
      (format t "Starting an app thingy~%")
      (uiop:launch-program '("weston-terminal") :output *standard-output* :error-output *standard-output*)))
 
-  (wlc:wl-display-run (display *wayland*))
+  ;; (wlc:wl-display-run (display *wayland*))
 
   (livesupport:continuable
     (loop while t
