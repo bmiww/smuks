@@ -126,10 +126,10 @@ These errors are global and can be emitted in response to any
 	server request.
 "
   (CASE VALUE
-    (0 INVALID_OBJECT)
-    (1 INVALID_METHOD)
-    (2 NO_MEMORY)
-    (3 IMPLEMENTATION)))
+    (0 'INVALID_OBJECT)
+    (1 'INVALID_METHOD)
+    (2 'NO_MEMORY)
+    (3 'IMPLEMENTATION)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DISPLAY) OPCODE)
   (NTH OPCODE '(EVT-ERROR EVT-DELETE_ID)))
@@ -441,7 +441,7 @@ size::int: pool size, in bytes
 
 These errors can be emitted in response to wl_shm requests.
 "
-  (CASE VALUE (0 INVALID_FORMAT) (1 INVALID_STRIDE) (2 INVALID_FD)))
+  (CASE VALUE (0 'INVALID_FORMAT) (1 'INVALID_STRIDE) (2 'INVALID_FD)))
 
 (DEFMETHOD ENUM-FORMAT ((OBJ WL_SHM) VALUE)
   ";; pixel formats
@@ -460,114 +460,114 @@ This describes the memory layout of an individual pixel.
 	extension, pre-multiplied alpha is used for pixel values.
 "
   (CASE VALUE
-    (0 ARGB8888)
-    (1 XRGB8888)
-    (538982467 C8)
-    (943867730 RGB332)
-    (944916290 BGR233)
-    (842093144 XRGB4444)
-    (842089048 XBGR4444)
-    (842094674 RGBX4444)
-    (842094658 BGRX4444)
-    (842093121 ARGB4444)
-    (842089025 ABGR4444)
-    (842088786 RGBA4444)
-    (842088770 BGRA4444)
-    (892424792 XRGB1555)
-    (892420696 XBGR1555)
-    (892426322 RGBX5551)
-    (892426306 BGRX5551)
-    (892424769 ARGB1555)
-    (892420673 ABGR1555)
-    (892420434 RGBA5551)
-    (892420418 BGRA5551)
-    (909199186 RGB565)
-    (909199170 BGR565)
-    (875710290 RGB888)
-    (875710274 BGR888)
-    (875709016 XBGR8888)
-    (875714642 RGBX8888)
-    (875714626 BGRX8888)
-    (875708993 ABGR8888)
-    (875708754 RGBA8888)
-    (875708738 BGRA8888)
-    (808669784 XRGB2101010)
-    (808665688 XBGR2101010)
-    (808671314 RGBX1010102)
-    (808671298 BGRX1010102)
-    (808669761 ARGB2101010)
-    (808665665 ABGR2101010)
-    (808665426 RGBA1010102)
-    (808665410 BGRA1010102)
-    (1448695129 YUYV)
-    (1431918169 YVYU)
-    (1498831189 UYVY)
-    (1498765654 VYUY)
-    (1448433985 AYUV)
-    (842094158 NV12)
-    (825382478 NV21)
-    (909203022 NV16)
-    (825644622 NV61)
-    (961959257 YUV410)
-    (961893977 YVU410)
-    (825316697 YUV411)
-    (825316953 YVU411)
-    (842093913 YUV420)
-    (842094169 YVU420)
-    (909202777 YUV422)
-    (909203033 YVU422)
-    (875713881 YUV444)
-    (875714137 YVU444)
-    (538982482 R8)
-    (540422482 R16)
-    (943212370 RG88)
-    (943215175 GR88)
-    (842221394 RG1616)
-    (842224199 GR1616)
-    (1211388504 XRGB16161616F)
-    (1211384408 XBGR16161616F)
-    (1211388481 ARGB16161616F)
-    (1211384385 ABGR16161616F)
-    (1448434008 XYUV8888)
-    (875713878 VUY888)
-    (808670550 VUY101010)
-    (808530521 Y210)
-    (842084953 Y212)
-    (909193817 Y216)
-    (808531033 Y410)
-    (842085465 Y412)
-    (909194329 Y416)
-    (808670808 XVYU2101010)
-    (909334104 XVYU12_16161616)
-    (942954072 XVYU16161616)
-    (810299481 Y0L0)
-    (810299480 X0L0)
-    (843853913 Y0L2)
-    (843853912 X0L2)
-    (942691673 YUV420_8BIT)
-    (808539481 YUV420_10BIT)
-    (943805016 XRGB8888_A8)
-    (943800920 XBGR8888_A8)
-    (943806546 RGBX8888_A8)
-    (943806530 BGRX8888_A8)
-    (943798354 RGB888_A8)
-    (943798338 BGR888_A8)
-    (943797586 RGB565_A8)
-    (943797570 BGR565_A8)
-    (875714126 NV24)
-    (842290766 NV42)
-    (808530512 P210)
-    (808530000 P010)
-    (842084432 P012)
-    (909193296 P016)
-    (808534593 AXBXGXRX106106106106)
-    (892425806 NV15)
-    (808531025 Q410)
-    (825242705 Q401)
-    (942953048 XRGB16161616)
-    (942948952 XBGR16161616)
-    (942953025 ARGB16161616)
-    (942948929 ABGR16161616)))
+    (0 'ARGB8888)
+    (1 'XRGB8888)
+    (538982467 'C8)
+    (943867730 'RGB332)
+    (944916290 'BGR233)
+    (842093144 'XRGB4444)
+    (842089048 'XBGR4444)
+    (842094674 'RGBX4444)
+    (842094658 'BGRX4444)
+    (842093121 'ARGB4444)
+    (842089025 'ABGR4444)
+    (842088786 'RGBA4444)
+    (842088770 'BGRA4444)
+    (892424792 'XRGB1555)
+    (892420696 'XBGR1555)
+    (892426322 'RGBX5551)
+    (892426306 'BGRX5551)
+    (892424769 'ARGB1555)
+    (892420673 'ABGR1555)
+    (892420434 'RGBA5551)
+    (892420418 'BGRA5551)
+    (909199186 'RGB565)
+    (909199170 'BGR565)
+    (875710290 'RGB888)
+    (875710274 'BGR888)
+    (875709016 'XBGR8888)
+    (875714642 'RGBX8888)
+    (875714626 'BGRX8888)
+    (875708993 'ABGR8888)
+    (875708754 'RGBA8888)
+    (875708738 'BGRA8888)
+    (808669784 'XRGB2101010)
+    (808665688 'XBGR2101010)
+    (808671314 'RGBX1010102)
+    (808671298 'BGRX1010102)
+    (808669761 'ARGB2101010)
+    (808665665 'ABGR2101010)
+    (808665426 'RGBA1010102)
+    (808665410 'BGRA1010102)
+    (1448695129 'YUYV)
+    (1431918169 'YVYU)
+    (1498831189 'UYVY)
+    (1498765654 'VYUY)
+    (1448433985 'AYUV)
+    (842094158 'NV12)
+    (825382478 'NV21)
+    (909203022 'NV16)
+    (825644622 'NV61)
+    (961959257 'YUV410)
+    (961893977 'YVU410)
+    (825316697 'YUV411)
+    (825316953 'YVU411)
+    (842093913 'YUV420)
+    (842094169 'YVU420)
+    (909202777 'YUV422)
+    (909203033 'YVU422)
+    (875713881 'YUV444)
+    (875714137 'YVU444)
+    (538982482 'R8)
+    (540422482 'R16)
+    (943212370 'RG88)
+    (943215175 'GR88)
+    (842221394 'RG1616)
+    (842224199 'GR1616)
+    (1211388504 'XRGB16161616F)
+    (1211384408 'XBGR16161616F)
+    (1211388481 'ARGB16161616F)
+    (1211384385 'ABGR16161616F)
+    (1448434008 'XYUV8888)
+    (875713878 'VUY888)
+    (808670550 'VUY101010)
+    (808530521 'Y210)
+    (842084953 'Y212)
+    (909193817 'Y216)
+    (808531033 'Y410)
+    (842085465 'Y412)
+    (909194329 'Y416)
+    (808670808 'XVYU2101010)
+    (909334104 'XVYU12_16161616)
+    (942954072 'XVYU16161616)
+    (810299481 'Y0L0)
+    (810299480 'X0L0)
+    (843853913 'Y0L2)
+    (843853912 'X0L2)
+    (942691673 'YUV420_8BIT)
+    (808539481 'YUV420_10BIT)
+    (943805016 'XRGB8888_A8)
+    (943800920 'XBGR8888_A8)
+    (943806546 'RGBX8888_A8)
+    (943806530 'BGRX8888_A8)
+    (943798354 'RGB888_A8)
+    (943798338 'BGR888_A8)
+    (943797586 'RGB565_A8)
+    (943797570 'BGR565_A8)
+    (875714126 'NV24)
+    (842290766 'NV42)
+    (808530512 'P210)
+    (808530000 'P010)
+    (842084432 'P012)
+    (909193296 'P016)
+    (808534593 'AXBXGXRX106106106106)
+    (892425806 'NV15)
+    (808531025 'Q410)
+    (825242705 'Q401)
+    (942953048 'XRGB16161616)
+    (942948952 'XBGR16161616)
+    (942953025 'ARGB16161616)
+    (942948929 'ABGR16161616)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHM) OPCODE) (NTH OPCODE '(EVT-FORMAT)))
 
@@ -851,10 +851,10 @@ preferred_action::enum: action preferred by the destination client
 (DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_OFFER) VALUE)
   ";; "
   (CASE VALUE
-    (0 INVALID_FINISH)
-    (1 INVALID_ACTION_MASK)
-    (2 INVALID_ACTION)
-    (3 INVALID_OFFER)))
+    (0 'INVALID_FINISH)
+    (1 'INVALID_ACTION_MASK)
+    (2 'INVALID_ACTION)
+    (3 'INVALID_OFFER)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_OFFER) OPCODE)
   (NTH OPCODE '(EVT-OFFER EVT-SOURCE_ACTIONS EVT-ACTION)))
@@ -1049,7 +1049,7 @@ dnd_actions::enum: actions supported by the data source
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_SOURCE) VALUE)
   ";; "
-  (CASE VALUE (0 INVALID_ACTION_MASK) (1 INVALID_SOURCE)))
+  (CASE VALUE (0 'INVALID_ACTION_MASK) (1 'INVALID_SOURCE)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_SOURCE) OPCODE)
   (NTH OPCODE
@@ -1243,7 +1243,7 @@ This request destroys the data device.
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_DEVICE) VALUE) ";; " (CASE VALUE (0 ROLE)))
+(DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_DEVICE) VALUE) ";; " (CASE VALUE (0 'ROLE)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE) OPCODE)
   (NTH OPCODE
@@ -1325,7 +1325,10 @@ This is a bitmask of the available/preferred actions in a
 	or drags initiated with other buttons than BTN_LEFT to specific
 	actions (e.g. \"ask\").
 "
-  (LET ((OPTIONS '((0 . NONE) (1 . COPY) (2 . MOVE) (4 . ASK))))
+  (LET ((OPTIONS
+         '((0 READ-FROM-STRING (NAME ENTRY)) (1 READ-FROM-STRING (NAME ENTRY))
+           (2 READ-FROM-STRING (NAME ENTRY))
+           (4 READ-FROM-STRING (NAME ENTRY)))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
@@ -1374,7 +1377,7 @@ surface::object: surface to be given the shell surface role
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD ENUM-ERROR ((OBJ WL_SHELL) VALUE) ";; " (CASE VALUE (0 ROLE)))
+(DEFMETHOD ENUM-ERROR ((OBJ WL_SHELL) VALUE) ";; " (CASE VALUE (0 'ROLE)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL) OPCODE) (NTH OPCODE 'NIL))
 
@@ -1682,8 +1685,11 @@ These values are used to indicate which edge of a surface
 	an appropriate cursor image.
 "
   (LET ((OPTIONS
-         '((0 . NONE) (1 . TOP) (2 . BOTTOM) (4 . LEFT) (5 . TOP_LEFT)
-           (6 . BOTTOM_LEFT) (8 . RIGHT) (9 . TOP_RIGHT) (10 . BOTTOM_RIGHT))))
+         '((0 READ-FROM-STRING (NAME ENTRY)) (1 READ-FROM-STRING (NAME ENTRY))
+           (2 READ-FROM-STRING (NAME ENTRY)) (4 READ-FROM-STRING (NAME ENTRY))
+           (5 READ-FROM-STRING (NAME ENTRY)) (6 READ-FROM-STRING (NAME ENTRY))
+           (8 READ-FROM-STRING (NAME ENTRY)) (9 READ-FROM-STRING (NAME ENTRY))
+           (10 READ-FROM-STRING (NAME ENTRY)))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
@@ -1694,7 +1700,7 @@ These values are used to indicate which edge of a surface
 These flags specify details of the expected behaviour
 	of transient surfaces. Used in the set_transient request.
 "
-  (LET ((OPTIONS '((1 . INACTIVE))))
+  (LET ((OPTIONS '((1 READ-FROM-STRING (NAME ENTRY)))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
@@ -1706,7 +1712,7 @@ Hints to indicate to the compositor how to deal with a conflict
 	between the dimensions of the surface and the dimensions of the
 	output. The compositor is free to ignore this parameter.
 "
-  (CASE VALUE (0 DEFAULT) (1 SCALE) (2 DRIVER) (3 FILL)))
+  (CASE VALUE (0 'DEFAULT) (1 'SCALE) (2 'DRIVER) (3 'FILL)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SHELL_SURFACE) OPCODE)
   (NTH OPCODE '(EVT-PING EVT-CONFIGURE EVT-POPUP_DONE)))
@@ -2235,11 +2241,11 @@ y::int: surface-local y coordinate
 These errors can be emitted in response to wl_surface requests.
 "
   (CASE VALUE
-    (0 INVALID_SCALE)
-    (1 INVALID_TRANSFORM)
-    (2 INVALID_SIZE)
-    (3 INVALID_OFFSET)
-    (4 DEFUNCT_ROLE_OBJECT)))
+    (0 'INVALID_SCALE)
+    (1 'INVALID_TRANSFORM)
+    (2 'INVALID_SIZE)
+    (3 'INVALID_OFFSET)
+    (4 'DEFUNCT_ROLE_OBJECT)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SURFACE) OPCODE)
   (NTH OPCODE
@@ -2401,7 +2407,9 @@ Using this request a client can tell the server that it is not going to
 This is a bitmask of capabilities this seat has; if a member is
 	set, then it is present on the seat.
 "
-  (LET ((OPTIONS '((1 . POINTER) (2 . KEYBOARD) (4 . TOUCH))))
+  (LET ((OPTIONS
+         '((1 READ-FROM-STRING (NAME ENTRY)) (2 READ-FROM-STRING (NAME ENTRY))
+           (4 READ-FROM-STRING (NAME ENTRY)))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
@@ -2411,7 +2419,7 @@ This is a bitmask of capabilities this seat has; if a member is
 
 These errors can be emitted in response to wl_seat requests.
 "
-  (CASE VALUE (0 MISSING_CAPABILITY)))
+  (CASE VALUE (0 'MISSING_CAPABILITY)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SEAT) OPCODE)
   (NTH OPCODE '(EVT-CAPABILITIES EVT-NAME)))
@@ -2825,7 +2833,7 @@ Using this request a client can tell the server that it is not going to
 "
   (ERROR "Unimplemented"))
 
-(DEFMETHOD ENUM-ERROR ((OBJ WL_POINTER) VALUE) ";; " (CASE VALUE (0 ROLE)))
+(DEFMETHOD ENUM-ERROR ((OBJ WL_POINTER) VALUE) ";; " (CASE VALUE (0 'ROLE)))
 
 (DEFMETHOD ENUM-BUTTON_STATE ((OBJ WL_POINTER) VALUE)
   ";; physical button state
@@ -2833,14 +2841,14 @@ Using this request a client can tell the server that it is not going to
 Describes the physical state of a button that produced the button
 	event.
 "
-  (CASE VALUE (0 RELEASED) (1 PRESSED)))
+  (CASE VALUE (0 'RELEASED) (1 'PRESSED)))
 
 (DEFMETHOD ENUM-AXIS ((OBJ WL_POINTER) VALUE)
   ";; axis types
 
 Describes the axis types of scroll events.
 "
-  (CASE VALUE (0 VERTICAL_SCROLL) (1 HORIZONTAL_SCROLL)))
+  (CASE VALUE (0 'VERTICAL_SCROLL) (1 'HORIZONTAL_SCROLL)))
 
 (DEFMETHOD ENUM-AXIS_SOURCE ((OBJ WL_POINTER) VALUE)
   ";; axis source types
@@ -2862,7 +2870,7 @@ Describes the source types for axis events. This indicates to the
 	wheel but the scroll event is not caused by a rotation but a
 	(usually sideways) tilt of the wheel.
 "
-  (CASE VALUE (0 WHEEL) (1 FINGER) (2 CONTINUOUS) (3 WHEEL_TILT)))
+  (CASE VALUE (0 'WHEEL) (1 'FINGER) (2 'CONTINUOUS) (3 'WHEEL_TILT)))
 
 (DEFMETHOD ENUM-AXIS_RELATIVE_DIRECTION ((OBJ WL_POINTER) VALUE)
   ";; axis relative direction
@@ -2870,7 +2878,7 @@ Describes the source types for axis events. This indicates to the
 This specifies the direction of the physical motion that caused a
 	wl_pointer.axis event, relative to the wl_pointer.axis direction.
 "
-  (CASE VALUE (0 IDENTICAL) (1 INVERTED)))
+  (CASE VALUE (0 'IDENTICAL) (1 'INVERTED)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_POINTER) OPCODE)
   (NTH OPCODE
@@ -3029,14 +3037,14 @@ NIL
 This specifies the format of the keymap provided to the
 	client with the wl_keyboard.keymap event.
 "
-  (CASE VALUE (0 NO_KEYMAP) (1 XKB_V1)))
+  (CASE VALUE (0 'NO_KEYMAP) (1 'XKB_V1)))
 
 (DEFMETHOD ENUM-KEY_STATE ((OBJ WL_KEYBOARD) VALUE)
   ";; physical key state
 
 Describes the physical state of a key that produced the key event.
 "
-  (CASE VALUE (0 RELEASED) (1 PRESSED)))
+  (CASE VALUE (0 'RELEASED) (1 'PRESSED)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_KEYBOARD) OPCODE)
   (NTH OPCODE
@@ -3449,12 +3457,12 @@ This enumeration describes how the physical
 	pixels on an output are laid out.
 "
   (CASE VALUE
-    (0 UNKNOWN)
-    (1 NONE)
-    (2 HORIZONTAL_RGB)
-    (3 HORIZONTAL_BGR)
-    (4 VERTICAL_RGB)
-    (5 VERTICAL_BGR)))
+    (0 'UNKNOWN)
+    (1 'NONE)
+    (2 'HORIZONTAL_RGB)
+    (3 'HORIZONTAL_BGR)
+    (4 'VERTICAL_RGB)
+    (5 'VERTICAL_BGR)))
 
 (DEFMETHOD ENUM-TRANSFORM ((OBJ WL_OUTPUT) VALUE)
   ";; transform from framebuffer to output
@@ -3472,14 +3480,14 @@ This describes the transform that a compositor will apply to a
 	surfaces.
 "
   (CASE VALUE
-    (0 NORMAL)
-    (1 90)
-    (2 180)
-    (3 270)
-    (4 FLIPPED)
-    (5 FLIPPED_90)
-    (6 FLIPPED_180)
-    (7 FLIPPED_270)))
+    (0 'NORMAL)
+    (1 '90)
+    (2 '180)
+    (3 '270)
+    (4 'FLIPPED)
+    (5 'FLIPPED_90)
+    (6 'FLIPPED_180)
+    (7 'FLIPPED_270)))
 
 (DEFMETHOD ENUM-MODE ((OBJ WL_OUTPUT) VALUE)
   ";; mode information
@@ -3487,7 +3495,9 @@ This describes the transform that a compositor will apply to a
 These flags describe properties of an output mode.
 	They are used in the flags bitfield of the mode event.
 "
-  (LET ((OPTIONS '((1 . CURRENT) (2 . PREFERRED))))
+  (LET ((OPTIONS
+         '((1 READ-FROM-STRING (NAME ENTRY))
+           (2 READ-FROM-STRING (NAME ENTRY)))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
@@ -3629,7 +3639,7 @@ parent::object: the parent surface
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SUBCOMPOSITOR) VALUE)
   ";; "
-  (CASE VALUE (0 BAD_SURFACE) (1 BAD_PARENT)))
+  (CASE VALUE (0 'BAD_SURFACE) (1 'BAD_PARENT)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBCOMPOSITOR) OPCODE) (NTH OPCODE 'NIL))
 
@@ -3821,7 +3831,7 @@ Change the commit behaviour of the sub-surface to desynchronized
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SUBSURFACE) VALUE)
   ";; "
-  (CASE VALUE (0 BAD_SURFACE)))
+  (CASE VALUE (0 'BAD_SURFACE)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_SUBSURFACE) OPCODE) (NTH OPCODE 'NIL))
 

@@ -34,12 +34,12 @@
   `(defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)
      ,(format nil ";; ~a" (description enum))
      (case value
-       ,@(mapcar (lambda (entry) `(,(value entry) ,(read-from-string (name entry)))) (entries enum)))))
+       ,@(mapcar (lambda (entry) `(,(value entry) ',(read-from-string (name entry)))) (entries enum)))))
 
 (defun do-bitfield-enum (interface enum)
   `(defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)
      ,(format nil ";; ~a" (description enum))
-     (let ((options ',(mapcar (lambda (entry) (cons (value entry) (read-from-string (name entry)))) (entries enum))))
+     (let ((options ',(mapcar (lambda (entry) (cons (value entry) '(read-from-string (name entry)))) (entries enum))))
        (loop for (mask name) in options
 	     when (logbitp mask value)
 	     collect name))))
