@@ -24,6 +24,7 @@
 	       #:str)
   :components ((:file "package")
 	       (:file "WAYLAND-SERVER")
+	       (:file "smuks-wl")
 	       (:file "wayland")
 	       (:file "drm-ffi")
 	       (:file "drm")

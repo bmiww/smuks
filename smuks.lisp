@@ -7,20 +7,30 @@
 (defvar *swank-server* nil)
 (defvar *smuks-exit* nil)
 
+(defvar *client-thread* nil)
+
 (defun kill-all-threads ()
   (mapcar (lambda (thread) (thread:destroy-thread thread)) (thread:all-threads)))
 
+
 (defun main ()
+  (setf *smuks-exit* nil)
+  ;; TODO: This kills off the client listener rather ungracefully
+  (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
+  ;; NOTE: Maybe setup kill signals for the process
+  ;; TODO: Maybe add a "restart" to set *smuks-exit* to true
+  ;; (mapcar (lambda (signal) (sb-sys:enable-interrupt signal (lambda () (setf *smuks-exit* t)))) '(SIGINT SIGTERM))
+
+
   (unless *swank-server*
     (setf *swank-server* (swank:create-server :port 25252 :dont-close t)))
 
   (setf *socket* (init-socket))
-  ;; (setf *wayland* (init-wayland (unix-sockets::fd *socket*)))
-  (setf *wayland* (make-instance 'wl/wl_display:wl_display :id 1))
+  (setf *wayland* (make-instance 'smuks/wayland:wayland))
   (init-drm)
   ;; (init-egl (display *wayland*))
 
-  (thread:make-thread
+  (setf *client-thread* (bt:make-thread
    (lambda ()
      (format t "Starting wayland socket listener~%")
      (loop until *smuks-exit*
@@ -29,13 +39,13 @@
 		(format t "CLIENT CONNECTED~%")
 		(bt:make-thread (lambda ()
 				  (loop until *smuks-exit*
-					do (smuks/wayland:read-wayland-message stream))
+					do (smuks/wayland:read-wayland-message *wayland* stream))
 				  (format t "Exiting client~%")
-				  (unix-sockets:close-unix-socket client)))))))
+				  (unix-sockets:close-unix-socket client))))))))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
-  (thread:make-thread
+  (bt:make-thread
    (lambda ()
      (sleep 3)
      (format t "Starting an app thingy~%")
@@ -77,6 +87,7 @@
 ;; ██║███╗██║██╔══██║  ╚██╔╝  ██║     ██╔══██║██║╚██╗██║██║  ██║
 ;; ╚███╔███╔╝██║  ██║   ██║   ███████╗██║  ██║██║ ╚████║██████╔╝
 ;;  ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝
+;; TODO: This whole thing is pretty much unused, get rid of it
 
 (defclass wayland ()
   ((display :initarg :display :accessor display)

@@ -12,6 +12,7 @@
 (defun req-name (request) (read-from-string (format nil "req-~a" (name request))))
 (defun enum-name (enum) (read-from-string (format nil "enum-~a" (name enum))))
 (defun symbolize-event (event) (ev-name event))
+(defun symbolize-request (request) (req-name request))
 (defun do-arg (arg) (read-from-string (name arg)))
 (defun arg-type-symbol (arg)
   (if (enum arg)
@@ -56,7 +57,7 @@
 
 (defun do-request-opcode-matchers (interface requests)
   `((defmethod match-request-opcode ((obj ,(read-from-string interface)) opcode)
-      (nth opcode '(,@(mapcar 'symbolize-event requests))))))
+      (nth opcode '(,@(mapcar 'symbolize-request requests))))))
 
 (defun do-request-arg-types (interface requests)
   `((defmethod get-request-arg-types ((obj ,(read-from-string interface)) opcode)

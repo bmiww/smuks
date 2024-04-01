@@ -2,7 +2,8 @@
 (defpackage #:smuks/wayland
   (:use #:cl)
   (:export
-   read-wayland-message))
+   read-wayland-message
+   wayland))
 (in-package :smuks/wayland)
 
 (defun payload-string (stream)
@@ -83,8 +84,13 @@
        args))
     args))
 
+(defclass wayland ()
+  ((display :initarg :display :accessor display)))
 
-(defun read-wayland-message (stream)
+(defmethod initialize-instance :after ((wayland wayland) &key)
+  (setf (display wayland) (make-instance 'smuks-wl:display :id 1)))
+
+(defmethod read-wayland-message ((wayland wayland) stream)
   (let* ((object-id (read-n-as-number stream 4))
 	 (object (gethash object-id wl:*objects*))
 	 (opcode (read-n-as-number stream 2))
@@ -97,7 +103,7 @@
     (consume-padding stream message-size)
 
     (format t "Calling ~a with ~a~%" req-method payload)
-    (apply req-method payload)))
+    (apply req-method `(,object ,@payload))))
 
 (defun consume-padding (stream size)
   (when (> (mod size 4) 0)
