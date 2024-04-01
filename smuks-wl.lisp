@@ -75,7 +75,7 @@
 
 ;; TODO: Registry needs to be cleaned up once the client disconnects.
 (defmethod wl/wl_display::req-get_registry ((display display) client new-id)
-  (format t "NEW ID REQUESTED FOR REGISTRY: ~a" new-id)
+  (format t "NEW ID REQUESTED FOR REGISTRY: ~a~%" new-id)
   (let* ((registry (make-instance 'registry :id new-id)))
     (push registry (registries display))))
 
