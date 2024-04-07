@@ -164,7 +164,7 @@
 	 (wl:enum (read-enum stream (cadr arg-type)))
 	 (t (error "Unknown arg-type")))
        args))
-    args))
+    (reverse args)))
 
 
 ;; ┬ ┬┌┬┐┬┬
