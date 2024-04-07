@@ -48,7 +48,7 @@
 	  (wl:fd (incf *message-size* 0))
 
 	  ;; TODO: I guess this was utf8. Hoping for the best.
-	  (wl:string (incf *message-size* (align-32-bit-msg-size (length value))))
+	  (wl:string (incf *message-size* (+ 1 (align-32-bit-msg-size (length value)))))
 
 	  ;; TODO: The base protocol only does this for the currently presset keys array on an enter event
 	  ;; which afaik should be uint array, so i can assume that i can just multiply by 4
@@ -183,6 +183,7 @@
 
 (defun write-a-string (stream string)
   (let ((length (length string)))
+    (write-number-bytes stream length 4)
     (write-sequence (coerce string 'vector) stream)
     (loop for i from 0 below (- 4 (mod length 4))
 	  do (write-byte 0 stream))))
