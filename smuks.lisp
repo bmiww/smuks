@@ -13,11 +13,13 @@
 
 (defvar *test-program* "weston-terminal")
 ;; (defvar *test-program* "weston-flower")
+;; (defvar *test-program* "kitty")
 
 (defun main ()
   (setf *smuks-exit* nil)
   ;; TODO: This kills off the client listener rather ungracefully
   (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
+
   ;; NOTE: Maybe setup kill signals for the process
   ;; TODO: Maybe add a "restart" to set *smuks-exit* to true
   ;; (mapcar (lambda (signal) (sb-sys:enable-interrupt signal (lambda () (setf *smuks-exit* t)))) '(SIGINT SIGTERM))
@@ -44,7 +46,7 @@
      (let ((process (uiop:launch-program `(,*test-program*) :output :stream :error-output *standard-output*)))
        (loop while (uiop/launch-program:process-alive-p process)
 	     do (format t "🔴 ~a~%" (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
-       (format t "🟢 Client exit...~%"))))
+       (format t "🟢 Client exit. Code: ~a~%" (uiop:wait-process process)))))
 
   ;; (wlc:wl-display-run (display *wayland*))
 
