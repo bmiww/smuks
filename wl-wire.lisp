@@ -59,31 +59,31 @@
 
 ;; TODO: Depending on how much you can be arsed - you might want to define encoders for several lisp types
 ;; that could correspond to the wayland types
-(defun write-event-args (stream obj-id opcode &rest args)
-  (format t "📨 obj:~a op:~a with ~a~%" obj-id opcode args)
-  (format t "📨 message size: ~a~%" (calculate-message-size args))
+(defun write-event-args (stream obj opcode &rest args)
+  (let ((obj-id (wl::id obj)))
+    (format t "📨 ~a(~a) op:~a with ~a~%" (class-name (class-of obj)) obj-id opcode args)
 
-  (write-number-bytes stream obj-id 4)
-  (write-number-bytes stream opcode 2)
-  (write-number-bytes stream (calculate-message-size args) 2)
+    (write-number-bytes stream obj-id 4)
+    (write-number-bytes stream opcode 2)
+    (write-number-bytes stream (calculate-message-size args) 2)
 
-  (dolist (arg args)
-    (let* ((type (car arg))
-	   (value (cadr arg)))
-      (case type
-	;; TODO: You still need to figure out the proper parsing of integers, let alone encoding them
-	(wl:int (write-number-bytes stream value 4))
-	(wl:uint (write-number-bytes stream value 4))
-	;; TODO: You still need to figure out the proper parsing of fixnums, let alone encoding them
-	(wl:fixed (write-number-bytes stream value 4))
-	(wl:object (write-number-bytes stream value 4))
-	(wl:new_id (write-number-bytes stream value 4))
-	(wl:fd (error "FD through ancillary not implemented"))
-	(wl:string (write-a-string stream value))
-	(wl:array (write-array stream value))
-	;; TODO: Enum might be wrong. It's possible that bitfields are a possibility in which case i would need to
-	;; Generate proper numbers from multiple symbols
-	(wl:enum (write-number-bytes stream (wl:match-event-opcode value) 4))))))
+    (dolist (arg args)
+      (let* ((type (car arg))
+	     (value (cadr arg)))
+	(case type
+	  ;; TODO: You still need to figure out the proper parsing of integers, let alone encoding them
+	  (wl:int (write-number-bytes stream value 4))
+	  (wl:uint (write-number-bytes stream value 4))
+	  ;; TODO: You still need to figure out the proper parsing of fixnums, let alone encoding them
+	  (wl:fixed (write-number-bytes stream value 4))
+	  (wl:object (write-number-bytes stream value 4))
+	  (wl:new_id (write-number-bytes stream value 4))
+	  (wl:fd (error "FD through ancillary not implemented"))
+	  (wl:string (write-a-string stream value))
+	  (wl:array (write-array stream value))
+	  ;; TODO: Enum might be wrong. It's possible that bitfields are a possibility in which case i would need to
+	  ;; Generate proper numbers from multiple symbols
+	  (wl:enum (write-number-bytes stream (wl:match-event-opcode value) 4)))))))
 
 
 ;; ┌┬┐┌─┐┌─┐┌─┐┌┬┐┬┌┐┌┌─┐

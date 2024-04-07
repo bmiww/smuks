@@ -42,8 +42,6 @@
     (consume-padding stream message-size)
 
     (format t "📥 ~a with ~a~%" req-method payload)
-    ;; TODO: Message sizes are very very wrong. which makes me believe that the read-as-number might be wrong
-    (format t "Message size was ~a~%" message-size)
     (apply req-method `(,object ,client ,@payload))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
@@ -84,6 +82,7 @@
 
     ;; TODO: For now - not tracking callbacks, just directly invoking it
     ;; (add-callback client callback-id)))
+    ;; TODO: Destroy the callback object after invoking it
     (wl/wl_callback::done callback (sock-stream client) (next-serial client))))
 
 
@@ -101,4 +100,4 @@
   ())
 
 (defmethod wl/wl_callback::done ((callback callback) stream callback-data)
-  (write-event-args stream (wl::id callback) (match-event-opcode callback 'wl/wl_callback::evt-done) `(uint ,callback-data)))
+  (write-event-args stream callback (match-event-opcode callback 'wl/wl_callback::evt-done) `(uint ,callback-data)))

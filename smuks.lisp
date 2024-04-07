@@ -11,6 +11,8 @@
 (defun kill-all-threads ()
   (mapcar (lambda (thread) (thread:destroy-thread thread)) (thread:all-threads)))
 
+(defvar *test-program* "weston-terminal")
+;; (defvar *test-program* "weston-flower")
 
 (defun main ()
   (setf *smuks-exit* nil)
@@ -37,11 +39,12 @@
 
   (bt:make-thread
    (lambda ()
-     (sleep 3)
-     (format t "Starting an app thingy~%")
-     (let ((process (uiop:launch-program '("weston-terminal") :output :stream :error-output *standard-output*)))
+     (sleep 2)
+     (format t "🟢 Starting an app thingy: ~a~%" *test-program*)
+     (let ((process (uiop:launch-program `(,*test-program*) :output :stream :error-output *standard-output*)))
        (loop while (uiop/launch-program:process-alive-p process)
-	     do (format t "🔴 ~a~%" (uiop/stream:slurp-stream-string (uiop:process-info-output process)))))))
+	     do (format t "🔴 ~a~%" (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
+       (format t "🟢 Client exit...~%"))))
 
   ;; (wlc:wl-display-run (display *wayland*))
 
