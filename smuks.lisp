@@ -39,16 +39,7 @@
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
-  (bt:make-thread
-   (lambda ()
-     (sleep 2)
-     (format t "🟢 Starting an app thingy: ~a~%" *test-program*)
-     (let ((process (uiop:launch-program `(,*test-program*) :output :stream :error-output *standard-output*)))
-       (loop while (uiop/launch-program:process-alive-p process)
-	     do (format t "🔴 ~a~%" (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
-       (format t "🟢 Client exit. Code: ~a~%" (uiop:wait-process process)))))
-
-  ;; (wlc:wl-display-run (display *wayland*))
+  (test-app *test-program*)
 
   (livesupport:continuable
     (loop while t
@@ -128,3 +119,18 @@
 ;; (defmethod glfw:key-changed ((window window) key scancode action mods)
   ;; (case key
     ;; ((:escape) (setf (glfw:should-close-p window) t))))
+
+
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+
+(defun test-app (app-name)
+  (bt:make-thread
+   (lambda ()
+     (sleep 1)
+     (format t "🟢:~a: Starting an app~%" app-name)
+     (let ((process (uiop:launch-program `(,app-name) :output :stream :error-output *standard-output*)))
+       (loop while (uiop/launch-program:process-alive-p process)
+	     do (format t "🔴:~a: ~a~%" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
+       (format t "🟢:~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))))
