@@ -85,6 +85,20 @@ registry::new_id: global registry object
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(INVALID_OBJECT INVALID_METHOD NO_MEMORY IMPLEMENTATION))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_DISPLAY) ENUM-SYMBOL)
+  ";; global error values
+
+These errors are global and can be emitted in response to any
+	server request.
+"
+  (CASE ENUM-SYMBOL
+    (INVALID_OBJECT 0)
+    (INVALID_METHOD 1)
+    (NO_MEMORY 2)
+    (IMPLEMENTATION 3)))
+
 (DEFMETHOD ENUM-ERROR ((OBJ WL_DISPLAY) VALUE)
   ";; global error values
 
@@ -411,12 +425,162 @@ size::int: pool size, in bytes
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(INVALID_FORMAT INVALID_STRIDE INVALID_FD))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_SHM) ENUM-SYMBOL)
+  ";; wl_shm error values
+
+These errors can be emitted in response to wl_shm requests.
+"
+  (CASE ENUM-SYMBOL (INVALID_FORMAT 0) (INVALID_STRIDE 1) (INVALID_FD 2)))
+
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SHM) VALUE)
   ";; wl_shm error values
 
 These errors can be emitted in response to wl_shm requests.
 "
   (CASE VALUE (0 'INVALID_FORMAT) (1 'INVALID_STRIDE) (2 'INVALID_FD)))
+
+(EXPORT
+ '(ARGB8888 XRGB8888 C8 RGB332 BGR233 XRGB4444 XBGR4444 RGBX4444 BGRX4444
+   ARGB4444 ABGR4444 RGBA4444 BGRA4444 XRGB1555 XBGR1555 RGBX5551 BGRX5551
+   ARGB1555 ABGR1555 RGBA5551 BGRA5551 RGB565 BGR565 RGB888 BGR888 XBGR8888
+   RGBX8888 BGRX8888 ABGR8888 RGBA8888 BGRA8888 XRGB2101010 XBGR2101010
+   RGBX1010102 BGRX1010102 ARGB2101010 ABGR2101010 RGBA1010102 BGRA1010102 YUYV
+   YVYU UYVY VYUY AYUV NV12 NV21 NV16 NV61 YUV410 YVU410 YUV411 YVU411 YUV420
+   YVU420 YUV422 YVU422 YUV444 YVU444 R8 R16 RG88 GR88 RG1616 GR1616
+   XRGB16161616F XBGR16161616F ARGB16161616F ABGR16161616F XYUV8888 VUY888
+   VUY101010 Y210 Y212 Y216 Y410 Y412 Y416 XVYU2101010 XVYU12_16161616
+   XVYU16161616 Y0L0 X0L0 Y0L2 X0L2 YUV420_8BIT YUV420_10BIT XRGB8888_A8
+   XBGR8888_A8 RGBX8888_A8 BGRX8888_A8 RGB888_A8 BGR888_A8 RGB565_A8 BGR565_A8
+   NV24 NV42 P210 P010 P012 P016 AXBXGXRX106106106106 NV15 Q410 Q401
+   XRGB16161616 XBGR16161616 ARGB16161616 ABGR16161616))
+
+(DEFMETHOD ENUM-FORMAT-VALUE ((OBJ WL_SHM) ENUM-SYMBOL)
+  ";; pixel formats
+
+This describes the memory layout of an individual pixel.
+
+	All renderers should support argb8888 and xrgb8888 but any other
+	formats are optional and may not be supported by the particular
+	renderer in use.
+
+	The drm format codes match the macros defined in drm_fourcc.h, except
+	argb8888 and xrgb8888. The formats actually supported by the compositor
+	will be reported by the format event.
+
+	For all wl_shm formats and unless specified in another protocol
+	extension, pre-multiplied alpha is used for pixel values.
+"
+  (CASE ENUM-SYMBOL
+    (ARGB8888 0)
+    (XRGB8888 1)
+    (C8 538982467)
+    (RGB332 943867730)
+    (BGR233 944916290)
+    (XRGB4444 842093144)
+    (XBGR4444 842089048)
+    (RGBX4444 842094674)
+    (BGRX4444 842094658)
+    (ARGB4444 842093121)
+    (ABGR4444 842089025)
+    (RGBA4444 842088786)
+    (BGRA4444 842088770)
+    (XRGB1555 892424792)
+    (XBGR1555 892420696)
+    (RGBX5551 892426322)
+    (BGRX5551 892426306)
+    (ARGB1555 892424769)
+    (ABGR1555 892420673)
+    (RGBA5551 892420434)
+    (BGRA5551 892420418)
+    (RGB565 909199186)
+    (BGR565 909199170)
+    (RGB888 875710290)
+    (BGR888 875710274)
+    (XBGR8888 875709016)
+    (RGBX8888 875714642)
+    (BGRX8888 875714626)
+    (ABGR8888 875708993)
+    (RGBA8888 875708754)
+    (BGRA8888 875708738)
+    (XRGB2101010 808669784)
+    (XBGR2101010 808665688)
+    (RGBX1010102 808671314)
+    (BGRX1010102 808671298)
+    (ARGB2101010 808669761)
+    (ABGR2101010 808665665)
+    (RGBA1010102 808665426)
+    (BGRA1010102 808665410)
+    (YUYV 1448695129)
+    (YVYU 1431918169)
+    (UYVY 1498831189)
+    (VYUY 1498765654)
+    (AYUV 1448433985)
+    (NV12 842094158)
+    (NV21 825382478)
+    (NV16 909203022)
+    (NV61 825644622)
+    (YUV410 961959257)
+    (YVU410 961893977)
+    (YUV411 825316697)
+    (YVU411 825316953)
+    (YUV420 842093913)
+    (YVU420 842094169)
+    (YUV422 909202777)
+    (YVU422 909203033)
+    (YUV444 875713881)
+    (YVU444 875714137)
+    (R8 538982482)
+    (R16 540422482)
+    (RG88 943212370)
+    (GR88 943215175)
+    (RG1616 842221394)
+    (GR1616 842224199)
+    (XRGB16161616F 1211388504)
+    (XBGR16161616F 1211384408)
+    (ARGB16161616F 1211388481)
+    (ABGR16161616F 1211384385)
+    (XYUV8888 1448434008)
+    (VUY888 875713878)
+    (VUY101010 808670550)
+    (Y210 808530521)
+    (Y212 842084953)
+    (Y216 909193817)
+    (Y410 808531033)
+    (Y412 842085465)
+    (Y416 909194329)
+    (XVYU2101010 808670808)
+    (XVYU12_16161616 909334104)
+    (XVYU16161616 942954072)
+    (Y0L0 810299481)
+    (X0L0 810299480)
+    (Y0L2 843853913)
+    (X0L2 843853912)
+    (YUV420_8BIT 942691673)
+    (YUV420_10BIT 808539481)
+    (XRGB8888_A8 943805016)
+    (XBGR8888_A8 943800920)
+    (RGBX8888_A8 943806546)
+    (BGRX8888_A8 943806530)
+    (RGB888_A8 943798354)
+    (BGR888_A8 943798338)
+    (RGB565_A8 943797586)
+    (BGR565_A8 943797570)
+    (NV24 875714126)
+    (NV42 842290766)
+    (P210 808530512)
+    (P010 808530000)
+    (P012 842084432)
+    (P016 909193296)
+    (AXBXGXRX106106106106 808534593)
+    (NV15 892425806)
+    (Q410 808531025)
+    (Q401 825242705)
+    (XRGB16161616 942953048)
+    (XBGR16161616 942948952)
+    (ARGB16161616 942953025)
+    (ABGR16161616 942948929)))
 
 (DEFMETHOD ENUM-FORMAT ((OBJ WL_SHM) VALUE)
   ";; pixel formats
@@ -830,6 +994,16 @@ preferred_action::enum: action preferred by the destination client
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(INVALID_FINISH INVALID_ACTION_MASK INVALID_ACTION INVALID_OFFER))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_DATA_OFFER) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL
+    (INVALID_FINISH 0)
+    (INVALID_ACTION_MASK 1)
+    (INVALID_ACTION 2)
+    (INVALID_OFFER 3)))
+
 (DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_OFFER) VALUE)
   ";; "
   (CASE VALUE
@@ -1035,6 +1209,12 @@ Arguments:
 dnd_actions::enum: actions supported by the data source
 "
   (ERROR "Unimplemented"))
+
+(EXPORT '(INVALID_ACTION_MASK INVALID_SOURCE))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_DATA_SOURCE) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL (INVALID_ACTION_MASK 0) (INVALID_SOURCE 1)))
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_SOURCE) VALUE)
   ";; "
@@ -1244,6 +1424,12 @@ This request destroys the data device.
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(ROLE))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_DATA_DEVICE) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL (ROLE 0)))
+
 (DEFMETHOD ENUM-ERROR ((OBJ WL_DATA_DEVICE) VALUE) ";; " (CASE VALUE (0 'ROLE)))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_DATA_DEVICE) EVENT)
@@ -1305,6 +1491,37 @@ seat::object: seat associated with the data device
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(NONE COPY MOVE ASK))
+
+(DEFMETHOD ENUM-DND_ACTION-VALUE ((OBJ WL_DATA_DEVICE_MANAGER) ENUM-SYMBOL)
+  ";; drag and drop actions
+
+This is a bitmask of the available/preferred actions in a
+	drag-and-drop operation.
+
+	In the compositor, the selected action is a result of matching the
+	actions offered by the source and destination sides.  \"action\" events
+	with a \"none\" action will be sent to both source and destination if
+	there is no match. All further checks will effectively happen on
+	(source actions ∩ destination actions).
+
+	In addition, compositors may also pick different actions in
+	reaction to key modifiers being pressed. One common design that
+	is used in major toolkits (and the behavior recommended for
+	compositors) is:
+
+	- If no modifiers are pressed, the first match (in bit order)
+	  will be used.
+	- Pressing Shift selects \"move\", if enabled in the mask.
+	- Pressing Control selects \"copy\", if enabled in the mask.
+
+	Behavior beyond that is considered implementation-dependent.
+	Compositors may for example bind other modifiers (like Alt/Meta)
+	or drags initiated with other buttons than BTN_LEFT to specific
+	actions (e.g. \"ask\").
+"
+  (CASE ENUM-SYMBOL (NONE 0) (COPY 1) (MOVE 2) (ASK 4)))
+
 (DEFMETHOD ENUM-DND_ACTION ((OBJ WL_DATA_DEVICE_MANAGER) VALUE)
   ";; drag and drop actions
 
@@ -1333,9 +1550,8 @@ This is a bitmask of the available/preferred actions in a
 	actions (e.g. \"ask\").
 "
   (LET ((OPTIONS
-         '((0 READ-FROM-STRING (NAME ENTRY)) (1 READ-FROM-STRING (NAME ENTRY))
-           (2 READ-FROM-STRING (NAME ENTRY))
-           (4 READ-FROM-STRING (NAME ENTRY)))))
+         '((0 SAFE-ENUM-SYMBOL ENTRY ENUM) (1 SAFE-ENUM-SYMBOL ENTRY ENUM)
+           (2 SAFE-ENUM-SYMBOL ENTRY ENUM) (4 SAFE-ENUM-SYMBOL ENTRY ENUM))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
@@ -1383,6 +1599,12 @@ id::new_id: shell surface to create
 surface::object: surface to be given the shell surface role
 "
   (ERROR "Unimplemented"))
+
+(EXPORT '(ROLE))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_SHELL) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL (ROLE 0)))
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SHELL) VALUE) ";; " (CASE VALUE (0 'ROLE)))
 
@@ -1689,6 +1911,28 @@ class_::string: surface class
 "
   (ERROR "Unimplemented"))
 
+(EXPORT
+ '(NONE TOP BOTTOM LEFT TOP_LEFT BOTTOM_LEFT RIGHT TOP_RIGHT BOTTOM_RIGHT))
+
+(DEFMETHOD ENUM-RESIZE-VALUE ((OBJ WL_SHELL_SURFACE) ENUM-SYMBOL)
+  ";; edge values for resizing
+
+These values are used to indicate which edge of a surface
+	is being dragged in a resize operation. The server may
+	use this information to adapt its behavior, e.g. choose
+	an appropriate cursor image.
+"
+  (CASE ENUM-SYMBOL
+    (NONE 0)
+    (TOP 1)
+    (BOTTOM 2)
+    (LEFT 4)
+    (TOP_LEFT 5)
+    (BOTTOM_LEFT 6)
+    (RIGHT 8)
+    (TOP_RIGHT 9)
+    (BOTTOM_RIGHT 10)))
+
 (DEFMETHOD ENUM-RESIZE ((OBJ WL_SHELL_SURFACE) VALUE)
   ";; edge values for resizing
 
@@ -1698,14 +1942,24 @@ These values are used to indicate which edge of a surface
 	an appropriate cursor image.
 "
   (LET ((OPTIONS
-         '((0 READ-FROM-STRING (NAME ENTRY)) (1 READ-FROM-STRING (NAME ENTRY))
-           (2 READ-FROM-STRING (NAME ENTRY)) (4 READ-FROM-STRING (NAME ENTRY))
-           (5 READ-FROM-STRING (NAME ENTRY)) (6 READ-FROM-STRING (NAME ENTRY))
-           (8 READ-FROM-STRING (NAME ENTRY)) (9 READ-FROM-STRING (NAME ENTRY))
-           (10 READ-FROM-STRING (NAME ENTRY)))))
+         '((0 SAFE-ENUM-SYMBOL ENTRY ENUM) (1 SAFE-ENUM-SYMBOL ENTRY ENUM)
+           (2 SAFE-ENUM-SYMBOL ENTRY ENUM) (4 SAFE-ENUM-SYMBOL ENTRY ENUM)
+           (5 SAFE-ENUM-SYMBOL ENTRY ENUM) (6 SAFE-ENUM-SYMBOL ENTRY ENUM)
+           (8 SAFE-ENUM-SYMBOL ENTRY ENUM) (9 SAFE-ENUM-SYMBOL ENTRY ENUM)
+           (10 SAFE-ENUM-SYMBOL ENTRY ENUM))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
+
+(EXPORT '(INACTIVE))
+
+(DEFMETHOD ENUM-TRANSIENT-VALUE ((OBJ WL_SHELL_SURFACE) ENUM-SYMBOL)
+  ";; details of transient behaviour
+
+These flags specify details of the expected behaviour
+	of transient surfaces. Used in the set_transient request.
+"
+  (CASE ENUM-SYMBOL (INACTIVE 1)))
 
 (DEFMETHOD ENUM-TRANSIENT ((OBJ WL_SHELL_SURFACE) VALUE)
   ";; details of transient behaviour
@@ -1713,10 +1967,21 @@ These values are used to indicate which edge of a surface
 These flags specify details of the expected behaviour
 	of transient surfaces. Used in the set_transient request.
 "
-  (LET ((OPTIONS '((1 READ-FROM-STRING (NAME ENTRY)))))
+  (LET ((OPTIONS '((1 SAFE-ENUM-SYMBOL ENTRY ENUM))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
+
+(EXPORT '(DEFAULT SCALE DRIVER FILL))
+
+(DEFMETHOD ENUM-FULLSCREEN_METHOD-VALUE ((OBJ WL_SHELL_SURFACE) ENUM-SYMBOL)
+  ";; different method to set the surface fullscreen
+
+Hints to indicate to the compositor how to deal with a conflict
+	between the dimensions of the surface and the dimensions of the
+	output. The compositor is free to ignore this parameter.
+"
+  (CASE ENUM-SYMBOL (DEFAULT 0) (SCALE 1) (DRIVER 2) (FILL 3)))
 
 (DEFMETHOD ENUM-FULLSCREEN_METHOD ((OBJ WL_SHELL_SURFACE) VALUE)
   ";; different method to set the surface fullscreen
@@ -2253,6 +2518,22 @@ y::int: surface-local y coordinate
 "
   (ERROR "Unimplemented"))
 
+(EXPORT
+ '(INVALID_SCALE INVALID_TRANSFORM INVALID_SIZE INVALID_OFFSET
+   DEFUNCT_ROLE_OBJECT))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_SURFACE) ENUM-SYMBOL)
+  ";; wl_surface error values
+
+These errors can be emitted in response to wl_surface requests.
+"
+  (CASE ENUM-SYMBOL
+    (INVALID_SCALE 0)
+    (INVALID_TRANSFORM 1)
+    (INVALID_SIZE 2)
+    (INVALID_OFFSET 3)
+    (DEFUNCT_ROLE_OBJECT 4)))
+
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SURFACE) VALUE)
   ";; wl_surface error values
 
@@ -2424,6 +2705,16 @@ Using this request a client can tell the server that it is not going to
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(POINTER KEYBOARD TOUCH))
+
+(DEFMETHOD ENUM-CAPABILITY-VALUE ((OBJ WL_SEAT) ENUM-SYMBOL)
+  ";; seat capability bitmask
+
+This is a bitmask of capabilities this seat has; if a member is
+	set, then it is present on the seat.
+"
+  (CASE ENUM-SYMBOL (POINTER 1) (KEYBOARD 2) (TOUCH 4)))
+
 (DEFMETHOD ENUM-CAPABILITY ((OBJ WL_SEAT) VALUE)
   ";; seat capability bitmask
 
@@ -2431,11 +2722,20 @@ This is a bitmask of capabilities this seat has; if a member is
 	set, then it is present on the seat.
 "
   (LET ((OPTIONS
-         '((1 READ-FROM-STRING (NAME ENTRY)) (2 READ-FROM-STRING (NAME ENTRY))
-           (4 READ-FROM-STRING (NAME ENTRY)))))
+         '((1 SAFE-ENUM-SYMBOL ENTRY ENUM) (2 SAFE-ENUM-SYMBOL ENTRY ENUM)
+           (4 SAFE-ENUM-SYMBOL ENTRY ENUM))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
+
+(EXPORT '(MISSING_CAPABILITY))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_SEAT) ENUM-SYMBOL)
+  ";; wl_seat error values
+
+These errors can be emitted in response to wl_seat requests.
+"
+  (CASE ENUM-SYMBOL (MISSING_CAPABILITY 0)))
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SEAT) VALUE)
   ";; wl_seat error values
@@ -2870,7 +3170,23 @@ Using this request a client can tell the server that it is not going to
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(ROLE))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_POINTER) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL (ROLE 0)))
+
 (DEFMETHOD ENUM-ERROR ((OBJ WL_POINTER) VALUE) ";; " (CASE VALUE (0 'ROLE)))
+
+(EXPORT '(RELEASED PRESSED))
+
+(DEFMETHOD ENUM-BUTTON_STATE-VALUE ((OBJ WL_POINTER) ENUM-SYMBOL)
+  ";; physical button state
+
+Describes the physical state of a button that produced the button
+	event.
+"
+  (CASE ENUM-SYMBOL (RELEASED 0) (PRESSED 1)))
 
 (DEFMETHOD ENUM-BUTTON_STATE ((OBJ WL_POINTER) VALUE)
   ";; physical button state
@@ -2880,12 +3196,45 @@ Describes the physical state of a button that produced the button
 "
   (CASE VALUE (0 'RELEASED) (1 'PRESSED)))
 
+(EXPORT '(VERTICAL_SCROLL HORIZONTAL_SCROLL))
+
+(DEFMETHOD ENUM-AXIS-VALUE ((OBJ WL_POINTER) ENUM-SYMBOL)
+  ";; axis types
+
+Describes the axis types of scroll events.
+"
+  (CASE ENUM-SYMBOL (VERTICAL_SCROLL 0) (HORIZONTAL_SCROLL 1)))
+
 (DEFMETHOD ENUM-AXIS ((OBJ WL_POINTER) VALUE)
   ";; axis types
 
 Describes the axis types of scroll events.
 "
   (CASE VALUE (0 'VERTICAL_SCROLL) (1 'HORIZONTAL_SCROLL)))
+
+(EXPORT '(WHEEL FINGER CONTINUOUS WHEEL_TILT))
+
+(DEFMETHOD ENUM-AXIS_SOURCE-VALUE ((OBJ WL_POINTER) ENUM-SYMBOL)
+  ";; axis source types
+
+Describes the source types for axis events. This indicates to the
+	client how an axis event was physically generated; a client may
+	adjust the user interface accordingly. For example, scroll events
+	from a \"finger\" source may be in a smooth coordinate space with
+	kinetic scrolling whereas a \"wheel\" source may be in discrete steps
+	of a number of lines.
+
+	The \"continuous\" axis source is a device generating events in a
+	continuous coordinate space, but using something other than a
+	finger. One example for this source is button-based scrolling where
+	the vertical motion of a device is converted to scroll events while
+	a button is held down.
+
+	The \"wheel tilt\" axis source indicates that the actual device is a
+	wheel but the scroll event is not caused by a rotation but a
+	(usually sideways) tilt of the wheel.
+"
+  (CASE ENUM-SYMBOL (WHEEL 0) (FINGER 1) (CONTINUOUS 2) (WHEEL_TILT 3)))
 
 (DEFMETHOD ENUM-AXIS_SOURCE ((OBJ WL_POINTER) VALUE)
   ";; axis source types
@@ -2908,6 +3257,16 @@ Describes the source types for axis events. This indicates to the
 	(usually sideways) tilt of the wheel.
 "
   (CASE VALUE (0 'WHEEL) (1 'FINGER) (2 'CONTINUOUS) (3 'WHEEL_TILT)))
+
+(EXPORT '(IDENTICAL INVERTED))
+
+(DEFMETHOD ENUM-AXIS_RELATIVE_DIRECTION-VALUE ((OBJ WL_POINTER) ENUM-SYMBOL)
+  ";; axis relative direction
+
+This specifies the direction of the physical motion that caused a
+	wl_pointer.axis event, relative to the wl_pointer.axis direction.
+"
+  (CASE ENUM-SYMBOL (IDENTICAL 0) (INVERTED 1)))
 
 (DEFMETHOD ENUM-AXIS_RELATIVE_DIRECTION ((OBJ WL_POINTER) VALUE)
   ";; axis relative direction
@@ -3083,6 +3442,16 @@ NIL
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(NO_KEYMAP XKB_V1))
+
+(DEFMETHOD ENUM-KEYMAP_FORMAT-VALUE ((OBJ WL_KEYBOARD) ENUM-SYMBOL)
+  ";; keyboard mapping format
+
+This specifies the format of the keymap provided to the
+	client with the wl_keyboard.keymap event.
+"
+  (CASE ENUM-SYMBOL (NO_KEYMAP 0) (XKB_V1 1)))
+
 (DEFMETHOD ENUM-KEYMAP_FORMAT ((OBJ WL_KEYBOARD) VALUE)
   ";; keyboard mapping format
 
@@ -3090,6 +3459,15 @@ This specifies the format of the keymap provided to the
 	client with the wl_keyboard.keymap event.
 "
   (CASE VALUE (0 'NO_KEYMAP) (1 'XKB_V1)))
+
+(EXPORT '(RELEASED PRESSED))
+
+(DEFMETHOD ENUM-KEY_STATE-VALUE ((OBJ WL_KEYBOARD) ENUM-SYMBOL)
+  ";; physical key state
+
+Describes the physical state of a key that produced the key event.
+"
+  (CASE ENUM-SYMBOL (RELEASED 0) (PRESSED 1)))
 
 (DEFMETHOD ENUM-KEY_STATE ((OBJ WL_KEYBOARD) VALUE)
   ";; physical key state
@@ -3527,6 +3905,22 @@ Using this request a client can tell the server that it is not going to
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(UNKNOWN NONE HORIZONTAL_RGB HORIZONTAL_BGR VERTICAL_RGB VERTICAL_BGR))
+
+(DEFMETHOD ENUM-SUBPIXEL-VALUE ((OBJ WL_OUTPUT) ENUM-SYMBOL)
+  ";; subpixel geometry information
+
+This enumeration describes how the physical
+	pixels on an output are laid out.
+"
+  (CASE ENUM-SYMBOL
+    (UNKNOWN 0)
+    (NONE 1)
+    (HORIZONTAL_RGB 2)
+    (HORIZONTAL_BGR 3)
+    (VERTICAL_RGB 4)
+    (VERTICAL_BGR 5)))
+
 (DEFMETHOD ENUM-SUBPIXEL ((OBJ WL_OUTPUT) VALUE)
   ";; subpixel geometry information
 
@@ -3540,6 +3934,35 @@ This enumeration describes how the physical
     (3 'HORIZONTAL_BGR)
     (4 'VERTICAL_RGB)
     (5 'VERTICAL_BGR)))
+
+(EXPORT
+ '(NORMAL TRANSFORM_90 TRANSFORM_180 TRANSFORM_270 FLIPPED FLIPPED_90
+   FLIPPED_180 FLIPPED_270))
+
+(DEFMETHOD ENUM-TRANSFORM-VALUE ((OBJ WL_OUTPUT) ENUM-SYMBOL)
+  ";; transform from framebuffer to output
+
+This describes the transform that a compositor will apply to a
+	surface to compensate for the rotation or mirroring of an
+	output device.
+
+	The flipped values correspond to an initial flip around a
+	vertical axis followed by rotation.
+
+	The purpose is mainly to allow clients to render accordingly and
+	tell the compositor, so that for fullscreen surfaces, the
+	compositor will still be able to scan out directly from client
+	surfaces.
+"
+  (CASE ENUM-SYMBOL
+    (NORMAL 0)
+    (TRANSFORM_90 1)
+    (TRANSFORM_180 2)
+    (TRANSFORM_270 3)
+    (FLIPPED 4)
+    (FLIPPED_90 5)
+    (FLIPPED_180 6)
+    (FLIPPED_270 7)))
 
 (DEFMETHOD ENUM-TRANSFORM ((OBJ WL_OUTPUT) VALUE)
   ";; transform from framebuffer to output
@@ -3558,13 +3981,23 @@ This describes the transform that a compositor will apply to a
 "
   (CASE VALUE
     (0 'NORMAL)
-    (1 '90)
-    (2 '180)
-    (3 '270)
+    (1 'TRANSFORM_90)
+    (2 'TRANSFORM_180)
+    (3 'TRANSFORM_270)
     (4 'FLIPPED)
     (5 'FLIPPED_90)
     (6 'FLIPPED_180)
     (7 'FLIPPED_270)))
+
+(EXPORT '(CURRENT PREFERRED))
+
+(DEFMETHOD ENUM-MODE-VALUE ((OBJ WL_OUTPUT) ENUM-SYMBOL)
+  ";; mode information
+
+These flags describe properties of an output mode.
+	They are used in the flags bitfield of the mode event.
+"
+  (CASE ENUM-SYMBOL (CURRENT 1) (PREFERRED 2)))
 
 (DEFMETHOD ENUM-MODE ((OBJ WL_OUTPUT) VALUE)
   ";; mode information
@@ -3573,8 +4006,7 @@ These flags describe properties of an output mode.
 	They are used in the flags bitfield of the mode event.
 "
   (LET ((OPTIONS
-         '((1 READ-FROM-STRING (NAME ENTRY))
-           (2 READ-FROM-STRING (NAME ENTRY)))))
+         '((1 SAFE-ENUM-SYMBOL ENTRY ENUM) (2 SAFE-ENUM-SYMBOL ENTRY ENUM))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
@@ -3720,6 +4152,12 @@ surface::object: the surface to be turned into a sub-surface
 parent::object: the parent surface
 "
   (ERROR "Unimplemented"))
+
+(EXPORT '(BAD_SURFACE BAD_PARENT))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_SUBCOMPOSITOR) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL (BAD_SURFACE 0) (BAD_PARENT 1)))
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SUBCOMPOSITOR) VALUE)
   ";; "
@@ -3913,6 +4351,12 @@ Change the commit behaviour of the sub-surface to desynchronized
 	the cached state is applied on set_desync.
 "
   (ERROR "Unimplemented"))
+
+(EXPORT '(BAD_SURFACE))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ WL_SUBSURFACE) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL (BAD_SURFACE 0)))
 
 (DEFMETHOD ENUM-ERROR ((OBJ WL_SUBSURFACE) VALUE)
   ";; "

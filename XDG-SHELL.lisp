@@ -102,6 +102,21 @@ serial::uint: serial of the ping event
 "
   (ERROR "Unimplemented"))
 
+(EXPORT
+ '(ROLE DEFUNCT_SURFACES NOT_THE_TOPMOST_POPUP INVALID_POPUP_PARENT
+   INVALID_SURFACE_STATE INVALID_POSITIONER UNRESPONSIVE))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ XDG_WM_BASE) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL
+    (ROLE 0)
+    (DEFUNCT_SURFACES 1)
+    (NOT_THE_TOPMOST_POPUP 2)
+    (INVALID_POPUP_PARENT 3)
+    (INVALID_SURFACE_STATE 4)
+    (INVALID_POSITIONER 5)
+    (UNRESPONSIVE 6)))
+
 (DEFMETHOD ENUM-ERROR ((OBJ XDG_WM_BASE) VALUE)
   ";; "
   (CASE VALUE
@@ -327,9 +342,31 @@ serial::uint: serial of parent configure event
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(INVALID_INPUT))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ XDG_POSITIONER) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL (INVALID_INPUT 0)))
+
 (DEFMETHOD ENUM-ERROR ((OBJ XDG_POSITIONER) VALUE)
   ";; "
   (CASE VALUE (0 'INVALID_INPUT)))
+
+(EXPORT
+ '(NONE TOP BOTTOM LEFT RIGHT TOP_LEFT BOTTOM_LEFT TOP_RIGHT BOTTOM_RIGHT))
+
+(DEFMETHOD ENUM-ANCHOR-VALUE ((OBJ XDG_POSITIONER) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL
+    (NONE 0)
+    (TOP 1)
+    (BOTTOM 2)
+    (LEFT 3)
+    (RIGHT 4)
+    (TOP_LEFT 5)
+    (BOTTOM_LEFT 6)
+    (TOP_RIGHT 7)
+    (BOTTOM_RIGHT 8)))
 
 (DEFMETHOD ENUM-ANCHOR ((OBJ XDG_POSITIONER) VALUE)
   ";; "
@@ -344,6 +381,22 @@ serial::uint: serial of parent configure event
     (7 'TOP_RIGHT)
     (8 'BOTTOM_RIGHT)))
 
+(EXPORT
+ '(NONE TOP BOTTOM LEFT RIGHT TOP_LEFT BOTTOM_LEFT TOP_RIGHT BOTTOM_RIGHT))
+
+(DEFMETHOD ENUM-GRAVITY-VALUE ((OBJ XDG_POSITIONER) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL
+    (NONE 0)
+    (TOP 1)
+    (BOTTOM 2)
+    (LEFT 3)
+    (RIGHT 4)
+    (TOP_LEFT 5)
+    (BOTTOM_LEFT 6)
+    (TOP_RIGHT 7)
+    (BOTTOM_RIGHT 8)))
+
 (DEFMETHOD ENUM-GRAVITY ((OBJ XDG_POSITIONER) VALUE)
   ";; "
   (CASE VALUE
@@ -356,6 +409,32 @@ serial::uint: serial of parent configure event
     (6 'BOTTOM_LEFT)
     (7 'TOP_RIGHT)
     (8 'BOTTOM_RIGHT)))
+
+(EXPORT '(NONE SLIDE_X SLIDE_Y FLIP_X FLIP_Y RESIZE_X RESIZE_Y))
+
+(DEFMETHOD ENUM-CONSTRAINT_ADJUSTMENT-VALUE ((OBJ XDG_POSITIONER) ENUM-SYMBOL)
+  ";; constraint adjustments
+
+The constraint adjustment value define ways the compositor will adjust
+	the position of the surface, if the unadjusted position would result
+	in the surface being partly constrained.
+
+	Whether a surface is considered 'constrained' is left to the compositor
+	to determine. For example, the surface may be partly outside the
+	compositor's defined 'work area', thus necessitating the child surface's
+	position be adjusted until it is entirely inside the work area.
+
+	The adjustments can be combined, according to a defined precedence: 1)
+	Flip, 2) Slide, 3) Resize.
+"
+  (CASE ENUM-SYMBOL
+    (NONE 0)
+    (SLIDE_X 1)
+    (SLIDE_Y 2)
+    (FLIP_X 4)
+    (FLIP_Y 8)
+    (RESIZE_X 16)
+    (RESIZE_Y 32)))
 
 (DEFMETHOD ENUM-CONSTRAINT_ADJUSTMENT ((OBJ XDG_POSITIONER) VALUE)
   ";; constraint adjustments
@@ -373,10 +452,10 @@ The constraint adjustment value define ways the compositor will adjust
 	Flip, 2) Slide, 3) Resize.
 "
   (LET ((OPTIONS
-         '((0 READ-FROM-STRING (NAME ENTRY)) (1 READ-FROM-STRING (NAME ENTRY))
-           (2 READ-FROM-STRING (NAME ENTRY)) (4 READ-FROM-STRING (NAME ENTRY))
-           (8 READ-FROM-STRING (NAME ENTRY)) (16 READ-FROM-STRING (NAME ENTRY))
-           (32 READ-FROM-STRING (NAME ENTRY)))))
+         '((0 SAFE-ENUM-SYMBOL ENTRY ENUM) (1 SAFE-ENUM-SYMBOL ENTRY ENUM)
+           (2 SAFE-ENUM-SYMBOL ENTRY ENUM) (4 SAFE-ENUM-SYMBOL ENTRY ENUM)
+           (8 SAFE-ENUM-SYMBOL ENTRY ENUM) (16 SAFE-ENUM-SYMBOL ENTRY ENUM)
+           (32 SAFE-ENUM-SYMBOL ENTRY ENUM))))
     (LOOP FOR (MASK NAME) IN OPTIONS
           WHEN (LOGBITP MASK VALUE)
           COLLECT NAME)))
@@ -618,6 +697,20 @@ Arguments:
 serial::uint: the serial from the configure event
 "
   (ERROR "Unimplemented"))
+
+(EXPORT
+ '(NOT_CONSTRUCTED ALREADY_CONSTRUCTED UNCONFIGURED_BUFFER INVALID_SERIAL
+   INVALID_SIZE DEFUNCT_ROLE_OBJECT))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ XDG_SURFACE) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL
+    (NOT_CONSTRUCTED 1)
+    (ALREADY_CONSTRUCTED 2)
+    (UNCONFIGURED_BUFFER 3)
+    (INVALID_SERIAL 4)
+    (INVALID_SIZE 5)
+    (DEFUNCT_ROLE_OBJECT 6)))
 
 (DEFMETHOD ENUM-ERROR ((OBJ XDG_SURFACE) VALUE)
   ";; "
@@ -1180,9 +1273,38 @@ Request that the compositor minimize your surface. There is no
 "
   (ERROR "Unimplemented"))
 
+(EXPORT '(INVALID_RESIZE_EDGE INVALID_PARENT INVALID_SIZE))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ XDG_TOPLEVEL) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL
+    (INVALID_RESIZE_EDGE 0)
+    (INVALID_PARENT 1)
+    (INVALID_SIZE 2)))
+
 (DEFMETHOD ENUM-ERROR ((OBJ XDG_TOPLEVEL) VALUE)
   ";; "
   (CASE VALUE (0 'INVALID_RESIZE_EDGE) (1 'INVALID_PARENT) (2 'INVALID_SIZE)))
+
+(EXPORT
+ '(NONE TOP BOTTOM LEFT TOP_LEFT BOTTOM_LEFT RIGHT TOP_RIGHT BOTTOM_RIGHT))
+
+(DEFMETHOD ENUM-RESIZE_EDGE-VALUE ((OBJ XDG_TOPLEVEL) ENUM-SYMBOL)
+  ";; edge values for resizing
+
+These values are used to indicate which edge of a surface
+	is being dragged in a resize operation.
+"
+  (CASE ENUM-SYMBOL
+    (NONE 0)
+    (TOP 1)
+    (BOTTOM 2)
+    (LEFT 4)
+    (TOP_LEFT 5)
+    (BOTTOM_LEFT 6)
+    (RIGHT 8)
+    (TOP_RIGHT 9)
+    (BOTTOM_RIGHT 10)))
 
 (DEFMETHOD ENUM-RESIZE_EDGE ((OBJ XDG_TOPLEVEL) VALUE)
   ";; edge values for resizing
@@ -1200,6 +1322,32 @@ These values are used to indicate which edge of a surface
     (8 'RIGHT)
     (9 'TOP_RIGHT)
     (10 'BOTTOM_RIGHT)))
+
+(EXPORT
+ '(MAXIMIZED FULLSCREEN RESIZING ACTIVATED TILED_LEFT TILED_RIGHT TILED_TOP
+   TILED_BOTTOM SUSPENDED))
+
+(DEFMETHOD ENUM-STATE-VALUE ((OBJ XDG_TOPLEVEL) ENUM-SYMBOL)
+  ";; types of state on the surface
+
+The different state values used on the surface. This is designed for
+	state values like maximized, fullscreen. It is paired with the
+	configure event to ensure that both the client and the compositor
+	setting the state can be synchronized.
+
+	States set in this way are double-buffered. They will get applied on
+	the next commit.
+"
+  (CASE ENUM-SYMBOL
+    (MAXIMIZED 1)
+    (FULLSCREEN 2)
+    (RESIZING 3)
+    (ACTIVATED 4)
+    (TILED_LEFT 5)
+    (TILED_RIGHT 6)
+    (TILED_TOP 7)
+    (TILED_BOTTOM 8)
+    (SUSPENDED 9)))
 
 (DEFMETHOD ENUM-STATE ((OBJ XDG_TOPLEVEL) VALUE)
   ";; types of state on the surface
@@ -1222,6 +1370,12 @@ The different state values used on the surface. This is designed for
     (7 'TILED_TOP)
     (8 'TILED_BOTTOM)
     (9 'SUSPENDED)))
+
+(EXPORT '(WINDOW_MENU MAXIMIZE FULLSCREEN MINIMIZE))
+
+(DEFMETHOD ENUM-WM_CAPABILITIES-VALUE ((OBJ XDG_TOPLEVEL) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL (WINDOW_MENU 1) (MAXIMIZE 2) (FULLSCREEN 3) (MINIMIZE 4)))
 
 (DEFMETHOD ENUM-WM_CAPABILITIES ((OBJ XDG_TOPLEVEL) VALUE)
   ";; "
@@ -1439,6 +1593,12 @@ positioner::object: NIL
 token::uint: reposition request token
 "
   (ERROR "Unimplemented"))
+
+(EXPORT '(INVALID_GRAB))
+
+(DEFMETHOD ENUM-ERROR-VALUE ((OBJ XDG_POPUP) ENUM-SYMBOL)
+  ";; "
+  (CASE ENUM-SYMBOL (INVALID_GRAB 0)))
 
 (DEFMETHOD ENUM-ERROR ((OBJ XDG_POPUP) VALUE)
   ";; "

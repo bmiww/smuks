@@ -20,6 +20,7 @@
 (defun ev-name (event) (read-from-string (format nil "evt-~a" (name event))))
 (defun req-name (request) (read-from-string (format nil "req-~a" (name request))))
 (defun enum-name (enum) (read-from-string (format nil "enum-~a" (name enum))))
+(defun enum-val-name (enum) (read-from-string (format nil "enum-~a-value" (name enum))))
 (defun symbolize-event (event) (ev-name event))
 (defun symbolize-request (request) (req-name request))
 (defun do-arg (arg) (read-from-string (name arg)))
@@ -27,6 +28,13 @@
   (if (enum arg)
       (read-from-string (format nil "(~a ~a)" (arg-type arg) (enum arg)))
       (read-from-string (format nil "~a" (arg-type arg)))))
+
+(defun safe-enum-symbol (entry enum)
+  "For enum names that are not valid symbols, we prepend them with the enum name"
+  (let ((name (name entry)))
+    (read-from-string (format nil "~a~a"
+			      (if (nump name) (format nil "~a_" (name enum)) "")
+			      name))))
 
 (defun do-event (interface event)
   `(defmethod ,(ev-name event) ((obj ,(read-from-string interface))
@@ -44,25 +52,34 @@
      ,(format nil ";; ~a" (description request))
      (error "Unimplemented")))
 
+
 (defun do-regular-enum (interface enum)
-  `(defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)
+  `((defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)
      ,(format nil ";; ~a" (description enum))
      (case value
-       ,@(mapcar (lambda (entry) `(,(value entry) ',(read-from-string (name entry)))) (entries enum)))))
+       ,@(mapcar (lambda (entry) `(,(value entry) ',(safe-enum-symbol entry enum))) (entries enum))))))
 
 (defun do-bitfield-enum (interface enum)
-  `(defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)
+  `((defmethod ,(enum-name enum) ((obj ,(read-from-string interface)) value)
      ,(format nil ";; ~a" (description enum))
-     (let ((options ',(mapcar (lambda (entry) (cons (value entry) '(read-from-string (name entry)))) (entries enum))))
+     (let ((options ',(mapcar (lambda (entry) (cons (value entry) '(safe-enum-symbol entry enum))) (entries enum))))
        (loop for (mask name) in options
 	     when (logbitp mask value)
-	     collect name))))
+	     collect name)))))
+
+(defun do-enum-to-value (interface enum)
+  `((defmethod ,(enum-val-name enum) ((obj ,(read-from-string interface)) enum-symbol)
+     ,(format nil ";; ~a" (description enum))
+      (case enum-symbol
+	,@(mapcar (lambda (entry) `(,(safe-enum-symbol entry enum) ,(value entry))) (entries enum))))))
 
 (defun do-enum (interface enum)
-  (if (bitfield-p enum)
-      (do-bitfield-enum interface enum)
-      (do-regular-enum interface enum)))
-
+  (append
+   `((export ',(mapcar (lambda (entry) (safe-enum-symbol entry enum)) (entries enum))))
+   (do-enum-to-value interface enum)
+   (if (bitfield-p enum)
+       (do-bitfield-enum interface enum)
+       (do-regular-enum interface enum))))
 
 (defun do-event-opcode-matchers (interface events)
   `((defmethod match-event-opcode ((obj ,(read-from-string interface)) event)
@@ -99,7 +116,7 @@
 	 (:documentation ,(description interface))))
      (mapcar (lambda (event) (do-event (name interface) event)) (events interface))
      (mapcar (lambda (request) (do-request (name interface) request)) (requests interface))
-     (mapcar (lambda (enum) (do-enum (name interface) enum)) (enums interface))
+     (flatten (mapcar (lambda (enum) (do-enum (name interface) enum)) (enums interface)))
      (do-event-opcode-matchers (name interface) (events interface))
      (do-request-opcode-matchers (name interface) (requests interface))
      (do-request-arg-types (name interface) (requests interface)))))
@@ -145,3 +162,19 @@
 			    :if-exists :supersede)
       (loop :for xep :in code
 	    :do (format stream "~S~%~%" xep)))))
+
+
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+
+(defun nump (s)
+  "Return t if `s' contains at least one character and all characters are numbers."
+  (ppcre:scan "^[0-9]+$" s))
+
+(defun flatten (list)
+  (let ((result nil))
+    (dolist (sublist list)
+      (dolist (x sublist)
+	(push x result)))
+    (nreverse result)))
