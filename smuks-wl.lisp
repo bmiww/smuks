@@ -28,10 +28,10 @@
     ;; TODO: This being a list is possibly problematic for removal?
     ;; Depends on the amount of clients i guess. And only member/ref access rather than id
     (push client (clients (display wayland)))
-    (format t "CLIENT CONNECTED~%")
+    (log! "CLIENT CONNECTED~%")
     (bt:make-thread (lambda ()
 		      (loop (read-wayland-message wayland client stream))
-		      (format t "Exiting client~%")
+		      (log! "Exiting client~%")
 		      (unix-sockets:close-unix-socket (socket client))))))
 
 
@@ -50,7 +50,7 @@
     ;; Discard extra bytes - since wayland messages are always 32-bit aligned
     (consume-padding stream message-size)
 
-    (format t "📥 ~a with ~a~%" req-method payload)
+    (log! "📥 ~a with ~a~%" req-method payload)
     (apply req-method `(,object ,client ,@payload))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
@@ -108,8 +108,9 @@
 (defmethod wl/wl_display::req-sync ((display display) client callback-id)
   (let* ((callback (make-instance 'callback :id callback-id)))
     ;; TODO: A shitty wait for now. Should instead create an event tracker pending events
+    ;; TODO: For now i think this is even never really true
     (loop while (pending client)
-	  do (sleep 0.1) (format t "⏲~%"))
+	  do (sleep 0.1) (log! "⏲~%"))
 
     ;; TODO: For now - not tracking callbacks, just directly invoking it
     ;; (add-callback client callback-id)))

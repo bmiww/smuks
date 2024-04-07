@@ -1,8 +1,25 @@
+
+;; ██╗   ██╗████████╗██╗██╗
+;; ██║   ██║╚══██╔══╝██║██║
+;; ██║   ██║   ██║   ██║██║
+;; ██║   ██║   ██║   ██║██║
+;; ╚██████╔╝   ██║   ██║███████╗
+;;  ╚═════╝    ╚═╝   ╚═╝╚══════╝
 (defpackage :smuks-util
   (:use :cl)
-  (:export dohash))
+  (:export dohash log! *log-output*))
 (in-package :smuks-util)
 
+
+;; ┬  ┌─┐┌─┐┬
+;; │  │ ││ ┬│
+;; ┴─┘└─┘└─┘o
+(defvar *log-output* *standard-output*)
+(defun log! (&rest args) (apply #'format *log-output* args))
+
+;; ┌┬┐┌─┐┬ ┬┌─┐┌─┐┬ ┬
+;;  │││ │├─┤├─┤└─┐├─┤
+;; ─┴┘└─┘┴ ┴┴ ┴└─┘┴ ┴
 ;; NOTE: Taken from https://github.com/yitzchak/trivial-do/blob/master/src/dohash.lisp
 (defmacro dohash ((key-var value-var hash-table-form &optional result-form) &body body)
   "dohash iterates over the elements of an hash table and binds key-var to the key,

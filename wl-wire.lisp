@@ -11,7 +11,7 @@
 ;; https://wayland.freedesktop.org/docs/html/ch04.html
 
 (defpackage :wl-wire
-  (:use :cl)
+  (:use :cl :smuks-util)
   (:export consume-padding write-event-args read-req-args read-n-as-number))
 (in-package :wl-wire)
 
@@ -48,7 +48,9 @@
 	  (wl:fd (incf *message-size* 0))
 
 	  ;; TODO: I guess this was utf8. Hoping for the best.
-	  (wl:string (incf *message-size* (+ 1 (align-32-bit-msg-size (length value)))))
+	  ;; NOTE: +1 for the length value in the beginning of the string
+	  ;; NOTE: +1 for the null terminator
+	  (wl:string (incf *message-size* (+ 2 (align-32-bit-msg-size (length value)))))
 
 	  ;; TODO: The base protocol only does this for the currently presset keys array on an enter event
 	  ;; which afaik should be uint array, so i can assume that i can just multiply by 4
@@ -63,7 +65,7 @@
 (defun write-event-args (stream obj opcode &rest args)
   (let ((obj-id (wl::id obj))
 	(message-size (calculate-message-size args)))
-    (format t "📨 ~a(~a) op:~a with ~a, size:~a~%" (class-name (class-of obj)) obj-id opcode args message-size)
+    (log! "📨 ~a(~a) op:~a with ~a, size:~a~%" (class-name (class-of obj)) obj-id opcode args message-size)
 
     (write-number-bytes stream obj-id 4)
     (write-number-bytes stream opcode 2)
@@ -183,9 +185,11 @@
 
 (defun write-a-string (stream string)
   (let ((length (length string)))
-    (write-number-bytes stream length 4)
+    (write-number-bytes stream (+ 1 length) 4)
     (write-sequence (coerce string 'vector) stream)
-    (loop for i from 0 below (- 4 (mod length 4))
+    (write-byte 0 stream)
+    ;; NOTE: +2 to account for length and null terminator
+    (loop for i from 0 below (- 4 (mod (+ 2 length) 4))
 	  do (write-byte 0 stream))))
 
 (defun write-array (stream array)

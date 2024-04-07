@@ -22,8 +22,8 @@
 	       #:swank
 	       #:glfw
 	       #:str)
-  :components ((:file "package")
-	       (:file "util")
+  :components ((:file "util")
+	       (:file "package")
 	       (:file "WAYLAND-SERVER")
 	       (:file "wl-wire")
 	       (:file "smuks-wl")

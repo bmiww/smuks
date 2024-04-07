@@ -1,4 +1,10 @@
 
+;; ███████╗███╗   ███╗██╗   ██╗██╗  ██╗███████╗
+;; ██╔════╝████╗ ████║██║   ██║██║ ██╔╝██╔════╝
+;; ███████╗██╔████╔██║██║   ██║█████╔╝ ███████╗
+;; ╚════██║██║╚██╔╝██║██║   ██║██╔═██╗ ╚════██║
+;; ███████║██║ ╚═╝ ██║╚██████╔╝██║  ██╗███████║
+;; ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
 (in-package :smuks)
 
 (defvar *socket-file* "/tmp/smuks.socket")
@@ -18,8 +24,21 @@
 ;; NOTE: Some very simple WL client you found here
 ;; https://github.com/emersion/hello-wayland/blob/master/main.c
 (defvar *test-program* "hello-wayland")
+(defvar *main-std* nil)
+
+(defun heading ()
+  (format t "~%")
+  (format t "███████╗███╗   ███╗██╗   ██╗██╗  ██╗███████╗~%")
+  (format t "██╔════╝████╗ ████║██║   ██║██║ ██╔╝██╔════╝~%")
+  (format t "███████╗██╔████╔██║██║   ██║█████╔╝ ███████╗~%")
+  (format t "╚════██║██║╚██╔╝██║██║   ██║██╔═██╗ ╚════██║~%")
+  (format t "███████║██║ ╚═╝ ██║╚██████╔╝██║  ██╗███████║~%")
+  (format t "╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝~%")
+  (format t "~%"))
 
 (defun main ()
+  (setf *log-output* *standard-output*)
+  (heading)
   (setf *smuks-exit* nil)
   ;; TODO: This kills off the client listener rather ungracefully
   (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
@@ -36,7 +55,7 @@
   (setf *client-thread*
 	(bt:make-thread
 	 (lambda ()
-	   (format t "Starting wayland socket listener~%")
+	   (log! "Starting wayland socket listener~%")
 	   (loop until *smuks-exit*
 		 do (let* ((client (unix-sockets:accept-unix-socket *socket*)))
 		      (smuks-wl:add-client *wayland* client))))))
@@ -67,7 +86,7 @@
 	  (unix-sockets:make-unix-socket *socket-file*))
     (create-new-socket ()
       :report "Create new socket"
-      (format t "Creating new socket~%")
+      (log! "Creating new socket~%")
       (delete-file *socket-file*)
       (unix-sockets:make-unix-socket *socket-file*))))
 
@@ -133,8 +152,8 @@
   (bt:make-thread
    (lambda ()
      (sleep 1)
-     (format t "🟢:~a: Starting an app~%" app-name)
+     (log! "🟢:~a: Starting an app~%" app-name)
      (let ((process (uiop:launch-program `(,app-name) :output :stream :error-output *standard-output*)))
        (loop while (uiop/launch-program:process-alive-p process)
-	     do (format t "🔴:~a: ~a~%" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
-       (format t "🟢:~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))))
+	     do (log! "🔴:~a: ~a~%" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
+       (log! "🟢:~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))))
