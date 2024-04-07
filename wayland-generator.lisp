@@ -86,7 +86,8 @@
     ;; TODO: This could probably move the client to the wl-object thing
      `((defclass ,class-name (wl:wl-object)
 	 ((client :initarg :client :accessor client))
-	(:documentation ,(description interface))))
+	 (:default-initargs :version ,(version interface) :ifname ,(name interface))
+	 (:documentation ,(description interface))))
      (mapcar (lambda (event) (do-event (name interface) event)) (events interface))
      (mapcar (lambda (request) (do-request (name interface) request)) (requests interface))
      (mapcar (lambda (enum) (do-enum (name interface) enum)) (enums interface))
@@ -102,10 +103,13 @@
      `((defpackage :wl
 	 (:use #:cl)
 	 (:export wl-object match-event-opcode match-request-opcode get-request-arg-types
+		  id ifname version
 		  ,@(mapcar (lambda (a) a) *arg-type-symbols*))))
      `((in-package :wl))
      `((defvar *arg-type-symbols* ',*arg-type-symbols*))
-     `((defclass wl-object () ((id :initarg :id :accessor id))))
+     `((defclass wl-object () ((id :initarg :id :accessor id)
+			       (ifname :initarg :ifname :reader ifname)
+			       (version :initarg :version :reader version))))
      `((defgeneric match-event-opcode (obj opcode)))
      `((defgeneric match-request-opcode (obj opcode)))
      `((defgeneric get-request-arg-types (obj opcode)))

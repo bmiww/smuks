@@ -60,12 +60,13 @@
 ;; TODO: Depending on how much you can be arsed - you might want to define encoders for several lisp types
 ;; that could correspond to the wayland types
 (defun write-event-args (stream obj opcode &rest args)
-  (let ((obj-id (wl::id obj)))
-    (format t "📨 ~a(~a) op:~a with ~a~%" (class-name (class-of obj)) obj-id opcode args)
+  (let ((obj-id (wl::id obj))
+	(message-size (calculate-message-size args)))
+    (format t "📨 ~a(~a) op:~a with ~a, size:~a~%" (class-name (class-of obj)) obj-id opcode args message-size)
 
     (write-number-bytes stream obj-id 4)
     (write-number-bytes stream opcode 2)
-    (write-number-bytes stream (calculate-message-size args) 2)
+    (write-number-bytes stream message-size 2)
 
     (dolist (arg args)
       (let* ((type (car arg))

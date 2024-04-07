@@ -23,6 +23,7 @@
 	       #:glfw
 	       #:str)
   :components ((:file "package")
+	       (:file "util")
 	       (:file "WAYLAND-SERVER")
 	       (:file "wl-wire")
 	       (:file "smuks-wl")

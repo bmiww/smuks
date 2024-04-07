@@ -6,12 +6,15 @@
 ;; ███████║██║ ╚═╝ ██║╚██████╔╝██║  ██╗███████║      ╚███╔███╔╝███████╗
 ;; ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝       ╚══╝╚══╝ ╚══════╝
 (defpackage :smuks-wl
-  (:use :cl :wl :wl-wire)
+  (:use :cl :wl :wl-wire :smuks-util)
   (:export display registry client read-wayland-message
 	   wayland
 	   add-client
 	   write-wayland-message))
 (in-package :smuks-wl)
+
+;; TODO: Maybe put this into the display class. For now - not that important
+(defvar *globals* (make-hash-table :test 'equal))
 
 ;; ┬ ┬┌─┐┬ ┬┬  ┌─┐┌┐┌┌┬┐
 ;; │││├─┤└┬┘│  ├─┤│││ ││
@@ -80,13 +83,10 @@
 ;; ┌─┐┬  ┌─┐┌┐ ┌─┐┬
 ;; │ ┬│  │ │├┴┐├─┤│
 ;; └─┘┴─┘└─┘└─┘┴ ┴┴─┘
-;; TODO: Maybe put this into the display class. For now - not that important
-(defvar *globals* (make-hash-table :test 'equal))
-
 (defclass global () ())
 
 (defmethod initialize-instance :after ((global global) &key)
-  (setf (gethash (id global) *globals*) global))
+  (setf (gethash (wl::id global) *globals*) global))
 
 ;; ┌┬┐┬┌─┐┌─┐┬  ┌─┐┬ ┬
 ;;  │││└─┐├─┘│  ├─┤└┬┘
@@ -99,8 +99,8 @@
   (let* ((registry (setf (object client new-id) (make-instance 'registry :id new-id))))
     (setf (pending client) t)
 
-    (dolist (global (hash-table-values *globals*))
-      (wl/wl_registry::evt-global (sock-stream client) (id global) (ifname global) (version global)))
+    (dohash (id global *globals*)
+      (wl/wl_registry::evt-global registry (sock-stream client) id (wl::ifname global) (wl::version global)))
 
     (setf (pending client) nil)))
 
@@ -108,12 +108,13 @@
 (defmethod wl/wl_display::req-sync ((display display) client callback-id)
   (let* ((callback (make-instance 'callback :id callback-id)))
     ;; TODO: A shitty wait for now. Should instead create an event tracker pending events
-    (while (pending client) (sleep 0.1) (format t "⏲~%"))
+    (loop while (pending client)
+	  do (sleep 0.1) (format t "⏲~%"))
 
     ;; TODO: For now - not tracking callbacks, just directly invoking it
     ;; (add-callback client callback-id)))
     ;; TODO: Destroy the callback object after invoking it
-    (wl/wl_callback::done callback (sock-stream client) (next-serial client))))
+    (wl/wl_callback::evt-done callback (sock-stream client) (next-serial client))))
 
 
 ;; ┬─┐┌─┐┌─┐┬┌─┐┌┬┐┬─┐┬ ┬
@@ -123,7 +124,7 @@
 
 (defmethod wl/wl_registry::evt-global ((registry registry) stream name interface version)
   (write-event-args stream registry (match-event-opcode registry 'wl/wl_registry::evt-global)
-		    `(uint ,name string ,interface uint ,version)))
+		    `(uint ,name wl:string ,interface uint ,version)))
 
 
 ;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─

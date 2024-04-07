@@ -4,6 +4,9 @@
            MATCH-EVENT-OPCODE
            MATCH-REQUEST-OPCODE
            GET-REQUEST-ARG-TYPES
+           ID
+           IFNAME
+           VERSION
            INT
            UINT
            OBJECT
@@ -18,7 +21,10 @@
 
 (DEFVAR *ARG-TYPE-SYMBOLS* '(INT UINT OBJECT NEW_ID FIXED STRING ARRAY FD ENUM))
 
-(DEFCLASS WL-OBJECT NIL ((ID :INITARG :ID :ACCESSOR ID)))
+(DEFCLASS WL-OBJECT NIL
+          ((ID :INITARG :ID :ACCESSOR ID)
+           (IFNAME :INITARG :IFNAME :READER IFNAME)
+           (VERSION :INITARG :VERSION :READER VERSION)))
 
 (DEFGENERIC MATCH-EVENT-OPCODE
     (OBJ OPCODE))
@@ -35,7 +41,9 @@
 
 (IN-PACKAGE :WL/WL_DISPLAY)
 
-(DEFCLASS WL_DISPLAY (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_DISPLAY (WL:WL-OBJECT)
+          ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_display")
           (:DOCUMENTATION "core global object
 
 The core global object.  This is a special singleton object.  It
@@ -141,7 +149,9 @@ These errors are global and can be emitted in response to any
 
 (IN-PACKAGE :WL/WL_REGISTRY)
 
-(DEFCLASS WL_REGISTRY (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_REGISTRY (WL:WL-OBJECT)
+          ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_registry")
           (:DOCUMENTATION "global registry object
 
 The singleton global registry object.  The server has a number of
@@ -230,7 +240,9 @@ id::new_id: bounded object
 
 (IN-PACKAGE :WL/WL_CALLBACK)
 
-(DEFCLASS WL_CALLBACK (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_CALLBACK (WL:WL-OBJECT)
+          ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_callback")
           (:DOCUMENTATION "callback object
 
 Clients can handle the 'done' event to get notified when
@@ -252,7 +264,7 @@ callback_data::uint: request-specific data for the callback
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD MATCH-EVENT-OPCODE ((OBJ WL_CALLBACK) EVENT)
-  (CASE EVENT (EVT-DONE 0) (t (error "Unknown event opcode"))))
+  (CASE EVENT (EVT-DONE 0)))
 
 (DEFMETHOD MATCH-REQUEST-OPCODE ((OBJ WL_CALLBACK) OPCODE) (NTH OPCODE 'NIL))
 
@@ -264,8 +276,9 @@ callback_data::uint: request-specific data for the callback
 
 (IN-PACKAGE :WL/WL_COMPOSITOR)
 
-(DEFCLASS WL_COMPOSITOR (WL-OBJECT)
+(DEFCLASS WL_COMPOSITOR (WL:WL-OBJECT)
           ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 6 :IFNAME "wl_compositor")
           (:DOCUMENTATION "the compositor singleton
 
 A compositor.  This object is a singleton global.  The
@@ -307,7 +320,9 @@ id::new_id: the new region
 
 (IN-PACKAGE :WL/WL_SHM_POOL)
 
-(DEFCLASS WL_SHM_POOL (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_SHM_POOL (WL:WL-OBJECT)
+          ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_shm_pool")
           (:DOCUMENTATION "a shared memory pool
 
 The wl_shm_pool object encapsulates a piece of memory shared
@@ -389,7 +404,8 @@ size::int: new size of the pool, in bytes
 
 (IN-PACKAGE :WL/WL_SHM)
 
-(DEFCLASS WL_SHM (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_SHM (WL:WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_shm")
           (:DOCUMENTATION "shared memory support
 
 A singleton global object that provides support for shared
@@ -579,7 +595,8 @@ This describes the memory layout of an individual pixel.
 
 (IN-PACKAGE :WL/WL_BUFFER)
 
-(DEFCLASS WL_BUFFER (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_BUFFER (WL:WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_buffer")
           (:DOCUMENTATION "content for a wl_surface
 
 A buffer provides the content for a wl_surface. Buffers are
@@ -648,8 +665,9 @@ Destroy a buffer. If and how you need to release the backing
 
 (IN-PACKAGE :WL/WL_DATA_OFFER)
 
-(DEFCLASS WL_DATA_OFFER (WL-OBJECT)
+(DEFCLASS WL_DATA_OFFER (WL:WL-OBJECT)
           ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 3 :IFNAME "wl_data_offer")
           (:DOCUMENTATION "offer to transfer data
 
 A wl_data_offer represents a piece of data offered for transfer
@@ -884,8 +902,9 @@ preferred_action::enum: action preferred by the destination client
 
 (IN-PACKAGE :WL/WL_DATA_SOURCE)
 
-(DEFCLASS WL_DATA_SOURCE (WL-OBJECT)
+(DEFCLASS WL_DATA_SOURCE (WL:WL-OBJECT)
           ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 3 :IFNAME "wl_data_source")
           (:DOCUMENTATION "offer to transfer data
 
 The wl_data_source object is the source side of a wl_data_offer.
@@ -1088,8 +1107,9 @@ dnd_actions::enum: actions supported by the data source
 
 (IN-PACKAGE :WL/WL_DATA_DEVICE)
 
-(DEFCLASS WL_DATA_DEVICE (WL-OBJECT)
+(DEFCLASS WL_DATA_DEVICE (WL:WL-OBJECT)
           ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 3 :IFNAME "wl_data_device")
           (:DOCUMENTATION "data transfer device
 
 There is one wl_data_device per seat which can be obtained
@@ -1284,8 +1304,9 @@ This request destroys the data device.
 
 (IN-PACKAGE :WL/WL_DATA_DEVICE_MANAGER)
 
-(DEFCLASS WL_DATA_DEVICE_MANAGER (WL-OBJECT)
+(DEFCLASS WL_DATA_DEVICE_MANAGER (WL:WL-OBJECT)
           ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 3 :IFNAME "wl_data_device_manager")
           (:DOCUMENTATION "data transfer interface
 
 The wl_data_device_manager is a singleton global object that
@@ -1370,7 +1391,8 @@ This is a bitmask of the available/preferred actions in a
 
 (IN-PACKAGE :WL/WL_SHELL)
 
-(DEFCLASS WL_SHELL (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_SHELL (WL:WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_shell")
           (:DOCUMENTATION "create desktop-style surfaces
 
 This interface is implemented by servers that provide
@@ -1428,8 +1450,9 @@ surface::object: surface to be given the shell surface role
 
 (IN-PACKAGE :WL/WL_SHELL_SURFACE)
 
-(DEFCLASS WL_SHELL_SURFACE (WL-OBJECT)
+(DEFCLASS WL_SHELL_SURFACE (WL:WL-OBJECT)
           ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_shell_surface")
           (:DOCUMENTATION "desktop-style metadata interface
 
 An interface that may be implemented by a wl_surface, for
@@ -1779,7 +1802,9 @@ Hints to indicate to the compositor how to deal with a conflict
 
 (IN-PACKAGE :WL/WL_SURFACE)
 
-(DEFCLASS WL_SURFACE (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_SURFACE (WL:WL-OBJECT)
+          ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 6 :IFNAME "wl_surface")
           (:DOCUMENTATION "an onscreen surface
 
 A surface is a rectangular area that may be displayed on zero
@@ -2307,7 +2332,8 @@ These errors can be emitted in response to wl_surface requests.
 
 (IN-PACKAGE :WL/WL_SEAT)
 
-(DEFCLASS WL_SEAT (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_SEAT (WL:WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 9 :IFNAME "wl_seat")
           (:DOCUMENTATION "group of input devices
 
 A seat is a group of keyboards, pointer and touch devices. This
@@ -2483,7 +2509,9 @@ These errors can be emitted in response to wl_seat requests.
 
 (IN-PACKAGE :WL/WL_POINTER)
 
-(DEFCLASS WL_POINTER (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_POINTER (WL:WL-OBJECT)
+          ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 9 :IFNAME "wl_pointer")
           (:DOCUMENTATION "pointer input device
 
 The wl_pointer interface represents one or more input devices,
@@ -2959,7 +2987,9 @@ This specifies the direction of the physical motion that caused a
 
 (IN-PACKAGE :WL/WL_KEYBOARD)
 
-(DEFCLASS WL_KEYBOARD (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_KEYBOARD (WL:WL-OBJECT)
+          ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 9 :IFNAME "wl_keyboard")
           (:DOCUMENTATION "keyboard input device
 
 The wl_keyboard interface represents one or more keyboards
@@ -3133,7 +3163,8 @@ Describes the physical state of a key that produced the key event.
 
 (IN-PACKAGE :WL/WL_TOUCH)
 
-(DEFCLASS WL_TOUCH (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_TOUCH (WL:WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 9 :IFNAME "wl_touch")
           (:DOCUMENTATION "touchscreen input device
 
 The wl_touch interface represents a touchscreen
@@ -3328,7 +3359,8 @@ NIL
 
 (IN-PACKAGE :WL/WL_OUTPUT)
 
-(DEFCLASS WL_OUTPUT (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_OUTPUT (WL:WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 4 :IFNAME "wl_output")
           (:DOCUMENTATION "compositor output region
 
 An output describes part of the compositor geometry.  The
@@ -3604,7 +3636,8 @@ These flags describe properties of an output mode.
 
 (IN-PACKAGE :WL/WL_REGION)
 
-(DEFCLASS WL_REGION (WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+(DEFCLASS WL_REGION (WL:WL-OBJECT) ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_region")
           (:DOCUMENTATION "region interface
 
 A region object describes an area.
@@ -3660,8 +3693,9 @@ height::int: rectangle height
 
 (IN-PACKAGE :WL/WL_SUBCOMPOSITOR)
 
-(DEFCLASS WL_SUBCOMPOSITOR (WL-OBJECT)
+(DEFCLASS WL_SUBCOMPOSITOR (WL:WL-OBJECT)
           ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_subcompositor")
           (:DOCUMENTATION "sub-surface compositing
 
 The global interface exposing sub-surface compositing capabilities.
@@ -3748,8 +3782,9 @@ parent::object: the parent surface
 
 (IN-PACKAGE :WL/WL_SUBSURFACE)
 
-(DEFCLASS WL_SUBSURFACE (WL-OBJECT)
+(DEFCLASS WL_SUBSURFACE (WL:WL-OBJECT)
           ((CLIENT :INITARG :CLIENT :ACCESSOR CLIENT))
+          (:DEFAULT-INITARGS :VERSION 1 :IFNAME "wl_subsurface")
           (:DOCUMENTATION "sub-surface interface to a wl_surface
 
 An additional interface to a wl_surface object, which has been
@@ -3929,3 +3964,4 @@ Change the commit behaviour of the sub-surface to desynchronized
 
 (DEFMETHOD GET-REQUEST-ARG-TYPES ((OBJ WL_SUBSURFACE) OPCODE)
   (NTH OPCODE '(NIL (INT INT) (OBJECT) (OBJECT) NIL NIL)))
+
