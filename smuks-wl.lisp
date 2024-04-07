@@ -1,4 +1,10 @@
 
+;; ███████╗███╗   ███╗██╗   ██╗██╗  ██╗███████╗      ██╗    ██╗██╗
+;; ██╔════╝████╗ ████║██║   ██║██║ ██╔╝██╔════╝      ██║    ██║██║
+;; ███████╗██╔████╔██║██║   ██║█████╔╝ ███████╗█████╗██║ █╗ ██║██║
+;; ╚════██║██║╚██╔╝██║██║   ██║██╔═██╗ ╚════██║╚════╝██║███╗██║██║
+;; ███████║██║ ╚═╝ ██║╚██████╔╝██║  ██╗███████║      ╚███╔███╔╝███████╗
+;; ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝       ╚══╝╚══╝ ╚══════╝
 (defpackage :smuks-wl
   (:use :cl :wl :wl-wire)
   (:export display registry client read-wayland-message
@@ -31,7 +37,7 @@
 
 (defmethod read-wayland-message ((wayland wayland) client stream)
   (let* ((object-id (read-n-as-number stream 4))
-	 (object (gethash object-id wl:*objects*))
+	 (object (or (gethash object-id *globals*) (gethash (objects client) object-id)))
 	 (opcode (read-n-as-number stream 2))
 	 (req-method (wl:match-request-opcode object opcode))
 	 (req-arg-types (wl:get-request-arg-types object opcode))
@@ -50,7 +56,9 @@
 (defclass client ()
   ((socket :initarg :socket :accessor socket)
    (callbacks :initform nil :accessor callbacks)
-   (serial :initform 1 :accessor serial)))
+   (serial :initform 1 :accessor serial)
+   (objects :initform (make-hash-table :test 'equal) :accessor objects)
+   (pending :initform nil :accessor pending)))
 
 (defmethod sock-stream ((client client))
   (unix-sockets:unix-socket-stream (socket client)))
@@ -63,22 +71,44 @@
   (prog1 (serial client)
     (incf (serial client))))
 
+(defmethod object ((client client) id)
+  (gethash id (objects client)))
+
+(defmethod (setf object) (object (client client) id)
+  (setf (gethash id (objects client)) object))
+
+;; ┌─┐┬  ┌─┐┌┐ ┌─┐┬
+;; │ ┬│  │ │├┴┐├─┤│
+;; └─┘┴─┘└─┘└─┘┴ ┴┴─┘
+;; TODO: Maybe put this into the display class. For now - not that important
+(defvar *globals* (make-hash-table :test 'equal))
+
+(defclass global () ())
+
+(defmethod initialize-instance :after ((global global) &key)
+  (setf (gethash (id global) *globals*) global))
+
 ;; ┌┬┐┬┌─┐┌─┐┬  ┌─┐┬ ┬
 ;;  │││└─┐├─┘│  ├─┤└┬┘
 ;; ─┴┘┴└─┘┴  ┴─┘┴ ┴ ┴
-(defclass display (wl/wl_display::wl_display)
-  ((registries :initarg :registries :accessor registries :initform nil)
-   (clients :initarg :clients :accessor clients :initform nil)))
+(defclass display (wl/wl_display::wl_display global)
+  ((clients :initarg :clients :accessor clients :initform nil)))
 
 ;; TODO: Registry needs to be cleaned up once the client disconnects.
 (defmethod wl/wl_display::req-get_registry ((display display) client new-id)
-  ;; (format t "NEW ID REQUESTED FOR REGISTRY: ~a~%" new-id)
-  (let* ((registry (make-instance 'registry :id new-id)))
-    (push registry (registries display))))
+  (let* ((registry (setf (object client new-id) (make-instance 'registry :id new-id))))
+    (setf (pending client) t)
+
+    (dolist (global (hash-table-values *globals*))
+      (wl/wl_registry::evt-global (sock-stream client) (id global) (ifname global) (version global)))
+
+    (setf (pending client) nil)))
+
 
 (defmethod wl/wl_display::req-sync ((display display) client callback-id)
-  ;; (format t "SYNC REQUESTED: ~a" callback-id)
   (let* ((callback (make-instance 'callback :id callback-id)))
+    ;; TODO: A shitty wait for now. Should instead create an event tracker pending events
+    (while (pending client) (sleep 0.1) (format t "⏲~%"))
 
     ;; TODO: For now - not tracking callbacks, just directly invoking it
     ;; (add-callback client callback-id)))
@@ -89,8 +119,11 @@
 ;; ┬─┐┌─┐┌─┐┬┌─┐┌┬┐┬─┐┬ ┬
 ;; ├┬┘├┤ │ ┬│└─┐ │ ├┬┘└┬┘
 ;; ┴└─└─┘└─┘┴└─┘ ┴ ┴└─ ┴
-(defclass registry (wl/wl_registry::wl_registry)
-  ())
+(defclass registry (wl/wl_registry::wl_registry) ())
+
+(defmethod wl/wl_registry::evt-global ((registry registry) stream name interface version)
+  (write-event-args stream registry (match-event-opcode registry 'wl/wl_registry::evt-global)
+		    `(uint ,name string ,interface uint ,version)))
 
 
 ;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─
@@ -99,5 +132,5 @@
 (defclass callback (wl/wl_callback::wl_callback)
   ())
 
-(defmethod wl/wl_callback::done ((callback callback) stream callback-data)
+(defmethod wl/wl_callback::evt-done ((callback callback) stream callback-data)
   (write-event-args stream callback (match-event-opcode callback 'wl/wl_callback::evt-done) `(uint ,callback-data)))

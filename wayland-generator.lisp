@@ -71,11 +71,6 @@
   `((defmethod get-request-arg-types ((obj ,(read-from-string interface)) opcode)
       (nth opcode '(,@(mapcar (lambda (req) (mapcar 'arg-type-symbol (args req))) requests))))))
 
-
-(defun do-initializer (interface)
-  `((defmethod initialize-instance :after ((obj ,interface) &key)
-      (setf (gethash (id obj) wl:*objects*) obj))))
-
 (defun do-interface (interface)
   (let ((if-name (read-from-string (format nil ":wl/~a" (name interface))))
 	(class-name (read-from-string (name interface))))
@@ -106,16 +101,14 @@
     (append
      `((defpackage :wl
 	 (:use #:cl)
-	 (:export wl-object *objects* match-event-opcode match-request-opcode get-request-arg-types
+	 (:export wl-object match-event-opcode match-request-opcode get-request-arg-types
 		  ,@(mapcar (lambda (a) a) *arg-type-symbols*))))
      `((in-package :wl))
      `((defvar *arg-type-symbols* ',*arg-type-symbols*))
-     `((defvar *objects* (make-hash-table :test 'eq)))
      `((defclass wl-object () ((id :initarg :id :accessor id))))
      `((defgeneric match-event-opcode (obj opcode)))
      `((defgeneric match-request-opcode (obj opcode)))
      `((defgeneric get-request-arg-types (obj opcode)))
-     (do-initializer 'wl-object)
      interfaces)))
 
 
