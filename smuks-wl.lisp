@@ -57,7 +57,8 @@
     ;; Discard extra bytes - since wayland messages are always 32-bit aligned
     (consume-padding stream message-size)
 
-    (log! "📥 ~a with ~a~%" req-method payload)
+
+    (log! "📥 ~a(~a) ~a with ~a~%" (class-name (class-of object)) (wl:id object) req-method payload)
     (apply req-method `(,object ,client ,@payload))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
@@ -107,6 +108,7 @@
     (setf (pending client) t)
 
     (dohash (id global *globals*)
+      ;; TODO: The id here - is not necessarily the same as an object id
       (wl/wl_registry::evt-global registry (sock-stream client) id (wl::ifname global) (wl::version global)))
 
     (setf (pending client) nil)))
