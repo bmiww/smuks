@@ -52,7 +52,7 @@
 
 	  ;; TODO: The base protocol only does this for the currently presset keys array on an enter event
 	  ;; which afaik should be uint array, so i can assume that i can just multiply by 4
-	  (wl:array (incf *message-size* (* 4 (length value))))
+	  (wl:array (incf *message-size* (+ 1 (* 4 (length value)))))
 
 	  (wl:enum (incf *message-size* 4))
 	  (t (error "Unknown type %s" type)))))
@@ -190,6 +190,7 @@
 
 (defun write-array (stream array)
   (let ((length (length array)))
+    (write-number-bytes stream length 4)
     ;; TODO: This might or might not work. The type of the array elements is kind of not specified enough
     ;; It could be that i might need to actually go byte by byte inside of each of the numbers of the array
     ;; Since the only currently known use case for me is numbers
