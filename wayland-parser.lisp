@@ -1,7 +1,10 @@
 
-;; (generate-wayland-classes 'wayland-server "/usr/share/wayland/wayland.xml")
-;; (generate-wayland-classes 'xdg-shell-server "xdg-shell.xml")
-
+;; ██████╗  █████╗ ██████╗ ███████╗███████╗██████╗
+;; ██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝██╔══██╗
+;; ██████╔╝███████║██████╔╝███████╗█████╗  ██████╔╝
+;; ██╔═══╝ ██╔══██║██╔══██╗╚════██║██╔══╝  ██╔══██╗
+;; ██║     ██║  ██║██║  ██║███████║███████╗██║  ██║
+;; ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (asdf:oos 'asdf:load-op :xmls)
   (asdf:oos 'asdf:load-op :split-sequence))
