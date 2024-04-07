@@ -124,7 +124,9 @@
 
 (defmethod wl/wl_registry::evt-global ((registry registry) stream name interface version)
   (write-event-args stream registry (match-event-opcode registry 'wl/wl_registry::evt-global)
-		    `(uint ,name wl:string ,interface uint ,version)))
+		    `(uint ,name)
+		    `(wl:string ,interface)
+		    `(uint ,version)))
 
 
 ;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─
