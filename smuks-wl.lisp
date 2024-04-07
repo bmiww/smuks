@@ -15,6 +15,8 @@
 
 ;; TODO: Maybe put this into the display class. For now - not that important
 (defvar *globals* (make-hash-table :test 'equal))
+(defvar *global-id* 0)
+(defun next-global-id () (incf *global-id*))
 
 ;; ┬ ┬┌─┐┬ ┬┬  ┌─┐┌┐┌┌┬┐
 ;; │││├─┤└┬┘│  ├─┤│││ ││
@@ -34,10 +36,13 @@
 		      (log! "Exiting client~%")
 		      (unix-sockets:close-unix-socket (socket client))))))
 
-
 (defmethod initialize-instance :after ((wayland wayland) &key)
-  (setf (display wayland) (make-instance 'smuks-wl:display :id 1)))
+  (setf (display wayland) (make-instance 'smuks-wl:display :id (next-global-id)))
+  (make-instance 'shm :id (next-global-id))
+  (make-instance 'compositor :id (next-global-id))
+  (make-instance 'xdg-wm-base :id (next-global-id)))
 
+;; TODO: Figure out how to partially move this to the wire package
 (defmethod read-wayland-message ((wayland wayland) client stream)
   (let* ((object-id (read-n-as-number stream 4))
 	 (object (or (gethash object-id *globals*) (gethash (objects client) object-id)))
@@ -117,10 +122,26 @@
     ;; TODO: Destroy the callback object after invoking it
     (wl/wl_callback::evt-done callback (sock-stream client) (next-serial client))))
 
+;; ┌─┐┬ ┬┌┬┐
+;; └─┐├─┤│││
+;; └─┘┴ ┴┴ ┴
+(defclass shm (wl/wl_shm::wl_shm global) ())
+
+;; ┌─┐┌─┐┌┬┐┌─┐┌─┐┌─┐┬┌┬┐┌─┐┬─┐
+;; │  │ ││││├─┘│ │└─┐│ │ │ │├┬┘
+;; └─┘└─┘┴ ┴┴  └─┘└─┘┴ ┴ └─┘┴└─
+(defclass compositor (wl/wl_compositor::wl_compositor global) ())
+
+;; ─┐ ┬┌┬┐┌─┐   ┬ ┬┌┬┐   ┌┐ ┌─┐┌─┐┌─┐
+;; ┌┴┬┘ │││ ┬───││││││───├┴┐├─┤└─┐├┤
+;; ┴ └──┴┘└─┘   └┴┘┴ ┴   └─┘┴ ┴└─┘└─┘
+(defclass xdg-wm-base (xdg/xdg_wm_base::xdg_wm_base global) ())
 
 ;; ┬─┐┌─┐┌─┐┬┌─┐┌┬┐┬─┐┬ ┬
 ;; ├┬┘├┤ │ ┬│└─┐ │ ├┬┘└┬┘
 ;; ┴└─└─┘└─┘┴└─┘ ┴ ┴└─ ┴
+;; TODO: Add hooks for when something gets added or removed from the globals
+;; This needs to notify all clients...
 (defclass registry (wl/wl_registry::wl_registry) ())
 
 (defmethod wl/wl_registry::evt-global ((registry registry) stream name interface version)
