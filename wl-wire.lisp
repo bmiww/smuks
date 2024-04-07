@@ -183,8 +183,8 @@
 (defun write-a-string (stream string)
   (let ((length (length string)))
     (write-sequence (coerce string 'vector) stream)
-    ;; TODO: Copilot generated 0 padding. Check at runtime if it works
-    (write-sequence (make-array (mod (- 4 (mod length 4)) 4) :initial-element 0) stream)))
+    (loop for i from 0 below (- 4 (mod length 4))
+	  do (write-byte 0 stream))))
 
 (defun write-array (stream array)
   (let ((length (length array)))
