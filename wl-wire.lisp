@@ -1,4 +1,15 @@
 
+;; ██╗    ██╗██╗██████╗ ███████╗
+;; ██║    ██║██║██╔══██╗██╔════╝
+;; ██║ █╗ ██║██║██████╔╝█████╗
+;; ██║███╗██║██║██╔══██╗██╔══╝
+;; ╚███╔███╔╝██║██║  ██║███████╗
+;;  ╚══╝╚══╝ ╚═╝╚═╝  ╚═╝╚══════╝
+;; NOTE: For the wire protocol details, see:
+;; https://wayland-book.com/protocol-design/wire-protocol.html
+;; NOTE: Theres also this - which has some other clarifications/confusions:
+;; https://wayland.freedesktop.org/docs/html/ch04.html
+
 (defpackage :wl-wire
   (:use :cl)
   (:export consume-padding write-event-args read-req-args read-n-as-number))
@@ -20,7 +31,8 @@
 	(+ size (- 4 aligned-size)))))
 
 (defun calculate-message-size (args)
-  (let ((*message-size* 0))
+  ;; NOTE: Message size is number of bytes in the header + the payload
+  (let ((*message-size* 8))
     (dolist (arg args)
       (let* ((type (car arg))
 	     (value (cadr arg)))
@@ -121,10 +133,7 @@
 	 (enum (find-symbol (format nil "~A::~A" package-name enum-name))))
     (funcall enum num)))
 
-;; NOTE: For the wire protocol details, see:
-;; https://wayland-book.com/protocol-design/wire-protocol.html
-;; NOTE: Theres also this - which has some other clarifications/confusions:
-;; https://wayland.freedesktop.org/docs/html/ch04.html
+;; NOTE: Message size is number of bytes in the header + the payload
 (defun read-req-args (stream message-size arg-types)
   ;; TODO: Maybe instead of ignoring - you could keep a counter as to how many bytes were read by each arg-type in the list
   ;; Then the difference could be discarded (wayland pads the payload to have word lengths 32bits)
