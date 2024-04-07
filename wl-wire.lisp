@@ -22,13 +22,11 @@
 ;; Basically its someone writing a client without libwayland, so included are the encoding functions
 ;; https://gaultier.github.io/blog/wayland_from_scratch.html?fbclid=IwAR2gRvsJvilJG8GcIoiywhOZxhiqy6lA_g_yCC95wo2bwYhEz8Myo_iU0zw_aem_ASJrcFMP5q2_3xeV-bkU_HAvTDxkisMVpIfiKfx2d-Ax0oKjLpDiUzpL_uc306l2Xn42-D-sh-I0wCizA4hEedJC
 
-;; TODO: Copilot generated this.
-;; On first look it seems alright. Needs testing
 (defun align-32-bit-msg-size (size)
-  (let ((aligned-size (mod (+ size 3) 4)))
-    (if (zerop aligned-size)
+  (let ((off-by (mod size 4)))
+    (if (zerop off-by)
 	size
-	(+ size (- 4 aligned-size)))))
+	(+ size (- 4 off-by)))))
 
 (defun calculate-message-size (args)
   ;; NOTE: Message size is number of bytes in the header + the payload
@@ -49,7 +47,8 @@
 
 	  ;; TODO: I guess this was utf8. Hoping for the best.
 	  ;; NOTE: +4 for the length value in the beginning of the string
-	  (wl:string (incf *message-size* (+ 4 (align-32-bit-msg-size (length value)))))
+	  ;; NOTE: +1 for the null terminator
+	  (wl:string (incf *message-size* (+ 4 (align-32-bit-msg-size (+ 1 (length value))))))
 
 	  ;; TODO: The base protocol only does this for the currently presset keys array on an enter event
 	  ;; which afaik should be uint array, so i can assume that i can just multiply by 4
@@ -183,12 +182,12 @@
     num))
 
 (defun write-a-string (stream string)
-  (let ((length (length string)))
-    (write-number-bytes stream (+ 1 length) 4)
+  ;; NOTE: +1 for the null terminator
+  (let ((length (+ 1 (length string))))
+    (write-number-bytes stream length 4)
     (write-sequence (coerce string 'vector) stream)
     (write-byte 0 stream)
-    ;; TODO: A bit confused about the padding here, since it doesn't account for the null terminator
-    ;; But seems to be working for now. Check how it goes when you start sending more strings
+    ;; NOTE: +1 for the null terminator
     (loop for i from 0 below (- 4 (mod length 4))
 	  do (write-byte 0 stream))))
 

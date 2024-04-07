@@ -17,13 +17,13 @@
 (defun kill-all-threads ()
   (mapcar (lambda (thread) (thread:destroy-thread thread)) (thread:all-threads)))
 
-;; (defvar *test-program* "weston-terminal")
+(defvar *test-program* "weston-terminal")
 ;; (defvar *test-program* "weston-flower")
 ;; (defvar *test-program* "kitty")
 
 ;; NOTE: Some very simple WL client you found here
 ;; https://github.com/emersion/hello-wayland/blob/master/main.c
-(defvar *test-program* "hello-wayland")
+;; (defvar *test-program* "hello-wayland")
 
 (defun heading ()
   (format t "~%")
@@ -45,6 +45,8 @@
   ;; NOTE: Maybe setup kill signals for the process
   ;; TODO: Maybe add a "restart" to set *smuks-exit* to true
   ;; (mapcar (lambda (signal) (sb-sys:enable-interrupt signal (lambda () (setf *smuks-exit* t)))) '(SIGINT SIGTERM))
+
+  (smuks-wl:reset-globals)
 
   (setf *socket* (init-socket))
   (setf *wayland* (make-instance 'smuks-wl:wayland))
