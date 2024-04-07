@@ -152,8 +152,8 @@
   (bt:make-thread
    (lambda ()
      (sleep 1)
-     (log! "🟢:~a: Starting an app~%" app-name)
+     (log! "🟢 ~a: Starting an app~%" app-name)
      (let ((process (uiop:launch-program `(,app-name) :output :stream :error-output *standard-output*)))
        (loop while (uiop/launch-program:process-alive-p process)
-	     do (log! "🔴:~a: ~a~%" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
-       (log! "🟢:~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))))
+	     do (log! "🔴 ~a: ~a~%" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
+       (log! "🟢 ~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))))
