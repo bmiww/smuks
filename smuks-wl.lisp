@@ -16,9 +16,9 @@
 
 ;; TODO: Maybe put this into the display class. For now - not that important
 (defvar *globals* (make-hash-table :test 'equal))
-(defvar *global-id* 0)
+(defvar *global-id* #xFF000000)
 (defun next-global-id () (incf *global-id*))
-(defun reset-globals () (clrhash *globals*) (setq *global-id* 0))
+(defun reset-globals () (clrhash *globals*) (setq *global-id* #xFF000000))
 
 ;; ┬ ┬┌─┐┬ ┬┬  ┌─┐┌┐┌┌┬┐
 ;; │││├─┤└┬┘│  ├─┤│││ ││
@@ -39,7 +39,7 @@
 		      (unix-sockets:close-unix-socket (socket client))))))
 
 (defmethod initialize-instance :after ((wayland wayland) &key)
-  (setf (display wayland) (make-instance 'smuks-wl:display :id (next-global-id)))
+  (setf (display wayland) (make-instance 'smuks-wl:display :id 1))
   (make-instance 'shm :id (next-global-id))
   (make-instance 'compositor :id (next-global-id))
   (make-instance 'xdg-wm-base :id (next-global-id)))
@@ -47,7 +47,7 @@
 ;; TODO: Figure out how to partially move this to the wire package
 (defmethod read-wayland-message ((wayland wayland) client stream)
   (let* ((object-id (read-n-as-number stream 4))
-	 (object (or (gethash object-id *globals*) (gethash (objects client) object-id)))
+	 (object (or (gethash object-id *globals*) (gethash object-id (objects client))))
 	 (opcode (read-n-as-number stream 2))
 	 (req-method (wl:match-request-opcode object opcode))
 	 (req-arg-types (wl:get-request-arg-types object opcode))
