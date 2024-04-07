@@ -96,6 +96,8 @@
 (defmethod initialize-instance :after ((global global) &key)
   (setf (gethash (wl::id global) *globals*) global))
 
+(defgeneric bind (global client))
+
 ;; ┌┬┐┬┌─┐┌─┐┬  ┌─┐┬ ┬
 ;;  │││└─┐├─┘│  ├─┤└┬┘
 ;; ─┴┘┴└─┘┴  ┴─┘┴ ┴ ┴
@@ -130,6 +132,16 @@
 ;; └─┐├─┤│││
 ;; └─┘┴ ┴┴ ┴
 (defclass shm (wl/wl_shm::wl_shm global) ())
+(defvar *supported-formats* '(wl/wl_shm:ARGB8888 wl/wl_shm:XRGB8888))
+
+(defmethod bind ((shm shm) client)
+  (dolist (format *supported-formats*)
+    (wl/wl_shm::evt-format shm (sock-stream client) format)))
+
+(defmethod wl/wl_shm::evt-format ((shm shm) stream format)
+  (write-event-args stream shm (match-event-opcode shm 'wl/wl_shm::evt-format) `(uint ,format)))
+
+
 
 ;; ┌─┐┌─┐┌┬┐┌─┐┌─┐┌─┐┬┌┬┐┌─┐┬─┐
 ;; │  │ ││││├─┘│ │└─┐│ │ │ │├┬┘
@@ -147,6 +159,12 @@
 ;; TODO: Add hooks for when something gets added or removed from the globals
 ;; This needs to notify all clients...
 (defclass registry (wl/wl_registry::wl_registry) ())
+
+;; TODO: Bind is weird - i do not know why i would care about the global object here any more
+(defmethod wl/wl_registry::req-bind ((registry registry) client name id)
+  (let ((bound-instance (make-instance (class-of (gethash name *globals*)) :id id)))
+    (setf (object client id) bound-instance)
+    (bind bound-instance client)))
 
 (defmethod wl/wl_registry::evt-global ((registry registry) stream name interface version)
   (write-event-args stream registry (match-event-opcode registry 'wl/wl_registry::evt-global)
