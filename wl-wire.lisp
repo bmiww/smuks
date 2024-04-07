@@ -49,8 +49,7 @@
 
 	  ;; TODO: I guess this was utf8. Hoping for the best.
 	  ;; NOTE: +4 for the length value in the beginning of the string
-	  ;; NOTE: +1 for the null terminator
-	  (wl:string (incf *message-size* (+ 5 (align-32-bit-msg-size (length value)))))
+	  (wl:string (incf *message-size* (+ 4 (align-32-bit-msg-size (length value)))))
 
 	  ;; TODO: The base protocol only does this for the currently presset keys array on an enter event
 	  ;; which afaik should be uint array, so i can assume that i can just multiply by 4
@@ -188,8 +187,9 @@
     (write-number-bytes stream (+ 1 length) 4)
     (write-sequence (coerce string 'vector) stream)
     (write-byte 0 stream)
-    ;; NOTE: +2 to account for length and null terminator
-    (loop for i from 0 below (- 4 (mod (+ 2 length) 4))
+    ;; TODO: A bit confused about the padding here, since it doesn't account for the null terminator
+    ;; But seems to be working for now. Check how it goes when you start sending more strings
+    (loop for i from 0 below (- 4 (mod length 4))
 	  do (write-byte 0 stream))))
 
 (defun write-array (stream array)
