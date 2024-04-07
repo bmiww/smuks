@@ -48,13 +48,13 @@
 	  (wl:fd (incf *message-size* 0))
 
 	  ;; TODO: I guess this was utf8. Hoping for the best.
-	  ;; NOTE: +1 for the length value in the beginning of the string
+	  ;; NOTE: +4 for the length value in the beginning of the string
 	  ;; NOTE: +1 for the null terminator
-	  (wl:string (incf *message-size* (+ 2 (align-32-bit-msg-size (length value)))))
+	  (wl:string (incf *message-size* (+ 5 (align-32-bit-msg-size (length value)))))
 
 	  ;; TODO: The base protocol only does this for the currently presset keys array on an enter event
 	  ;; which afaik should be uint array, so i can assume that i can just multiply by 4
-	  (wl:array (incf *message-size* (+ 1 (* 4 (length value)))))
+	  (wl:array (incf *message-size* (+ 4 (* 4 (length value)))))
 
 	  (wl:enum (incf *message-size* 4))
 	  (t (error "Unknown type %s" type)))))
