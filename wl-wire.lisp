@@ -54,7 +54,8 @@
 	  ;; which afaik should be uint array, so i can assume that i can just multiply by 4
 	  (wl:array (incf *message-size* (* 4 (length value))))
 
-	  (wl:enum (incf *message-size* 4)))))
+	  (wl:enum (incf *message-size* 4))
+	  (t (error "Unknown type %s" type)))))
     *message-size*))
 
 ;; TODO: Depending on how much you can be arsed - you might want to define encoders for several lisp types
