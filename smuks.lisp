@@ -11,6 +11,8 @@
 (defvar *socket* nil)
 (defvar *wayland* nil)
 (defvar *smuks-exit* nil)
+(defvar *drm-dev* nil)
+(defvar *egl* nil)
 
 (defvar *client-thread* nil)
 
@@ -50,8 +52,8 @@
 
   (setf *socket* (init-socket))
   (setf *wayland* (make-instance 'smuks-wl:wayland))
-  (init-drm)
-  ;; (init-egl (display *wayland*))
+  (setf *drm-dev* (init-drm))
+  (setf *egl* (init-egl *drm-dev*))
 
   (setf *client-thread*
 	(bt:make-thread
@@ -99,11 +101,43 @@
 ;; ███████╗╚██████╔╝███████╗
 ;; ╚══════╝ ╚═════╝ ╚══════╝
 
-(defun init-egl (wayland-display-ptr)
-  (let* ((egl (egl:init-egl-wayland))
-	 (display (egl:get-display (cffi:null-pointer))))
-    (egl:bind-wayland-display display wayland-display-ptr)))
+;; NOTE: libwayland egl code
+;; https://gitlab.freedesktop.org/wayland/wayland/-/tree/main/egl?ref_type=heads
+;; NOTE: Nvidia eglstream code for binding egl to wayland
+;; https://github.com/NVIDIA/egl-wayland/blob/master/src/wayland-egldisplay.c#L82
+;; NOTE: Libwayland display create code:
+;; https://gitlab.freedesktop.org/wayland/wayland/-/blob/main/src/wayland-server.c#L1132
+;; TODO: If this fails - it is very likely that it is because i do not have a wayland-display-ptr
+(defun init-egl (drm-dev)
+  ;; CONFIG null_ptr
+  ;; WINDOW is null
+  ;; WAYLAND_DISPLAY = NO CLUE
+  ;; NATIVE_DISPLAY = gbm crap
 
+  (let* ((egl (egl:init-egl-wayland))
+	 (display (egl:get-display (gbm-pointer drm-dev))))
+    ;; TODO: This one is problematic - since i don't exactly have the wl_display struct around here.
+    ;; https://elixir.bootlin.com/mesa/mesa-19.0.6/source/docs/specs/WL_bind_wayland_display.spec
+    (egl:bind-wayland-display display wayland-display-ptr)
+    (egl:initialize display)
+    ;; TODO: Update the egl lib and add the ES_API enum value there
+    (egl:bind-api display :opengl-es-api)
+    (let* ((config (egl:choose-config display fb-attrib-list))
+	   (context (egl:create-context display config)))
+      (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context))))
+
+(defvar fb-attrib-list
+  (list
+   :color-buffer-type :rgb-buffer
+   :red-size          8
+   :green-size        8
+   :blue-size         8
+   :alpha-size        8
+   :depth-size        24
+   :surface-type      (egl:eglintor :window-bit :pbuffer-bit)
+   :renderable-type   :opengl-es3-bit
+   :conformant        :opengl-es3-bit
+   :none))
 
 
 
