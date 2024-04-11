@@ -14,6 +14,8 @@
 (defvar *drm-dev* nil)
 (defvar *egl* nil)
 (defvar *main-vbo* nil)
+(defvar *egl-image* nil)
+(defvar *frame-buffer* nil)
 
 (defvar *client-thread* nil)
 
