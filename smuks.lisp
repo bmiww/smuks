@@ -89,7 +89,9 @@
 	 (handle (gbm:bo-get-handle buffer-object))
 	 (stride (gbm:bo-get-stride buffer-object))
 	 (offset 0) (bpp 32) (depth 24)
-	 (frame-buffer (add-framebuffer (fd device) width height depth bpp stride handle))
+	 ;; TODO: Using the global *frame-buffer* here, since i'm too lazy to clean up
+	 ;; And trying to add the framebuffer more than once ends up corrupting the image
+	 (frame-buffer (or *frame-buffer* (add-framebuffer (fd device) width height depth bpp stride handle)))
 	 (egl-image (egl:create-image-khr *egl* (cffi:null-pointer) egl::LINUX_DMA_BUF_EXT (cffi:null-pointer)
 					  ;; TODO: In the rust thing this was an FD not a pointer
 					  :dma-buf-plane-fd-ext (gbm:bo-get-fd buffer-object)
