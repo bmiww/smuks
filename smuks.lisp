@@ -128,31 +128,25 @@
 ;; TODO: Check if you can just malloc the display and pass it to eglGetDisplay
 ;; So far from the mesa code - i don't see any of the struct fields being directly accessed
 (defun init-egl (drm-dev)
+  (egl:init-egl-wayland)
   (let* ((wayland-display-ptr (cffi:null-pointer))
-	 (egl (egl:init-egl-wayland))
-	 (display (egl:get-display (gbm-pointer drm-dev))))
+	 (display (egl:get-display (gbm-pointer drm-dev)))
+	 ;; TODO: Possibly i did not need to find a config for the fancy gbm buffers
+	 ;; Check as you go along. Worst case revert a bit
+	 (config (cffi:null-pointer)))
     ;; TODO: This one is problematic - since i don't exactly have the wl_display struct around here.
     ;; https://elixir.bootlin.com/mesa/mesa-19.0.6/source/docs/specs/WL_bind_wayland_display.spec
     (egl:bind-wayland-display display wayland-display-ptr)
     (egl:initialize display)
-    (egl:bind-api display :opengl-es-api)
-    (let* ((config (egl:choose-config display fb-attrib-list))
-	   (context (egl:create-context display config)))
+    (egl:bind-api :opengl-es-api)
+    (let* ((context (apply 'egl:create-context `(,display ,config ,(cffi:null-pointer) ,@context-attribs))))
       (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context))))
 
-(defvar fb-attrib-list
+(defvar context-attribs
   (list
-   :color-buffer-type :rgb-buffer
-   :red-size          8
-   :green-size        8
-   :blue-size         8
-   :alpha-size        8
-   :depth-size        24
-   :surface-type      (egl:eglintor :window-bit :pbuffer-bit)
-   :renderable-type   :opengl-es3-bit
-   :conformant        :opengl-es3-bit
+   :context-major-version 3
+   :context-minor-version 2
    :none))
-
 
 
 ;;  ██████╗ ██╗     ███████╗██╗    ██╗
