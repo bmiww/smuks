@@ -13,6 +13,7 @@
 (defvar *smuks-exit* nil)
 (defvar *drm-dev* nil)
 (defvar *egl* nil)
+(defvar *main-vbo* nil)
 
 (defvar *client-thread* nil)
 
@@ -55,6 +56,8 @@
   (setf *drm-dev* (init-drm))
   (setf *egl* (init-egl *drm-dev*))
 
+  (setf *main-vbo* (init-instanced-verts))
+
   (setf *client-thread*
 	(bt:make-thread
 	 (lambda ()
@@ -71,6 +74,18 @@
     (loop while t
 	  do (livesupport:update-repl-link)
 	     (magic))))
+
+(defvar *instanced-verts* '(1.0 0.0   0.0 0.0   1.0 1.0   0.0 1.0))
+
+(defun init-instanced-verts ()
+  (let* ((vbo (gl:gen-buffer))
+	 (arr (gl:alloc-gl-array :float (length *instanced-verts*))))
+    (dotimes (i (length *instanced-verts*))
+      (setf (gl:glaref arr i) (nth i *instanced-verts*)))
+
+    (gl:bind-buffer :array-buffer vbo)
+    (gl:buffer-data :array-buffer :static-draw arr)
+    (gl:bind-buffer :array-buffer 0)))
 
 (defun magic ()
   (sleep 1))
