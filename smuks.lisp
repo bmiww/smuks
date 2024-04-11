@@ -105,22 +105,35 @@
 ;; https://gitlab.freedesktop.org/wayland/wayland/-/tree/main/egl?ref_type=heads
 ;; NOTE: Nvidia eglstream code for binding egl to wayland
 ;; https://github.com/NVIDIA/egl-wayland/blob/master/src/wayland-egldisplay.c#L82
+
+;; NOTE: Mesa egl code for binding egl to wayland
+;; https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/src/egl/main/eglapi.c#L2311
+;; And what seems to be main function for it:
+;; https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/src/egl/drivers/dri2/egl_dri2.c#L3156
+;; Here the display gets used further inside of more wayland specific code:
+;; https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/src/egl/wayland/wayland-drm/wayland-drm.c#L251
+
+;; Global create (wl_global_create)
+;; https://gitlab.freedesktop.org/wayland/wayland/-/blob/main/src/wayland-server.c#L1299
+
+;; One example where DRM calls wl_drm_authenticate which could be found in wayland-drm.c
+;; https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/src/egl/drivers/dri2/platform_wayland.c#L1662
+
 ;; NOTE: Libwayland display create code:
 ;; https://gitlab.freedesktop.org/wayland/wayland/-/blob/main/src/wayland-server.c#L1132
+;; And the wl_display struct:
+;; https://gitlab.freedesktop.org/wayland/wayland/-/blob/main/src/wayland-server.c#L92
 ;; TODO: If this fails - it is very likely that it is because i do not have a wayland-display-ptr
-(defun init-egl (drm-dev)
-  ;; CONFIG null_ptr
-  ;; WINDOW is null
-  ;; WAYLAND_DISPLAY = NO CLUE
-  ;; NATIVE_DISPLAY = gbm crap
 
+;; TODO: Check if you can just malloc the display and pass it to eglGetDisplay
+;; So far from the mesa code - i don't see any of the struct fields being directly accessed
+(defun init-egl (drm-dev)
   (let* ((egl (egl:init-egl-wayland))
 	 (display (egl:get-display (gbm-pointer drm-dev))))
     ;; TODO: This one is problematic - since i don't exactly have the wl_display struct around here.
     ;; https://elixir.bootlin.com/mesa/mesa-19.0.6/source/docs/specs/WL_bind_wayland_display.spec
     (egl:bind-wayland-display display wayland-display-ptr)
     (egl:initialize display)
-    ;; TODO: Update the egl lib and add the ES_API enum value there
     (egl:bind-api display :opengl-es-api)
     (let* ((config (egl:choose-config display fb-attrib-list))
 	   (context (egl:create-context display config)))
