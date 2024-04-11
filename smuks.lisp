@@ -58,6 +58,9 @@
 
   (setf *main-vbo* (init-instanced-verts))
 
+  (setf (values *frame-buffer* *egl-image*) (create-framebuffer *drm-dev*))
+
+
   (setf *client-thread*
 	(bt:make-thread
 	 (lambda ()
@@ -74,6 +77,28 @@
     (loop while t
 	  do (livesupport:update-repl-link)
 	     (magic))))
+
+;; NOTE: Stride is pitch. Eh.
+(defun create-framebuffer (device)
+  (let* ((width (width device))
+	 (height (height device))
+	 (buffer-object (gbm:bo-create (gbm-pointer device)
+				       width height gbm::FORMAT_XRGB8888
+				       (logior gbm::BO_USE_SCANOUT gbm::BO_USE_RENDERING)))
+	 (handle (gbm:bo-get-handle buffer-object))
+	 (stride (gbm:bo-get-stride buffer-object))
+	 (offset 0) (bpp 32) (depth 24)
+	 (frame-buffer (add-framebuffer (fd device) width height depth bpp stride handle))
+	 (egl-image (egl:create-image-khr *egl* (cffi:null-pointer) egl::LINUX_DMA_BUF_EXT (cffi:null-pointer)
+					  ;; TODO: In the rust thing this was an FD not a pointer
+					  :dma-buf-plane-fd-ext (gbm:bo-get-fd buffer-object)
+					  :width width :height height
+					  :linux-drm-fourcc-ext gbm::FORMAT_XRGB8888
+					  :dma-buf-plane0-pitch-ext stride
+					  :dma-buf-plane0-offset-ext offset
+					  :none)))
+    (values frame-buffer egl-image)))
+
 
 (defvar *instanced-verts* '(1.0 0.0   0.0 0.0   1.0 1.0   0.0 1.0))
 
