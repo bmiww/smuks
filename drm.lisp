@@ -20,7 +20,7 @@
     (setf (gbm-pointer device) (gbm:create-device fd))
     (let* ((resources (drm:get-resources fd))
 	   (crtcs (drm:resources-crtcs resources))
-	   (valid (find-if (lambda (crtc) (getf crtc 'drm::mode-valid)) crtcs)))
+	   (valid (find-if (lambda (crtc) (> (getf crtc 'drm::mode-valid) 0)) crtcs)))
       (unless crtcs (error "No CRTCs found"))
 
       (setf (slot-value device 'crtcs) crtcs)
