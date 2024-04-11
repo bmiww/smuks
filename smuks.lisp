@@ -62,7 +62,6 @@
 
   (setf (values *frame-buffer* *egl-image*) (create-framebuffer *drm-dev*))
 
-
   (setf *client-thread*
 	(bt:make-thread
 	 (lambda ()
@@ -182,7 +181,8 @@
     (egl:initialize display)
     (egl:bind-api :opengl-es-api)
     (let* ((context (apply 'egl:create-context `(,display ,config ,(cffi:null-pointer) ,@context-attribs))))
-      (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context))))
+      (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context))
+    display))
 
 (defvar context-attribs
   (list
