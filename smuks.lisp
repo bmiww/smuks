@@ -128,7 +128,8 @@
 ;; TODO: Check if you can just malloc the display and pass it to eglGetDisplay
 ;; So far from the mesa code - i don't see any of the struct fields being directly accessed
 (defun init-egl (drm-dev)
-  (let* ((egl (egl:init-egl-wayland))
+  (let* ((wayland-display-ptr (cffi:null-pointer))
+	 (egl (egl:init-egl-wayland))
 	 (display (egl:get-display (gbm-pointer drm-dev))))
     ;; TODO: This one is problematic - since i don't exactly have the wl_display struct around here.
     ;; https://elixir.bootlin.com/mesa/mesa-19.0.6/source/docs/specs/WL_bind_wayland_display.spec
