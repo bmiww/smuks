@@ -16,6 +16,8 @@
    resources-crtcs
    resources-connectors
 
+   set-crtc
+
    mode-crtc-width
    mode-crtc-height))
 
@@ -135,6 +137,12 @@
   (connectors (:pointer :uint32))
   (count :int)
   (mode (:pointer (:struct mode-mode-info))))
+
+(defun set-crtc (fd crtc-id buffer-id x y connectors mode &optional (count (length connectors)))
+  (with-foreign-objects ((connectors-p ':uint32 count))
+    (dotimes (i count) (setf (mem-aref connectors-p ':uint32 i) (nth i connectors)))
+    (mode-set-crtc fd crtc-id buffer-id x y connectors-p count mode)))
+
 
 (defcfun ("drmModeGetResources" mode-get-resources) (:pointer (:struct mode-res))
   (fd :int))

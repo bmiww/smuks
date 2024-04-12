@@ -65,7 +65,7 @@
   (setf (values *frame-buffer* *egl-image*) (create-framebuffer *drm-dev*))
   (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
-  ;; (set-crtc )
+  (set-crtc *drm-dev* *frame-buffer*)
 
   (setf *client-thread*
 	(bt:make-thread
@@ -84,29 +84,64 @@
 	  do (livesupport:update-repl-link)
 	     (magic))))
 
+(defun check-egl-error (&optional (prefix "EGL Error"))
+  (let ((msg (case (egl:get-error)
+	       (:success nil)
+	       (:bad-alloc "EGL_BAD_ALLOC")
+	       (:bad-config "EGL_BAD_CONFIG")
+	       (:bad-context "EGL_BAD_CONTEXT")
+	       (:bad-current-surface "EGL_BAD_CURRENT_SURFACE")
+	       (:bad-display "EGL_BAD_DISPLAY")
+	       (:bad-match "EGL_BAD_MATCH")
+	       (:bad-native-pixmap "EGL_BAD_NATIVE_PIXMAP")
+	       (:bad-native-window "EGL_BAD_NATIVE_WINDOW")
+	       (:bad-parameter "EGL_BAD_PARAMETER")
+	       (:bad-surface "EGL_BAD_SURFACE")
+	       (t "TRAP: Unknown EGL error"))))
+    (when msg (error (format nil "~a: ~a" prefix msg)))))
+
+
+(defun check-gl-error (&optional (prefix "GL Error"))
+  (let ((msg (case (gl:get-error)
+	       (:zero nil)
+	       (:invalid-enum "Invalid enum")
+	       (:invalid-value "Invalid value")
+	       (:invalid-operation "Invalid operation")
+	       (:stack-overflow "Stack overflow")
+	       (:stack-underflow "Stack underflow")
+	       (:out-of-memory "Out of memory")
+	       (t "Unknown error"))))
+    (when msg (error (format nil "~a: ~a" prefix msg)))))
+
+(defun check-gl-fb-status (&optional (prefix "FB status"))
+  (let ((msg (case (gl:check-framebuffer-status :framebuffer)
+	       (:framebuffer-complete-oes nil)
+	       (:framebuffer-complete nil)
+	       (:zero (check-gl-error))
+	       (:framebuffer-incomplete-attachment "Framebuffer incomplete attachment")
+	       (:framebuffer-incomplete-missing-attachment "Framebuffer incomplete missing attachment")
+	       (:framebuffer-unsupported "Framebuffer unsupported")
+	       (:framebuffer-incomplete-multisample "Framebuffer incomplete multisample")
+	       (:framebuffer-undefined "Framebuffer undefined")
+	       (t (error "Uncovered GL framebuffer error code")))))
+    (when msg (error (format nil "~a: ~a~%" prefix msg)))))
+
 (defun create-gl-framebuffer (image)
   (let* ((texture (gl:gen-texture))
 	 (framebuffer (gl:gen-framebuffer)))
+    (check-gl-error "Gen texture/framebuffer")
     (gl:bind-texture :texture-2d texture)
     (%gl:egl-image-target-texture-2d-oes :texture-2d image)
+    (check-gl-error "egl-image-target-texture-2d-oes")
     (gl:bind-framebuffer :framebuffer framebuffer)
+    ;; (log! "First check~%")
+    ;; (check-gl-fb-status)
+
     (gl:framebuffer-texture-2d :framebuffer :color-attachment0 :texture-2d texture 0)
-    (print "STATUS")
-    (print (gl:check-framebuffer-status :framebuffer))
-    (case (gl:check-framebuffer-status :framebuffer)
-      (:framebuffer-complete (values framebuffer texture))
-      (:framebuffer-incomplete-attachment (error "Framebuffer incomplete attachment"))
-      (:framebuffer-incomplete-missing-attachment (error "Framebuffer incomplete missing attachment"))
-      (:framebuffer-unsupported (error "Framebuffer unsupported"))
-      (:framebuffer-incomplete-multisample (error "Framebuffer incomplete multisample"))
-      (:framebuffer-undefined (error "Framebuffer undefined"))
-      (:zero (error "Framebuffer zero - what is this even?"))
-      (t (error "Uncovered GL framebuffer error code")))
+    (check-gl-fb-status "After attaching texture")
+
     (gl:bind-texture :texture-2d 0)
     (gl:bind-framebuffer :framebuffer 0)
-
-    (when (eq texture 0) (error "Texture is 0"))
-    (when (eq framebuffer 0) (error "Framebuffer is 0"))
 
     (values framebuffer texture)))
 
@@ -121,8 +156,6 @@
 	 (handle (gbm:bo-get-handle buffer-object))
 	 (stride (gbm:bo-get-stride buffer-object))
 	 (offset 0) (bpp 32) (depth 24)
-	 ;; TODO: Using the global *frame-buffer* here, since i'm too lazy to clean up
-	 ;; And trying to add the framebuffer more than once ends up corrupting the image
 	 (frame-buffer (add-framebuffer (fd device) width height depth bpp stride handle))
 	 ;; TODO: It's possible that the gl lib already has this extension defined. And that lib seems a bit more stable
 	 (egl-image (egl:create-image-khr *egl* (cffi:null-pointer) egl::LINUX_DMA_BUF_EXT (cffi:null-pointer)
@@ -146,6 +179,7 @@
 
     (gl:bind-buffer :array-buffer vbo)
     (gl:buffer-data :array-buffer :static-draw arr)
+    (check-gl-error "Init instanced verts")
     (gl:bind-buffer :array-buffer 0)))
 
 (defun magic ()
@@ -216,13 +250,16 @@
     (egl:initialize display)
     (egl:bind-api :opengl-es-api)
     (let* ((context (apply 'egl:create-context `(,display ,config ,(cffi:null-pointer) ,@context-attribs))))
+      (check-egl-error "Initializing egl context")
+      (when (cffi:null-pointer-p context) (error "Failed to create context (was null pointer)"))
       (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context))
+    (when (cffi:null-pointer-p (egl:get-current-context)) (error "Context not CURRENT (was null pointer)"))
     display))
 
 (defvar context-attribs
   (list
    :context-major-version 3
-   :context-minor-version 2
+   :context-minor-version 1
    :none))
 
 
