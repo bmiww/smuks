@@ -33,11 +33,10 @@
 (defmethod close-drm ((device gbm-device))
   (gbm:device-destroy (fd device)))
 
-
 (defun add-framebuffer (fd width height depth bpp pitch handle)
-  (cffi:with-foreign-objects ((buf-id '(:pointer :uint32) 0))
+  (cffi:with-foreign-objects ((buf-id :uint32 1))
     (drm::mode-add-framebuffer fd width height depth bpp pitch handle buf-id)
-    (cffi:mem-ref buf-id '(:pointer :uint32))))
+    (cffi:mem-ref buf-id :uint32)))
 
 (defun init-drm ()
   (let ((card (loop for i from 0 below 32
