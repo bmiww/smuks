@@ -16,6 +16,8 @@
 (defvar *main-vbo* nil)
 (defvar *egl-image* nil)
 (defvar *frame-buffer* nil)
+(defvar *gl-frame-buffer* nil)
+(defvar *texture* nil)
 
 (defvar *client-thread* nil)
 
@@ -61,6 +63,9 @@
   (setf *main-vbo* (init-instanced-verts))
 
   (setf (values *frame-buffer* *egl-image*) (create-framebuffer *drm-dev*))
+  (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
+
+  ;; (set-crtc )
 
   (setf *client-thread*
 	(bt:make-thread
@@ -79,6 +84,25 @@
 	  do (livesupport:update-repl-link)
 	     (magic))))
 
+(defun create-gl-framebuffer (image)
+  (let* ((texture (gl:gen-texture))
+	 (framebuffer (gl:gen-framebuffer)))
+    (gl:bind-texture :texture-2d texture)
+    (%gl:egl-image-target-texture-2d-oes :texture-2d image)
+    (gl:bind-framebuffer :framebuffer framebuffer)
+    (gl:framebuffer-texture-2d :framebuffer :color-attachment-0 :texture-2d texture 0)
+    (case (gl:check-framebuffer-status :framebuffer)
+      (:framebuffer-complete (values framebuffer texture))
+      (t (error "Framebuffer not complete")))
+    (gl:bind-texture :texture-2d 0)
+    (gl:bind-framebuffer :framebuffer 0)
+
+    (when (eq texture 0) (error "Texture is 0"))
+    (when (eq framebuffer 0) (error "Framebuffer is 0"))
+
+    (values framebuffer texture)))
+
+
 ;; NOTE: Stride is pitch. Eh.
 (defun create-framebuffer (device)
   (let* ((width (width device))
@@ -92,6 +116,7 @@
 	 ;; TODO: Using the global *frame-buffer* here, since i'm too lazy to clean up
 	 ;; And trying to add the framebuffer more than once ends up corrupting the image
 	 (frame-buffer (add-framebuffer (fd device) width height depth bpp stride handle))
+	 ;; TODO: It's possible that the gl lib already has this extension defined. And that lib seems a bit more stable
 	 (egl-image (egl:create-image-khr *egl* (cffi:null-pointer) egl::LINUX_DMA_BUF_EXT (cffi:null-pointer)
 					  ;; TODO: In the rust thing this was an FD not a pointer
 					  :dma-buf-plane-fd-ext (gbm:bo-get-fd buffer-object)
