@@ -52,7 +52,6 @@
   (let* ((crtc (crtc device))
 	 (connector (car (connected-connectors device)))
 	 (modes (getf connector 'drm::modes)))
-    (break)
     (drm:set-crtc
      (fd device)
      (getf crtc 'drm::crtc-id)
