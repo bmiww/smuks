@@ -19,14 +19,16 @@
     (setf (fd device) fd)
     (setf (gbm-pointer device) (gbm:create-device fd))
     (let* ((resources (drm:get-resources fd))
-	   (crtcs (drm:resources-crtcs resources))
-	   (valid (find-if (lambda (crtc) (> (getf crtc 'drm::mode-valid) 0)) crtcs)))
-      (unless crtcs (error "No CRTCs found"))
+	   (crtcs      (setf (crtcs device) (drm:resources-crtcs resources)))
+	   (connectors (setf (connectors device) (drm:resources-connectors resources)))
+	   (valid      (find-if (lambda (crtc) (> (getf crtc 'drm::mode-valid) 0)) crtcs)))
 
-      (setf (slot-value device 'crtcs) crtcs)
-      (setf (slot-value device 'crtc) valid)
-      (setf (slot-value device 'width) (getf valid 'drm::width))
-      (setf (slot-value device 'height) (getf valid 'drm::height)))))
+      (unless crtcs (error "No CRTCs found"))
+      (unless connectors (error "No connectors found"))
+
+      (setf (crtc device) valid)
+      (setf (width device) (getf valid 'drm::width))
+      (setf (height device) (getf valid 'drm::height)))))
 
 
 ;; TODO: Check if you need to close any of the drm resources

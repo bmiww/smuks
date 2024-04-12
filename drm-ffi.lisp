@@ -14,6 +14,7 @@
    get-resources
 
    resources-crtcs
+   resources-connectors
 
    mode-crtc-width
    mode-crtc-height))
@@ -202,8 +203,8 @@
        ;; :fbs (loop for i from 0 below count-fbs collect (mem-aref fbs i))
        :crtcs (loop for i from 0 below count-crtcs
 		    collect (mem-ref (mode-get-crtc fd (mem-aref crtcs :uint32 i)) '(:struct mode-crtc)))
-       ;; :connectors (loop for i from 0 below count-connectors
-			 ;; collect (mode-get-connector fd (mem-aref connectors :uint32 i)))
+       :connectors (loop for i from 0 below count-connectors
+			 collect (mem-ref (mode-get-connector fd (mem-aref connectors :uint32 i)) '(:struct mode-connector)))
        ;; :encoders (loop for i from 0 below count-encoders collect (mode-get-encoder fd (mem-aref encoders :uint32 i)))
        :min-width min-width
        :max-width max-width
