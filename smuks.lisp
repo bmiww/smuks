@@ -73,8 +73,8 @@
   (set-crtc *drm-dev* *frame-buffer*)
 
   ;; TODO: For now disabling since it seems to be locking up other threads from erroring out for some reason...
-  ;; (log! "Starting DRM fd listener. Waiting for events...~%")
-  ;; (setf *drm-thread* (bt:make-thread 'drm-listener))
+  (log! "Starting DRM fd listener. Waiting for events...~%")
+  (setf *drm-thread* (bt:make-thread 'drm-listener))
 
   (log! "Starting wayland socket listener. Waiting for clients...~%")
   (setf *client-thread* (bt:make-thread 'client-listener))
@@ -97,12 +97,15 @@
 		 framebuffer
 		 :page-flip-event
 		 (cffi:null-pointer))))
-    ;; (print "RESULT")
-    ;; (print result)
-
-    (case result
-      (0 (log! "Page flip OK.~%"))
-      (t (log! "Page flip failed.~%")))))
+    (if (zerop result)
+	(log! "Page flip OK!~%")
+	(log! "Page flip:: ~a:~a~%" (- result) (case (- result)
+				  ;; TODO: These might all be wrong. I'm assuming based on this (page flip doesn't neccesarily use generic error codes):
+				  ;; https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US
+				  (9  "EBADF - Bad file descriptor number")
+				  (13 "EACCESS - Permission denied")
+				  (25 "ENOTTY - Not a typewriter")
+				  (t (format nil "UNKNOWN ERROR CODE - ~a" result)))))))
 
 (defun render-frame ()
   (livesupport:update-repl-link)
@@ -112,11 +115,12 @@
   (drm-page-flip *drm-dev* *frame-buffer*))
 
 (defun prep-gl-implementation (drm-device)
+  (gl:bind-framebuffer :framebuffer *frame-buffer*)
   (let* ((main-vbo (init-instanced-verts))
 	 (shaders "NOT IMPLEMENTED"))
     (gl:enable :blend)
     (gl:blend-func :src-alpha :one-minus-src-alpha)
-    (gl:clear-color 0.5 0.5 0.5 1.0)
+    (gl:clear-color 1.0 0.5 0.5 1.0)
     (gl:viewport 0 0 (width drm-device) (height drm-device))
 
     (values main-vbo shaders)))
@@ -124,11 +128,13 @@
 ;; TODO: Unfinished. Still in debug mode
 (defun drm-listener ()
   (let ((buffer (cffi:foreign-alloc :uint8 :count 1024)))
-    (log! "WHAT?")
     (loop while (not *smuks-exit*)
 	  ;; TODO: SBCL EXCLUSIVE
-	  for msg = (prog2 (log! "READIN") (sb-unix:unix-read (fd *drm-dev*) buffer 1024) (log! "DONE READIN"))
-	  do (format t "DRM-EVENT: ~A~%" msg))))
+	  for count = (sb-unix:unix-read (fd *drm-dev*) buffer 1024)
+	  do (when count
+	       (loop for i from 0 below count
+		     do (log! "~a" (cffi:mem-ref buffer :uint8 i)))
+	       (log! "~%")))))
 
 (defun client-listener ()
   (loop until *smuks-exit*
