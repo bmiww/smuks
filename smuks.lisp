@@ -52,6 +52,7 @@
 
   ;; TODO: This kills off the client listener rather ungracefully
   (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
+  (when (and *drm-thread* (bt:thread-alive-p *drm-thread*)) (bt:destroy-thread *drm-thread*) (setf *drm-thread* nil))
 
   ;; NOTE: Maybe setup kill signals for the process
   ;; TODO: Maybe add a "restart" to set *smuks-exit* to true
