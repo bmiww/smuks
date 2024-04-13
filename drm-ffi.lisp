@@ -179,12 +179,28 @@
   (flags PageFlipFlags)
   (user-data :pointer))
 
-;; void (*vblank_handler)(int fd, unsigned int sequence, unsigned int tv_sec, unsigned int tv_usec, void *user_data);
-;; void (*page_flip_handler)(int fd, unsigned int sequence, unsigned int tv_sec, unsigned int tv_usec, void *user_data);
 (defcstruct event-context
   (version :int)
   (vblank-handler :pointer)
   (page-flip-handler :pointer))
+
+
+(defcstruct drm-event
+  (type :uint32)
+  (length :uint32))
+
+(defcstruct drm-event-vblank
+  (base :struct drm-event)
+  (user-data :uint64)
+  (tv-sec :uint32)
+  (tv-usec :uint32)
+  (sequence :uint32)
+  (crtc-id :uint32))
+
+
+;; (defun read-drm-event (buffer)
+  ;; ())
+
 
 (defcfun ("drmHandleEvent" handle-event) :int
   (fd :int)
