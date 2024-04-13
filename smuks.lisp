@@ -68,16 +68,10 @@
 
   (set-crtc *drm-dev* *frame-buffer*)
 
+
   ;; TODO: For now disabling since it seems to be locking up other threads from erroring out for some reason...
-  ;; (setf *drm-thread*
-	;; (bt:make-thread
-	 ;; (lambda ()
-	   ;; (let ((buffer (cffi:foreign-alloc :uint8 :count 1024)))
-	     ;; (log! "WHAT?")
-	     ;; (loop while (not *smuks-exit*)
-		   ;; ;; TODO: SBCL EXCLUSIVE
-		   ;; for msg = (prog2 (log! "READIN") (sb-unix:unix-read (fd *drm-dev*) buffer 1024) (log! "DONE READIN"))
-		   ;; do (format t "DRM-EVENT: ~A~%" msg))))))
+  ;; (log! "Starting DRM fd listener. Waiting for events...~%")
+  ;; (setf *drm-thread* (bt:make-thread 'drm-listener))
 
   (log! "Starting wayland socket listener. Waiting for clients...~%")
   (setf *client-thread* (bt:make-thread 'client-listener))
@@ -90,6 +84,15 @@
     (loop while t
 	  do (livesupport:update-repl-link)
 	     (magic))))
+
+;; TODO: Unfinished. Still in debug mode
+(defun drm-listener ()
+  (let ((buffer (cffi:foreign-alloc :uint8 :count 1024)))
+    (log! "WHAT?")
+    (loop while (not *smuks-exit*)
+	  ;; TODO: SBCL EXCLUSIVE
+	  for msg = (prog2 (log! "READIN") (sb-unix:unix-read (fd *drm-dev*) buffer 1024) (log! "DONE READIN"))
+	  do (format t "DRM-EVENT: ~A~%" msg))))
 
 (defun client-listener ()
   (loop until *smuks-exit*
