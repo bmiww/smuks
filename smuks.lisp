@@ -19,6 +19,7 @@
 (defvar *frame-buffer* nil)
 (defvar *gl-frame-buffer* nil)
 (defvar *texture* nil)
+(defvar *shaders* nil)
 
 (defvar *client-thread* nil)
 
@@ -43,10 +44,12 @@
   (format t "╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝~%")
   (format t "~%"))
 
+  ;; TODO: Add cleanup/restarts for crtc grabs
 (defun main ()
   (setf *log-output* *standard-output*)
   (heading)
   (setf *smuks-exit* nil)
+
   ;; TODO: This kills off the client listener rather ungracefully
   (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
 
@@ -61,13 +64,13 @@
   (setf *drm-dev* (init-drm))
   (setf *egl* (init-egl *drm-dev*))
 
-  (setf *main-vbo* (init-instanced-verts))
-
   (setf (values *frame-buffer* *egl-image*) (create-framebuffer *drm-dev*))
   (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
-  (set-crtc *drm-dev* *frame-buffer*)
+  (setf *main-vbo* (init-instanced-verts))
+  (setf (values *main-vbo* *shaders*) (prep-gl-implementation *drm-dev*))
 
+  (set-crtc *drm-dev* *frame-buffer*)
 
   ;; TODO: For now disabling since it seems to be locking up other threads from erroring out for some reason...
   ;; (log! "Starting DRM fd listener. Waiting for events...~%")
@@ -81,9 +84,30 @@
   (test-app *test-program*)
 
   (livesupport:continuable
-    (loop while t
-	  do (livesupport:update-repl-link)
-	     (magic))))
+    (loop while (not *smuks-exit*)
+	  do (render-frame))))
+
+(defun render-frame ()
+  (livesupport:update-repl-link)
+  (sleep 1)
+  (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
+  (gl:clear :color-buffer-bit)
+  ;; (drm::mode-page-flip
+   ;; (fd *drm-dev*)
+   ;; (getf (crtc *drm-dev*) 'drm::crtc-id)
+   ;; *frame-buffer*
+   ;; )
+)
+
+(defun prep-gl-implementation (drm-device)
+  (let* ((main-vbo (init-instanced-verts))
+	 (shaders "NOT IMPLEMENTED"))
+    (gl:enable :blend)
+    (gl:blend-func :src-alpha :one-minus-src-alpha)
+    (gl:clear-color 0.5 0.5 0.5 1.0)
+    (gl:viewport 0 0 (width drm-device) (height drm-device))
+
+    (values main-vbo shaders)))
 
 ;; TODO: Unfinished. Still in debug mode
 (defun drm-listener ()
@@ -197,8 +221,6 @@
     (check-gl-error "Init instanced verts")
     (gl:bind-buffer :array-buffer 0)))
 
-(defun magic ()
-  (sleep 1))
 
 ;; ███████╗ ██████╗  ██████╗██╗  ██╗███████╗████████╗
 ;; ██╔════╝██╔═══██╗██╔════╝██║ ██╔╝██╔════╝╚══██╔══╝
