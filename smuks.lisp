@@ -79,13 +79,8 @@
 		   ;; for msg = (prog2 (log! "READIN") (sb-unix:unix-read (fd *drm-dev*) buffer 1024) (log! "DONE READIN"))
 		   ;; do (format t "DRM-EVENT: ~A~%" msg))))))
 
-  (setf *client-thread*
-	(bt:make-thread
-	 (lambda ()
-	   (log! "Starting wayland socket listener~%")
-	   (loop until *smuks-exit*
-		 do (let* ((client (unix-sockets:accept-unix-socket *socket*)))
-		      (smuks-wl:add-client *wayland* client))))))
+  (log! "Starting wayland socket listener. Waiting for clients...~%")
+  (setf *client-thread* (bt:make-thread 'client-listener))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
@@ -95,6 +90,11 @@
     (loop while t
 	  do (livesupport:update-repl-link)
 	     (magic))))
+
+(defun client-listener ()
+  (loop until *smuks-exit*
+	do (let* ((client (unix-sockets:accept-unix-socket *socket*)))
+	     (smuks-wl:add-client *wayland* client))))
 
 (defun check-egl-error (&optional (prefix "EGL Error"))
   (let ((msg (case (egl:get-error)
