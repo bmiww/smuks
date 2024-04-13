@@ -41,6 +41,9 @@
   :vertical-bgr
   :none)
 
+(defbitfield (PageFlipFlags :uint32)
+  (:page-flip-event 1))
+
 (defcstruct mode-res
   (count-fbs :int)
   (fbs (:pointer :uint32))
@@ -173,7 +176,7 @@
   (fd :int)
   (crtc-id :uint32)
   (fb-id :uint32)
-  (flags :uint32)
+  (flags PageFlipFlags)
   (user-data :pointer))
 
 ;; void (*vblank_handler)(int fd, unsigned int sequence, unsigned int tv_sec, unsigned int tv_usec, void *user_data);

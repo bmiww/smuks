@@ -87,17 +87,29 @@
     (loop while (not *smuks-exit*)
 	  do (render-frame))))
 
+;; TODO: Kernel docus on possible DRM debug funcs
+;; https://www.kernel.org/doc/html/v6.8/gpu/drm-internals.html?highlight=page+flip
+;; This might be for driver development
+(defun drm-page-flip (drm-dev framebuffer)
+  (let ((result (drm::mode-page-flip
+		 (fd drm-dev)
+		 (getf (crtc drm-dev) 'drm::crtc-id)
+		 framebuffer
+		 :page-flip-event
+		 (cffi:null-pointer))))
+    ;; (print "RESULT")
+    ;; (print result)
+
+    (case result
+      (0 (log! "Page flip OK.~%"))
+      (t (log! "Page flip failed.~%")))))
+
 (defun render-frame ()
   (livesupport:update-repl-link)
   (sleep 1)
   (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
   (gl:clear :color-buffer-bit)
-  ;; (drm::mode-page-flip
-   ;; (fd *drm-dev*)
-   ;; (getf (crtc *drm-dev*) 'drm::crtc-id)
-   ;; *frame-buffer*
-   ;; )
-)
+  (drm-page-flip *drm-dev* *frame-buffer*))
 
 (defun prep-gl-implementation (drm-device)
   (let* ((main-vbo (init-instanced-verts))
