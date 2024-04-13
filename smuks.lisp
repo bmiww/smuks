@@ -94,7 +94,7 @@
 (defun drm-page-flip (drm-dev framebuffer)
   (let ((result (drm::mode-page-flip
 		 (fd drm-dev)
-		 (getf (crtc drm-dev) 'drm::crtc-id)
+		 (drm::crtc-id (crtc drm-dev))
 		 framebuffer
 		 :page-flip-event
 		 (cffi:null-pointer))))

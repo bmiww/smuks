@@ -224,7 +224,8 @@
   (mode (:struct mode-mode-info))
   (gamma-size :int))
 
-(defstruct crtc
+(defstruct (crtc (:constructor map-crtc
+		     (id buffer-id x y width height mode-valid mode gamma-size pointer)))
   (id nil)
   (buffer-id nil)
   (x nil)
@@ -238,16 +239,17 @@
 
 (defun mk-crtc (c-crtc)
   (let ((de-pointerd (mem-ref c-crtc '(:struct mode-crtc))))
-    (make-crtc :id (getf de-pointerd 'crtc-id)
-	       :buffer-id (getf de-pointerd 'buffer-id)
-	       :x (getf de-pointerd 'x)
-	       :y (getf de-pointerd 'y)
-	       :width (getf de-pointerd 'width)
-	       :height (getf de-pointerd 'height)
-	       :mode-valid (getf de-pointerd 'mode-valid)
-	       :mode (getf de-pointerd 'crtc-mode))
-	       :gamma-size (getf de-pointerd 'gamma-size)
-	       :pointer c-crtc))
+    (print (getf de-pointerd 'crtc-id))
+    (map-crtc (getf de-pointerd 'crtc-id)
+	      (getf de-pointerd 'buffer-id)
+	      (getf de-pointerd 'x)
+	      (getf de-pointerd 'y)
+	      (getf de-pointerd 'width)
+	      (getf de-pointerd 'height)
+	      (getf de-pointerd 'mode-valid)
+	      (getf de-pointerd 'crtc-mode)
+	      (getf de-pointerd 'gamma-size)
+	      c-crtc)))
 
 (defun free-crtc (crtc) (mode-free-crtc (crtc-pointer crtc)))
 
@@ -275,7 +277,7 @@
       (make-resources
        ;; :fbs (loop for i from 0 below count-fbs collect (mem-aref fbs i))
        :crtcs (loop for i from 0 below count-crtcs
-		    collect (mk-crtc (mode-get-crtc fd (mem-aref crtcs :uint32 i))))
+		    collect (progn (let ((crtc (mk-crtc (mode-get-crtc fd (mem-aref crtcs :uint32 i))))) crtc)))
        :connectors (loop for i from 0 below count-connectors
 			 collect (mem-ref (mode-get-connector fd (mem-aref connectors :uint32 i)) '(:struct mode-connector)))
        ;; :encoders (loop for i from 0 below count-encoders collect (mode-get-encoder fd (mem-aref encoders :uint32 i)))
