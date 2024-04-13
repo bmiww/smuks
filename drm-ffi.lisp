@@ -17,6 +17,7 @@
    resources-connectors
 
    set-crtc
+   free-crtc
 
    mode-crtc-width
    mode-crtc-height))
@@ -190,7 +191,7 @@
   (length :uint32))
 
 (defcstruct drm-event-vblank
-  (base :struct drm-event)
+  (base (:struct drm-event))
   (user-data :uint64)
   (tv-sec :uint32)
   (tv-usec :uint32)
@@ -206,6 +207,49 @@
   (fd :int)
   (event-context (:pointer (:struct event-context))))
 
+
+
+;; ┬  ┬┌─┐┌─┐┬ ┬
+;; │  │└─┐├─┘└┬┘
+;; ┴─┘┴└─┘┴   ┴
+
+(defcstruct mode-crtc
+  (crtc-id :uint32)
+  (buffer-id :uint32)
+  (x :uint32)
+  (y :uint32)
+  (width :uint32)
+  (height :uint32)
+  (mode-valid :int)
+  (mode (:struct mode-mode-info))
+  (gamma-size :int))
+
+(defstruct crtc
+  (id nil)
+  (buffer-id nil)
+  (x nil)
+  (y nil)
+  (width nil)
+  (height nil)
+  (mode-valid nil)
+  (mode nil)
+  (gamma-size nil)
+  (pointer nil))
+
+(defun mk-crtc (c-crtc)
+  (let ((de-pointerd (mem-ref c-crtc '(:struct mode-crtc))))
+    (make-crtc :id (getf de-pointerd 'crtc-id)
+	       :buffer-id (getf de-pointerd 'buffer-id)
+	       :x (getf de-pointerd 'x)
+	       :y (getf de-pointerd 'y)
+	       :width (getf de-pointerd 'width)
+	       :height (getf de-pointerd 'height)
+	       :mode-valid (getf de-pointerd 'mode-valid)
+	       :mode (getf de-pointerd 'crtc-mode))
+	       :gamma-size (getf de-pointerd 'gamma-size)
+	       :pointer c-crtc))
+
+(defun free-crtc (crtc) (mode-free-crtc (crtc-pointer crtc)))
 
 
 ;; ┬ ┬┌┬┐┬┬  ┌─┐
@@ -231,7 +275,7 @@
       (make-resources
        ;; :fbs (loop for i from 0 below count-fbs collect (mem-aref fbs i))
        :crtcs (loop for i from 0 below count-crtcs
-		    collect (mem-ref (mode-get-crtc fd (mem-aref crtcs :uint32 i)) '(:struct mode-crtc)))
+		    collect (mk-crtc (mode-get-crtc fd (mem-aref crtcs :uint32 i))))
        :connectors (loop for i from 0 below count-connectors
 			 collect (mem-ref (mode-get-connector fd (mem-aref connectors :uint32 i)) '(:struct mode-connector)))
        ;; :encoders (loop for i from 0 below count-encoders collect (mode-get-encoder fd (mem-aref encoders :uint32 i)))
