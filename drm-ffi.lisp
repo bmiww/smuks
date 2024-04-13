@@ -207,6 +207,8 @@
   (max-height nil))
 
 
+;; TODO: create lisp structures for at minimum the crtc
+;; I am currently missing pointers to CRTC for the sake of freeing them
 (defun get-resources (fd)
   (let ((resources (mode-get-resources fd)))
     (with-foreign-slots ((crtcs count-crtcs connectors count-connectors fbs count-fbs encoders count-encoders min-width max-width min-height max-height) resources (:struct mode-res))
