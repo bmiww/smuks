@@ -213,6 +213,7 @@
 ;; │  │└─┐├─┘└┬┘
 ;; ┴─┘┴└─┘┴   ┴
 
+;; TODO: Maybe conflicting with crtc-mode in the lisp struct
 (defcstruct mode-crtc
   (crtc-id :uint32)
   (buffer-id :uint32)
@@ -224,7 +225,7 @@
   (mode (:struct mode-mode-info))
   (gamma-size :int))
 
-(defstruct (crtc (:constructor map-crtc
+(defstruct (crtc! (:constructor map-crtc
 		     (id buffer-id x y width height mode-valid mode gamma-size pointer)))
   (id nil)
   (buffer-id nil)
@@ -239,7 +240,6 @@
 
 (defun mk-crtc (c-crtc)
   (let ((de-pointerd (mem-ref c-crtc '(:struct mode-crtc))))
-    (print (getf de-pointerd 'crtc-id))
     (map-crtc (getf de-pointerd 'crtc-id)
 	      (getf de-pointerd 'buffer-id)
 	      (getf de-pointerd 'x)
@@ -251,7 +251,7 @@
 	      (getf de-pointerd 'gamma-size)
 	      c-crtc)))
 
-(defun free-crtc (crtc) (mode-free-crtc (crtc-pointer crtc)))
+(defun free-crtc (crtc) (mode-free-crtc (crtc!-pointer crtc)))
 
 
 ;; ┬ ┬┌┬┐┬┬  ┌─┐

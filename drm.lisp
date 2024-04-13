@@ -22,15 +22,15 @@
     (let* ((resources (drm:get-resources fd))
 	   (crtcs      (setf (crtcs device) (drm:resources-crtcs resources)))
 	   (connectors (setf (connectors device) (drm:resources-connectors resources)))
-	   (valid      (find-if (lambda (crtc) (> (drm::crtc-mode-valid crtc) 0)) crtcs)))
+	   (valid      (find-if (lambda (crtc) (> (drm::crtc!-mode-valid crtc) 0)) crtcs)))
 
       (unless crtcs (error "No CRTCs found"))
       (unless connectors (error "No connectors found"))
       (unless valid (error "No valid CRTCs found"))
 
       (setf (crtc device) valid)
-      (setf (width device) (drm::crtc-width valid))
-      (setf (height device) (drm::crtc-height valid)))))
+      (setf (width device) (drm::crtc!-width valid))
+      (setf (height device) (drm::crtc!-height valid)))))
 
 
 ;; TODO: Check if you need to close any of the drm resources
@@ -52,17 +52,19 @@
   (let* ((crtc (crtc device))
 	 (connector (car (connected-connectors device)))
 	 (modes (getf connector 'drm::modes)))
-    (drm:set-crtc
-     (fd device)
-     (drm::crtc-id crtc)
-     framebuffer
-     0 0
-     (list (getf connector 'drm::connector-id))
-     ;; TODO: I'm using the pointer to all the modes in hopes that i the first one is valid
-     ;; And that set-crtc will read exactly the first one
-     modes)))
+    (let ((result (drm:set-crtc
+		   (fd device)
+		   (drm::crtc!-id crtc)
+		   framebuffer
+		   0 0
+		   (list (getf connector 'drm::connector-id))
+		   ;; TODO: I'm using the pointer to all the modes in hopes that i the first one is valid
+		   ;; And that set-crtc will read exactly the first one
+		   modes)))
+      (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))
+      crtc)))
 
-(defmethod free-crtc ((device gbm-device)) (drm:free-crtc (drm::crtc-pointer (crtc device))))
+(defmethod free-crtc ((device gbm-device)) (drm:free-crtc (crtc device)))
 
 
 (defun init-drm ()

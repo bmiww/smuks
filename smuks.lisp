@@ -20,6 +20,7 @@
 (defvar *gl-frame-buffer* nil)
 (defvar *texture* nil)
 (defvar *shaders* nil)
+(defvar *active-crtc* nil)
 
 (defvar *client-thread* nil)
 
@@ -53,6 +54,7 @@
   ;; TODO: This kills off the client listener rather ungracefully
   (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
   (when (and *drm-thread* (bt:thread-alive-p *drm-thread*)) (bt:destroy-thread *drm-thread*) (setf *drm-thread* nil))
+  (when *active-crtc* (free-crtc *drm-dev*) (setf *active-crtc* nil))
 
   ;; NOTE: Maybe setup kill signals for the process
   ;; TODO: Maybe add a "restart" to set *smuks-exit* to true
@@ -71,7 +73,7 @@
   (setf *main-vbo* (init-instanced-verts))
   (setf (values *main-vbo* *shaders*) (prep-gl-implementation *drm-dev*))
 
-  (set-crtc *drm-dev* *frame-buffer*)
+  (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*))
 
   ;; TODO: For now disabling since it seems to be locking up other threads from erroring out for some reason...
   (log! "Starting DRM fd listener. Waiting for events...~%")
@@ -82,7 +84,7 @@
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
-  (test-app *test-program*)
+  ;; (test-app *test-program*)
 
   (livesupport:continuable
     (loop while (not *smuks-exit*)
@@ -94,7 +96,7 @@
 (defun drm-page-flip (drm-dev framebuffer)
   (let ((result (drm::mode-page-flip
 		 (fd drm-dev)
-		 (drm::crtc-id (crtc drm-dev))
+		 (drm::crtc!-id (crtc drm-dev))
 		 framebuffer
 		 :page-flip-event
 		 (cffi:null-pointer))))
