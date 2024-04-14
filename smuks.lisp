@@ -216,6 +216,12 @@
 ;; ███████╗╚██████╔╝███████╗
 ;; ╚══════╝ ╚═════╝ ╚══════╝
 
+(defvar context-attribs
+  (list
+   :context-major-version 3
+   :context-minor-version 1
+   :none))
+
 ;; NOTE: libwayland egl code
 ;; https://gitlab.freedesktop.org/wayland/wayland/-/tree/main/egl?ref_type=heads
 ;; NOTE: Nvidia eglstream code for binding egl to wayland
@@ -260,12 +266,6 @@
       (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context))
     (when (cffi:null-pointer-p (egl:get-current-context)) (error "Context not CURRENT (was null pointer)"))
     display))
-
-(defvar context-attribs
-  (list
-   :context-major-version 3
-   :context-minor-version 1
-   :none))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
