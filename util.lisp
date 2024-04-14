@@ -7,7 +7,7 @@
 ;;  ╚═════╝    ╚═╝   ╚═╝╚══════╝
 (defpackage :smuks-util
   (:use :cl)
-  (:export dohash log! *log-output*))
+  (:export dohash log! *log-output* match-kernel-errcode))
 (in-package :smuks-util)
 
 (defun heading ()
@@ -50,3 +50,19 @@ declarations. Finally the result-form is returned after the iteration completes.
              (return ,result-form))
            (locally ,@body)
            (go ,repeat)))))
+
+
+;; ┬  ┬┌┐┌┬ ┬─┐ ┬
+;; │  │││││ │┌┴┬┘
+;; ┴─┘┴┘└┘└─┘┴ └─
+
+(defun match-kernel-errcode (code)
+  "Matches a linux kernel error code with a description
+You can find example error codes here:
+https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
+  (case code
+    (0 nil)
+    (9  "EBADF - Bad file descriptor number")
+    (13 "EACCESS - Permission denied")
+    (25 "ENOTTY - Not a typewriter")
+    (t (format nil "UNKNOWN ERROR CODE - ~a" result))))
