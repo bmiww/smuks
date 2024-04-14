@@ -8,6 +8,47 @@
    check-gl-fb-status))
 (in-package :smuks-gl-util)
 
+
+;; ┌─┐┬    ┌─┐┬─┐┌─┐┌─┐
+;; │ ┬│    ├─┘├┬┘├┤ ├─┘
+;; └─┘┴─┘  ┴  ┴└─└─┘┴
+(defvar *instanced-verts* '(1.0 0.0   0.0 0.0   1.0 1.0   0.0 1.0))
+
+(defun init-instanced-verts ()
+  (let* ((vbo (gl:gen-buffer))
+	 (arr (gl:alloc-gl-array :float (length *instanced-verts*))))
+    (dotimes (i (length *instanced-verts*))
+      (setf (gl:glaref arr i) (nth i *instanced-verts*)))
+
+    (gl:bind-buffer :array-buffer vbo)
+    (gl:buffer-data :array-buffer :static-draw arr)
+    (check-gl-error "Init instanced verts")
+    (gl:bind-buffer :array-buffer 0)))
+
+(defun create-gl-framebuffer (image)
+  (let* ((texture (gl:gen-texture))
+	 (framebuffer (gl:gen-framebuffer)))
+    (check-gl-error "Gen texture/framebuffer")
+    (gl:bind-texture :texture-2d texture)
+    (%gl:egl-image-target-texture-2d-oes :texture-2d image)
+    (check-gl-error "egl-image-target-texture-2d-oes")
+    (gl:bind-framebuffer :framebuffer framebuffer)
+    ;; (log! "First check~%")
+    ;; (check-gl-fb-status)
+
+    (gl:framebuffer-texture-2d :framebuffer :color-attachment0 :texture-2d texture 0)
+    (check-gl-fb-status "After attaching texture")
+
+    ;; (gl:bind-texture :texture-2d 0)
+    ;; (gl:bind-framebuffer :framebuffer 0)
+
+    (values framebuffer texture)))
+
+
+
+;; ┌─┐┬─┐┬─┐┌─┐┬─┐  ┌─┐┬ ┬┌─┐┌─┐┬┌─┌─┐
+;; ├┤ ├┬┘├┬┘│ │├┬┘  │  ├─┤├┤ │  ├┴┐└─┐
+;; └─┘┴└─┴└─└─┘┴└─  └─┘┴ ┴└─┘└─┘┴ ┴└─┘
 (defun check-egl-error (&optional (prefix "EGL Error"))
   (let ((msg (case (egl:get-error)
 	       (:success nil)
