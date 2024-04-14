@@ -22,8 +22,7 @@ The xdg_wm_base interface is exposed as a global object enabling clients
 "))
 
 (DEFMETHOD EVT-PING ((OBJ XDG_WM_BASE) STREAM SERIAL)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-PING)))
-    ";; check if the client is alive
+  ";; check if the client is alive
 
 The ping event asks the client if it's still alive. Pass the
 	serial specified in the event back to the compositor by sending
@@ -42,7 +41,7 @@ The ping event asks the client if it's still alive. Pass the
 Arguments:
 serial::uint: pass this to the pong request
 "
-    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
+  (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))
 
 (DEFMETHOD REQ-DESTROY ((OBJ XDG_WM_BASE) CLIENT)
   ";; destroy xdg_wm_base
@@ -540,8 +539,7 @@ An interface that may be implemented by a wl_surface, for
 "))
 
 (DEFMETHOD EVT-CONFIGURE ((OBJ XDG_SURFACE) STREAM SERIAL)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-CONFIGURE)))
-    ";; suggest a surface change
+  ";; suggest a surface change
 
 The configure event marks the end of a configure sequence. A configure
 	sequence is a set of one or more events configuring the state of the
@@ -563,7 +561,7 @@ The configure event marks the end of a configure sequence. A configure
 Arguments:
 serial::uint: serial of the configure event
 "
-    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
+  (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))
 
 (DEFMETHOD REQ-DESTROY ((OBJ XDG_SURFACE) CLIENT)
   ";; destroy the xdg_surface
@@ -786,8 +784,7 @@ This interface defines an xdg_surface role which allows a surface to,
 "))
 
 (DEFMETHOD EVT-CONFIGURE ((OBJ XDG_TOPLEVEL) STREAM WIDTH HEIGHT STATES)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-CONFIGURE)))
-    ";; suggest a surface change
+  ";; suggest a surface change
 
 This configure event asks the client to resize its toplevel surface or
 	to change its state. The configured state should not be applied
@@ -814,11 +811,10 @@ width::int: NIL
 height::int: NIL
 states::array: NIL
 "
-    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
+  (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))
 
 (DEFMETHOD EVT-CLOSE ((OBJ XDG_TOPLEVEL) STREAM)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-CLOSE)))
-    ";; surface wants to be closed
+  ";; surface wants to be closed
 
 The close event is sent by the compositor when the user
 	wants the surface to be closed. This should be equivalent to
@@ -829,11 +825,10 @@ The close event is sent by the compositor when the user
 	window. The client may choose to ignore this request, or show
 	a dialog to ask the user to save their data, etc.
 "
-    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
+  (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))
 
 (DEFMETHOD EVT-CONFIGURE_BOUNDS ((OBJ XDG_TOPLEVEL) STREAM WIDTH HEIGHT)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-CONFIGURE_BOUNDS)))
-    ";; recommended window geometry bounds
+  ";; recommended window geometry bounds
 
 The configure_bounds event may be sent prior to a xdg_toplevel.configure
 	event to communicate the bounds a window geometry size is recommended
@@ -855,11 +850,10 @@ Arguments:
 width::int: NIL
 height::int: NIL
 "
-    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
+  (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))
 
 (DEFMETHOD EVT-WM_CAPABILITIES ((OBJ XDG_TOPLEVEL) STREAM CAPABILITIES)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-WM_CAPABILITIES)))
-    ";; compositor capabilities
+  ";; compositor capabilities
 
 This event advertises the capabilities supported by the compositor. If
 	a capability isn't supported, clients should hide or disable the UI
@@ -885,7 +879,7 @@ This event advertises the capabilities supported by the compositor. If
 Arguments:
 capabilities::array: array of 32-bit capabilities
 "
-    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
+  (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))
 
 (DEFMETHOD REQ-DESTROY ((OBJ XDG_TOPLEVEL) CLIENT)
   ";; destroy the xdg_toplevel
@@ -1444,8 +1438,7 @@ A popup surface is a short-lived, temporary surface. It can be used to
 "))
 
 (DEFMETHOD EVT-CONFIGURE ((OBJ XDG_POPUP) STREAM X Y WIDTH HEIGHT)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-CONFIGURE)))
-    ";; configure the popup surface
+  ";; configure the popup surface
 
 This event asks the popup surface to configure itself given the
 	configuration. The configured state should not be applied immediately.
@@ -1466,21 +1459,19 @@ y::int: y position relative to parent surface window geometry
 width::int: window geometry width
 height::int: window geometry height
 "
-    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
+  (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))
 
 (DEFMETHOD EVT-POPUP_DONE ((OBJ XDG_POPUP) STREAM)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-POPUP_DONE)))
-    ";; popup interaction is done
+  ";; popup interaction is done
 
 The popup_done event is sent out when a popup is dismissed by the
 	compositor. The client should destroy the xdg_popup object at this
 	point.
 "
-    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
+  (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))
 
 (DEFMETHOD EVT-REPOSITIONED ((OBJ XDG_POPUP) STREAM TOKEN)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-REPOSITIONED)))
-    ";; signal the completion of a repositioned request
+  ";; signal the completion of a repositioned request
 
 The repositioned event is sent as part of a popup configuration
 	sequence, together with xdg_popup.configure and lastly
@@ -1501,7 +1492,7 @@ The repositioned event is sent as part of a popup configuration
 Arguments:
 token::uint: reposition request token
 "
-    (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
+  (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))
 
 (DEFMETHOD REQ-DESTROY ((OBJ XDG_POPUP) CLIENT)
   ";; remove xdg_popup interface

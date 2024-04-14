@@ -55,7 +55,7 @@
 	  (wl:array (incf *message-size* (+ 4 (* 4 (length value)))))
 
 	  (wl:enum (incf *message-size* 4))
-	  (t (error "Unknown type %s" type)))))
+	  (t (error (format nil "Unknown type %s" type))))))
     *message-size*))
 
 ;; TODO: Depending on how much you can be arsed - you might want to define encoders for several lisp types
