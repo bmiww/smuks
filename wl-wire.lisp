@@ -82,7 +82,7 @@ Including the 8 bytes for the header."
 	  (wl:array (write-array stream value))
 	  ;; TODO: Enum might be wrong. It's possible that bitfields are a possibility in which case i would need to
 	  ;; Generate proper numbers from multiple symbols
-	  (wl:enum (write-number-bytes stream (wl:match-event-opcode value) 4)))))))
+	  (wl:enum (write-number-bytes stream (wl:match-event-opcode obj value) 4)))))))
 
 
 ;; ┌┬┐┌─┐┌─┐┌─┐┌┬┐┬┌┐┌┌─┐

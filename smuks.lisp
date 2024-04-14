@@ -77,7 +77,7 @@
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
-  ;; (test-app *test-program*)
+  (test-app *test-program*)
 
   (livesupport:continuable
     (loop while (not *smuks-exit*)

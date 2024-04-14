@@ -48,18 +48,19 @@
 (defmethod read-wayland-message ((wayland wayland) client stream)
   (let* ((object-id (read-n-as-number stream 4))
 	 (object (or (gethash object-id *globals*) (gethash object-id (objects client))))
-	 (opcode (read-n-as-number stream 2))
-	 (req-method (wl:match-request-opcode object opcode))
+	 (opcode (read-n-as-number stream 2)))
+    (unless object (error (format nil "No object found for id: ~a" object-id)))
+    (let* ((req-method (wl:match-request-opcode object opcode))
 	 (req-arg-types (wl:get-request-arg-types object opcode))
 	 (message-size (read-n-as-number stream 2))
-	 (payload (read-req-args stream message-size req-arg-types)))
+	   (payload (read-req-args stream message-size req-arg-types)))
 
-    ;; Discard extra bytes - since wayland messages are always 32-bit aligned
-    (consume-padding stream message-size)
+      ;; Discard extra bytes - since wayland messages are always 32-bit aligned
+      (consume-padding stream message-size)
 
 
-    (log! "📥 ~a(~a) ~a with ~a~%" (class-name (class-of object)) (wl:id object) req-method payload)
-    (apply req-method `(,object ,client ,@payload))))
+      (log! "📥 ~a(~a) ~a with ~a~%" (class-name (class-of object)) (wl:id object) req-method payload)
+      (apply req-method `(,object ,client ,@payload)))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │
@@ -139,7 +140,7 @@
     (wl/wl_shm::evt-format shm (sock-stream client) format)))
 
 (defmethod wl/wl_shm::evt-format ((shm shm) stream format)
-  (write-event-args stream shm (match-event-opcode shm 'wl/wl_shm::evt-format) `(uint ,format)))
+  (write-event-args stream shm (match-event-opcode shm 'wl/wl_shm::evt-format) `(uint ,(wl/wl_shm::enum-format-value shm format))))
 
 
 
