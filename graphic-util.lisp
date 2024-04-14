@@ -3,9 +3,10 @@
   (:use :cl)
   (:nicknames :sglutil)
   (:export
-   check-egl-error
    check-gl-error
-   check-gl-fb-status))
+   check-gl-fb-status
+   prep-gl-implementation
+   create-gl-framebuffer))
 (in-package :smuks-gl-util)
 
 
@@ -44,28 +45,21 @@
 
     (values framebuffer texture)))
 
+(defun prep-gl-implementation (drm-device)
+  (gl:bind-framebuffer :framebuffer *frame-buffer*)
+  (let* ((main-vbo (init-instanced-verts))
+	 (shaders "NOT IMPLEMENTED"))
+    (gl:enable :blend)
+    (gl:blend-func :src-alpha :one-minus-src-alpha)
+    (gl:clear-color 0.0 0.0 1.0 1.0)
+    (gl:viewport 0 0 (width drm-device) (height drm-device))
+
+    (values main-vbo shaders)))
 
 
 ;; ┌─┐┬─┐┬─┐┌─┐┬─┐  ┌─┐┬ ┬┌─┐┌─┐┬┌─┌─┐
 ;; ├┤ ├┬┘├┬┘│ │├┬┘  │  ├─┤├┤ │  ├┴┐└─┐
 ;; └─┘┴└─┴└─└─┘┴└─  └─┘┴ ┴└─┘└─┘┴ ┴└─┘
-(defun check-egl-error (&optional (prefix "EGL Error"))
-  (let ((msg (case (egl:get-error)
-	       (:success nil)
-	       (:bad-alloc "EGL_BAD_ALLOC")
-	       (:bad-config "EGL_BAD_CONFIG")
-	       (:bad-context "EGL_BAD_CONTEXT")
-	       (:bad-current-surface "EGL_BAD_CURRENT_SURFACE")
-	       (:bad-display "EGL_BAD_DISPLAY")
-	       (:bad-match "EGL_BAD_MATCH")
-	       (:bad-native-pixmap "EGL_BAD_NATIVE_PIXMAP")
-	       (:bad-native-window "EGL_BAD_NATIVE_WINDOW")
-	       (:bad-parameter "EGL_BAD_PARAMETER")
-	       (:bad-surface "EGL_BAD_SURFACE")
-	       (t "TRAP: Unknown EGL error"))))
-    (when msg (error (format nil "~a: ~a" prefix msg)))))
-
-
 (defun check-gl-error (&optional (prefix "GL Error"))
   (let ((msg (case (gl:get-error)
 	       (:zero nil)

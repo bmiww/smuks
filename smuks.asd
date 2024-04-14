@@ -23,6 +23,7 @@
 	       #:str)
   :components ((:file "util")
 	       (:file "graphic-util")
+	       (:file "egl-util")
 	       (:file "package")
 	       (:file "wl-base")
 	       (:file "WAYLAND-SERVER")
