@@ -7,7 +7,7 @@
 ;;  ╚═════╝    ╚═╝   ╚═╝╚══════╝
 (defpackage :smuks-util
   (:use :cl)
-  (:export dohash log! *log-output* match-kernel-errcode))
+  (:export dohash log! *log-output* match-kernel-errcode heading))
 (in-package :smuks-util)
 
 (defun heading ()

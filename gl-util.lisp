@@ -1,6 +1,6 @@
 
 (defpackage :smuks-gl-util
-  (:use :cl)
+  (:use :cl :sdrm)
   (:nicknames :sglutil)
   (:export
    check-gl-error

@@ -25,9 +25,9 @@
 	       #:xmls
 	       #:split-sequence)
   :components ((:file "util")
-	       (:file "graphic-util")
 	       (:file "drm-ffi")
 	       (:file "drm")
+	       (:file "gl-util")
 	       (:file "egl-util")
 	       (:file "package")
 	       (:file "wl-base")
