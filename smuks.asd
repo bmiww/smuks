@@ -20,7 +20,6 @@
 	       #:alexandria
 	       #:bordeaux-threads
 	       #:swank
-	       #:glfw
 	       #:str)
   :components ((:file "util")
 	       (:file "package")

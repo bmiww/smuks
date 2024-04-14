@@ -328,45 +328,6 @@
    :context-minor-version 1
    :none))
 
-
-;;  ██████╗ ██╗     ███████╗██╗    ██╗
-;; ██╔════╝ ██║     ██╔════╝██║    ██║
-;; ██║  ███╗██║     █████╗  ██║ █╗ ██║
-;; ██║   ██║██║     ██╔══╝  ██║███╗██║
-;; ╚██████╔╝███████╗██║     ╚███╔███╔╝
-;;  ╚═════╝ ╚══════╝╚═╝      ╚══╝╚══╝
-;; TODO: Kind of forgot about this one. Maybe get back to it if you don't have the tablet around
-;; Or if you start getting into working on the desktop version
-
-;; (defun main-glfw ()
-  ;; (print "doooo")
-  ;; (glfw:init)
-  ;; (print "nop")
-  ;; (unwind-protect
-       ;; (print "yep")
-       ;; (let ((window (make-instance 'window :width 800 :height 600 :title "Hello wayland")))
-	 ;; (init-socket window)
-
-         ;; (loop until (glfw:should-close-p window)
-               ;; do (print "hurpa")
-		  ;; (glfw:poll-events)
-		  ;; (glfw:swap-buffers window)))
-    ;; (glfw:shutdown)))
-
-
-
-;; (defclass window (glfw:window)
-  ;; ((socket :initform :socket :accessor socket)))
-
-;; (defmethod glfw:window-resized ((window window) width height)
-  ;; ;; (call-next-method)
-  ;; (gl:viewport 0 0 width height))
-
-;; (defmethod glfw:key-changed ((window window) key scancode action mods)
-  ;; (case key
-    ;; ((:escape) (setf (glfw:should-close-p window) t))))
-
-
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
