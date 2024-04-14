@@ -6,7 +6,7 @@
 ;; ███████╗╚██████╔╝███████╗
 ;; ╚══════╝ ╚═════╝ ╚══════╝
 (defpackage :smuks-egl-util
-  (:use :cl)
+  (:use :cl :sdrm)
   (:nicknames :seglutil)
   (:export
    check-egl-error
