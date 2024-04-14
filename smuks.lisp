@@ -89,6 +89,8 @@
   (sleep 1)
   (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
   (gl:clear :color-buffer-bit)
+  (gl:flush)
+  (gl:finish)
   (egl:swap-buffers *egl* (cffi:null-pointer))
   (drm-page-flip *drm-dev* *frame-buffer*))
 
