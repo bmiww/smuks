@@ -31,7 +31,7 @@
 ;; ─┴┘└─┘┴ ┴┴ ┴└─┘┴ ┴
 ;; NOTE: Taken from https://github.com/yitzchak/trivial-do/blob/master/src/dohash.lisp
 (defmacro dohash ((key-var value-var hash-table-form &optional result-form) &body body)
-  "dohash iterates over the elements of an hash table and binds key-var to the key,
+  "Iterates over the elements of an hash table and binds key-var to the key,
 value-var to the associated value and then evaluates body as a tagbody that can include
 declarations. Finally the result-form is returned after the iteration completes."
   #+clisp
