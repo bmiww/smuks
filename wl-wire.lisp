@@ -22,13 +22,9 @@
 ;; Basically its someone writing a client without libwayland, so included are the encoding functions
 ;; https://gaultier.github.io/blog/wayland_from_scratch.html?fbclid=IwAR2gRvsJvilJG8GcIoiywhOZxhiqy6lA_g_yCC95wo2bwYhEz8Myo_iU0zw_aem_ASJrcFMP5q2_3xeV-bkU_HAvTDxkisMVpIfiKfx2d-Ax0oKjLpDiUzpL_uc306l2Xn42-D-sh-I0wCizA4hEedJC
 
-(defun align-32-bit-msg-size (size)
-  (let ((off-by (mod size 4)))
-    (if (zerop off-by)
-	size
-	(+ size (- 4 off-by)))))
-
 (defun calculate-message-size (args)
+  "Calculate the size of a wayland message given the arguments.
+Including the 8 bytes for the header."
   ;; NOTE: Message size is number of bytes in the header + the payload
   (let ((message-size 8))
     (dolist (arg args)
@@ -61,6 +57,7 @@
 ;; TODO: Depending on how much you can be arsed - you might want to define encoders for several lisp types
 ;; that could correspond to the wayland types
 (defun write-event-args (stream obj opcode &rest args)
+  "Writes the args list to the stream, with the opcode and object id prepended"
   (let ((obj-id (wl::id obj))
 	(message-size (calculate-message-size args)))
     (log! "📨 ~a(~a) op:~a with ~a, size:~a~%" (class-name (class-of obj)) obj-id opcode args message-size)
@@ -92,6 +89,8 @@
 ;;  ││├┤ │  │ │ │││││││ ┬
 ;; ─┴┘└─┘└─┘└─┘─┴┘┴┘└┘└─┘
 (defun payload-string (stream)
+  "Reads a string from the stream
+First 4 bytes is the length of the string"
   (let* ((length (read-n-as-number stream 4))
 	 (array (make-array length)))
     (read-sequence array stream :end length)
@@ -100,6 +99,8 @@
 
 ;; TODO: For now - this just returns an array with the bytes. It is currently up to the implementation to interpret the bytes.
 (defun payload-array (stream)
+  "Reads an array of bytes from the stream
+First 4 bytes is the length of the array"
   (let* ((length (read-n-as-number stream 4))
 	 (array (make-array length)))
     (read-sequence array stream :end length)
@@ -107,6 +108,8 @@
     array))
 
 (defun read-fixnum (stream)
+  "TODO: Unimplemented
+Reads a 24.8 fixnum from the stream and returns it as a lisp ???float or something???"
   (let* ((int (read-n-as-number stream 3))
 	 (sign (logand int 1))
 	 (int (ash int -1)) ;; TODO: This line might be total bullshit
@@ -117,6 +120,7 @@
 	(+ int dec))))
 
 (defun read-int (stream)
+  "Reads a 32 bit integer from the stream"
   (let* ((int (read-n-as-number stream 4))
 	 (sign (logand int 1))
 	 (int (ash int -1))) ;; TODO: This line might be total bullshit
@@ -125,18 +129,22 @@
 	int)))
 
 (defun read-fd (stream)
+  "Reads a file descriptor from unix socket ancillary data"
   (break) ;; TODO: Breaking here - since i'm pretty sure this ain't gonna work
   (unix-sockets::ancillary-fd stream))
 
 (defun read-enum (stream enum-ref)
+  "Reads an enum value from the stream and returns the corresponding symbol or symbol list in case of bitfields"
   (let* ((num (read-n-as-number stream 4))
 	 (package-name (car enum-ref))
 	 (enum-name (cadr enum-ref))
 	 (enum (find-symbol (format nil "~A::~A" package-name enum-name))))
+    ;; TODO: Stupid - arguments are wrong
     (funcall enum num)))
 
 ;; NOTE: Message size is number of bytes in the header + the payload
 (defun read-req-args (stream message-size arg-types)
+  "Reads bytes from a wayland request and returns a list of the arguments they represent in lisp format"
   ;; TODO: Maybe instead of ignoring - you could keep a counter as to how many bytes were read by each arg-type in the list
   ;; Then the difference could be discarded (wayland pads the payload to have word lengths 32bits)
   (declare (ignore message-size))
@@ -171,17 +179,20 @@
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
 (defun consume-padding (stream size)
+  "Reads and discards n+y bytes from the stream, where n is the number of bytes and y is the number of bytes needed to pad the message to a multiple of 4"
   (when (> (mod size 4) 0)
     (loop for i from 0 below (- 4 (mod size 4))
 	  do (read-byte stream))))
 
 (defun read-n-as-number (stream n)
+  "Read n bytes and interpret them as a number"
   (let ((num 0))
     (dotimes (i n)
       (setf (ldb (byte 8 (* i 8)) num) (read-byte stream)))
     num))
 
 (defun write-a-string (stream string)
+  "Write wayland string bytes to stream"
   ;; NOTE: +1 for the null terminator
   (let ((length (+ 1 (length string))))
     (write-number-bytes stream length 4)
@@ -192,6 +203,7 @@
 	  do (write-byte 0 stream))))
 
 (defun write-array (stream array)
+  "Write wayland array bytes to stream"
   (let ((length (length array)))
     (write-number-bytes stream length 4)
     ;; TODO: This might or might not work. The type of the array elements is kind of not specified enough
@@ -202,3 +214,11 @@
 (defun write-number-bytes (stream num n)
   (dotimes (i n)
     (write-byte (ldb (byte 8 (* i 8)) num) stream)))
+
+(defun align-32-bit-msg-size (size)
+  "Aligns the size to be a multiple of 4 bytes and returns the possibly increased size.
+Operations are performed in bytes."
+  (let ((off-by (mod size 4)))
+    (if (zerop off-by)
+	size
+	(+ size (- 4 off-by)))))
