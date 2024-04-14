@@ -20,7 +20,10 @@
 	       #:alexandria
 	       #:bordeaux-threads
 	       #:swank
-	       #:str)
+	       #:str
+	       ;; NOTE: Required by the wl-generator module
+	       #:xmls
+	       #:split-sequence)
   :components ((:file "util")
 	       (:file "graphic-util")
 	       (:file "drm-ffi")
@@ -32,4 +35,7 @@
 	       (:file "XDG-SHELL")
 	       (:file "wl-wire")
 	       (:file "smuks-wl")
-	       (:file "smuks")))
+	       (:file "smuks")
+	       (:module "wl-generator"
+		:components ((:file "wayland-parser")
+			     (:file "wayland-generator")))))

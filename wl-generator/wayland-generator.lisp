@@ -8,14 +8,9 @@
 ;; NOTE: Example invocations
 ;; (generate-wayland-base)
 ;; (generate-wayland-classes 'wayland-server "/usr/share/wayland/wayland.xml" :namespace "wl")
-;; (generate-wayland-classes 'xdg-shell "xdg-shell.xml" :namespace "xdg")
+;; (generate-wayland-classes 'xdg-shell "protocol/xdg-shell.xml" :namespace "xdg")
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (asdf:oos 'asdf:load-op :xmls)
-  (asdf:oos 'asdf:load-op :split-sequence))
-(defpackage :generate-wayland-classes
-  (:use :common-lisp :xmls :split-sequence))
-(in-package :generate-wayland-classes)
+(in-package :smuks-wl-generator)
 
 (defun ev-name (event) (read-from-string (format nil "evt-~a" (name event))))
 (defun req-name (request) (read-from-string (format nil "req-~a" (name request))))

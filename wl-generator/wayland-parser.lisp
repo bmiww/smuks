@@ -5,17 +5,13 @@
 ;; ██╔═══╝ ██╔══██║██╔══██╗╚════██║██╔══╝  ██╔══██╗
 ;; ██║     ██║  ██║██║  ██║███████║███████╗██║  ██║
 ;; ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (asdf:oos 'asdf:load-op :xmls)
-  (asdf:oos 'asdf:load-op :split-sequence))
-(defpackage :generate-wayland-classes
-  (:use :common-lisp :xmls :split-sequence))
-(in-package :generate-wayland-classes)
+(defpackage :smuks-wl-generator
+  (:use :cl :xmls :split-sequence))
+(in-package :smuks-wl-generator)
 
 ;; ┌─┐┌┐┌┌┬┐┬─┐┬ ┬
 ;; ├┤ │││ │ ├┬┘└┬┘
 ;; └─┘┘└┘ ┴ ┴└─ ┴
-
 (defun read-protocol (xml) (mapcar #'read-interface (interfaces-of (xmls:node-children xml))))
 
 (defun read-interface (interface)
