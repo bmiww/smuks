@@ -1,6 +1,13 @@
 
-(in-package :smuks)
-(declaim (optimize (speed 0) (safety 0) (debug 3) (compilation-speed 0)))
+(defpackage :smuks-drm
+  (:use :cl :smuks-util)
+  (:nicknames :sdrm)
+  (:export
+   width height connectors crtc crtcs fd
+   close-drm add-framebuffer free-crtc
+   init-drm drm-page-flip))
+(in-package :smuks-drm)
+;; (declaim (optimize (speed 0) (safety 0) (debug 3) (compilation-speed 0)))
 
 (defvar *default-card* "/dev/dri/card0")
 
