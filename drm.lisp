@@ -79,3 +79,24 @@
 		    for path = (format nil "/dev/dri/card~A" i)
 		    when (probe-file path) return path)))
     (make-instance 'gbm-device :file (open card :direction :io :if-exists :append))))
+
+;; TODO: Kernel docus on possible DRM debug funcs
+;; https://www.kernel.org/doc/html/v6.8/gpu/drm-internals.html?highlight=page+flip
+;; This might be for driver development
+;; TODO: When reevaluating code - starts to die with -9:EBADF
+(defun drm-page-flip (drm-dev framebuffer)
+  (let ((result (drm::mode-page-flip
+		 (fd drm-dev)
+		 (drm::crtc!-id (crtc drm-dev))
+		 framebuffer
+		 :page-flip-event
+		 (cffi:null-pointer))))
+    (if (zerop result)
+	(log! "Page flip OK!~%")
+	(log! "Page flip:: ~a:~a~%" (- result) (case (- result)
+				  ;; TODO: These might all be wrong. I'm assuming based on this (page flip doesn't neccesarily use generic error codes):
+				  ;; https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US
+				  (9  "EBADF - Bad file descriptor number")
+				  (13 "EACCESS - Permission denied")
+				  (25 "ENOTTY - Not a typewriter")
+				  (t (format nil "UNKNOWN ERROR CODE - ~a" result)))))))
