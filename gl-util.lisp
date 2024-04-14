@@ -45,8 +45,8 @@
 
     (values framebuffer texture)))
 
-(defun prep-gl-implementation (drm-device)
-  (gl:bind-framebuffer :framebuffer *frame-buffer*)
+(defun prep-gl-implementation (drm-device framebuffer)
+  (gl:bind-framebuffer :framebuffer framebuffer)
   (let* ((main-vbo (init-instanced-verts))
 	 (shaders "NOT IMPLEMENTED"))
     (gl:enable :blend)

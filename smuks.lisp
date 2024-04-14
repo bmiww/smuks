@@ -61,11 +61,10 @@
   (setf *drm-dev* (init-drm))
   (setf *egl* (init-egl *drm-dev*))
 
-  (setf (values *frame-buffer* *egl-image*) (create-framebuffer *drm-dev*))
+  (setf (values *frame-buffer* *egl-image*) (create-framebuffer *egl* *drm-dev*))
   (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
-  (setf *main-vbo* (init-instanced-verts))
-  (setf (values *main-vbo* *shaders*) (prep-gl-implementation *drm-dev*))
+  (setf (values *main-vbo* *shaders*) (prep-gl-implementation *drm-dev* *frame-buffer*))
 
   (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*))
 

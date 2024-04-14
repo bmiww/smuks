@@ -12,7 +12,7 @@
    check-egl-error
    create-framebuffer
    init-egl))
-(in-package :smuks-gl-util)
+(in-package :smuks-egl-util)
 
 (defvar context-attribs
   (list
@@ -21,7 +21,7 @@
    :none))
 
 ;; NOTE: Stride is pitch. Eh.
-(defun create-framebuffer (device)
+(defun create-framebuffer (egl device)
   (let* ((width (width device))
 	 (height (height device))
 	 (buffer-object (gbm:bo-create (gbm-pointer device)
@@ -32,7 +32,7 @@
 	 (offset 0) (bpp 32) (depth 24)
 	 (frame-buffer (add-framebuffer (fd device) width height depth bpp stride handle))
 	 ;; TODO: It's possible that the gl lib already has this extension defined. And that lib seems a bit more stable
-	 (egl-image (egl:create-image-khr *egl* (cffi:null-pointer) egl::LINUX_DMA_BUF_EXT (cffi:null-pointer)
+	 (egl-image (egl:create-image-khr egl (cffi:null-pointer) egl::LINUX_DMA_BUF_EXT (cffi:null-pointer)
 					  ;; TODO: In the rust thing this was an FD not a pointer
 					  :dma-buf-plane-fd-ext (gbm:bo-get-fd buffer-object)
 					  :width width :height height

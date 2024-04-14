@@ -3,8 +3,8 @@
   (:use :cl :smuks-util)
   (:nicknames :sdrm)
   (:export
-   width height connectors crtc crtcs fd
-   close-drm add-framebuffer free-crtc
+   width height connectors crtc crtcs fd gbm-pointer
+   close-drm add-framebuffer free-crtc set-crtc
    init-drm drm-page-flip))
 (in-package :smuks-drm)
 ;; (declaim (optimize (speed 0) (safety 0) (debug 3) (compilation-speed 0)))
