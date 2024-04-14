@@ -30,33 +30,33 @@
 
 (defun calculate-message-size (args)
   ;; NOTE: Message size is number of bytes in the header + the payload
-  (let ((*message-size* 8))
+  (let ((message-size 8))
     (dolist (arg args)
       (let* ((type (car arg))
 	     (value (cadr arg)))
 	(case type
-	  (wl:int (incf *message-size* 4))
-	  (wl:uint (incf *message-size* 4))
-	  (wl:fixed (incf *message-size* 4))
-	  (wl:object (incf *message-size* 4))
-	  (wl:new_id (incf *message-size* 4))
+	  (wl:int (incf message-size 4))
+	  (wl:uint (incf message-size 4))
+	  (wl:fixed (incf message-size 4))
+	  (wl:object (incf message-size 4))
+	  (wl:new_id (incf message-size 4))
 
 	  ;; TODO: FD does not really increase the payload size, but there are other considerations
 	  ;; Although - i'm unsure if an FD ever is an argument in a wayland event.
-	  (wl:fd (incf *message-size* 0))
+	  (wl:fd (incf message-size 0))
 
 	  ;; TODO: I guess this was utf8. Hoping for the best.
 	  ;; NOTE: +4 for the length value in the beginning of the string
 	  ;; NOTE: +1 for the null terminator
-	  (wl:string (incf *message-size* (+ 4 (align-32-bit-msg-size (+ 1 (length value))))))
+	  (wl:string (incf message-size (+ 4 (align-32-bit-msg-size (+ 1 (length value))))))
 
 	  ;; TODO: The base protocol only does this for the currently presset keys array on an enter event
 	  ;; which afaik should be uint array, so i can assume that i can just multiply by 4
-	  (wl:array (incf *message-size* (+ 4 (* 4 (length value)))))
+	  (wl:array (incf message-size (+ 4 (* 4 (length value)))))
 
-	  (wl:enum (incf *message-size* 4))
-	  (t (error (format nil "Unknown type %s" type))))))
-    *message-size*))
+	  (wl:enum (incf message-size 4))
+	  (t (error (format nil "Unknown type ~a~%" type))))))
+    message-size))
 
 ;; TODO: Depending on how much you can be arsed - you might want to define encoders for several lisp types
 ;; that could correspond to the wayland types
