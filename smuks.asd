@@ -5,6 +5,9 @@
 ;; ╚════██║██║╚██╔╝██║██║   ██║██╔═██╗ ╚════██║
 ;; ███████║██║ ╚═╝ ██║╚██████╔╝██║  ██╗███████║
 ;; ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
+;; TODO: Getting warnings about
+;; "Computing just-done stamp in plan NIL for action"
+;; Don't know yet what it means completely - happened after introducing the custom cl-drm package
 
 ;; TODO: Maybe an argument can be made that the original package was trivial enough to not warrant a fork.
 ;; NOTE: Primarily grabbed from here
@@ -27,7 +30,8 @@
   :author "bmiww <bmiww@bky.one>"
   :license "GPLv3"
   :version "0.0.1"
-  :depends-on (#:cl-opengl
+  :depends-on ("cl-drm"
+	       #:cl-opengl
 	       #:cl-egl
 	       #:cl-wayland
 	       #:cl-gbm
@@ -37,7 +41,6 @@
 	       #:bordeaux-threads
 	       #:swank
 	       #:str
-	       #:cl-drm
 	       ;; NOTE: Required by the wl-generator module
 	       #:xmls
 	       #:split-sequence)
