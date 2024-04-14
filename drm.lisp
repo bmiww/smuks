@@ -44,7 +44,8 @@
       (setf (height device) (drm::crtc!-height valid)))))
 
 
-;; TODO: Check if you need to close any of the drm resources
+;; TODO: Free connector is expecting a pointer
+;; but receiving a full connector structure
 (defmethod close-drm ((device gbm-device))
   (drm::mode-free-connector (car (connected-connectors device)))
   (drm::mode-free-resources (drm::resources-resources (resources device)))
