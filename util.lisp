@@ -65,4 +65,4 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
     (9  "EBADF - Bad file descriptor number")
     (13 "EACCESS - Permission denied")
     (25 "ENOTTY - Not a typewriter")
-    (t (format nil "UNKNOWN ERROR CODE - ~a" result))))
+    (t (format nil "UNKNOWN ERROR CODE - ~a" code))))
