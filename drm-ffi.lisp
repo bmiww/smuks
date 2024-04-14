@@ -1,10 +1,10 @@
 
-;; ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗ █████╗ ██╗     ███████╗
-;; ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██║     ██╔════╝
-;; ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║███████║██║     ███████╗
-;; ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║██╔══██║██║     ╚════██║
-;; ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║██║  ██║███████╗███████║
-;; ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝╚══════╝
+;; ██████╗ ██████╗ ███╗   ███╗
+;; ██╔══██╗██╔══██╗████╗ ████║
+;; ██║  ██║██████╔╝██╔████╔██║
+;; ██║  ██║██╔══██╗██║╚██╔╝██║
+;; ██████╔╝██║  ██║██║ ╚═╝ ██║
+;; ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝
 ;; NOTE: Primarily grabbed from here
 ;; https://github.com/malcolmstill/cl-drm/blob/master/cl-drm.lisp
 
@@ -23,12 +23,12 @@
    mode-crtc-height))
 
 (in-package :drm)
-
-(define-foreign-library libdrm
-  (t (:default "libdrm")))
-
+(define-foreign-library libdrm (t (:default "libdrm")))
 (use-foreign-library libdrm)
 
+;; ┌─┐┌┐┌┬ ┬┌┬┐┌─┐
+;; ├┤ ││││ ││││└─┐
+;; └─┘┘└┘└─┘┴ ┴└─┘
 (defcenum mode-connection
   (:connected 1)
   (:disconnected 2)
@@ -44,6 +44,11 @@
 
 (defbitfield (PageFlipFlags :uint32)
   (:page-flip-event 1))
+
+
+;; ┌─┐ ┌─┐┌┬┐┬─┐┬ ┬┌─┐┌┬┐┌─┐
+;; │───└─┐ │ ├┬┘│ ││   │ └─┐
+;; └─┘ └─┘ ┴ ┴└─└─┘└─┘ ┴ └─┘
 
 (defcstruct mode-res
   (count-fbs :int)
@@ -111,10 +116,37 @@
   (mode (:struct mode-mode-info))
   (gamma-size :int))
 
+(defcstruct drm-event
+  (type :uint32)
+  (length :uint32))
 
-;; ┌─┐┬ ┬┌┐┌┌─┐┌─┐
-;; ├┤ │ │││││  └─┐
-;; └  └─┘┘└┘└─┘└─┘
+(defcstruct drm-event-vblank
+  (base (:struct drm-event))
+  (user-data :uint64)
+  (tv-sec :uint32)
+  (tv-usec :uint32)
+  (sequence :uint32)
+  (crtc-id :uint32))
+
+(defcstruct mode-crtc
+  (crtc-id :uint32)
+  (buffer-id :uint32)
+  (x :uint32)
+  (y :uint32)
+  (width :uint32)
+  (height :uint32)
+  (mode-valid :int)
+  (mode (:struct mode-mode-info))
+  (gamma-size :int))
+
+(defcstruct event-context
+  (version :int)
+  (vblank-handler :pointer)
+  (page-flip-handler :pointer))
+
+;; ┌─┐ ┌─┐┬ ┬┌┐┌┌─┐┌─┐
+;; │───├┤ │ │││││  └─┐
+;; └─┘ └  └─┘┘└┘└─┘└─┘
 
 (defcfun ("drmModeGetCrtc" mode-get-crtc) (:pointer (:struct mode-crtc))
   (fd :int)
@@ -141,11 +173,6 @@
   (connectors (:pointer :uint32))
   (count :int)
   (mode (:pointer (:struct mode-mode-info))))
-
-(defun set-crtc (fd crtc-id buffer-id x y connectors mode &optional (count (length connectors)))
-  (with-foreign-objects ((connectors-p ':uint32 count))
-    (dotimes (i count) (setf (mem-aref connectors-p ':uint32 i) (nth i connectors)))
-    (mode-set-crtc fd crtc-id buffer-id x y connectors-p count mode)))
 
 
 (defcfun ("drmModeGetResources" mode-get-resources) (:pointer (:struct mode-res))
@@ -180,29 +207,6 @@
   (flags PageFlipFlags)
   (user-data :pointer))
 
-(defcstruct event-context
-  (version :int)
-  (vblank-handler :pointer)
-  (page-flip-handler :pointer))
-
-
-(defcstruct drm-event
-  (type :uint32)
-  (length :uint32))
-
-(defcstruct drm-event-vblank
-  (base (:struct drm-event))
-  (user-data :uint64)
-  (tv-sec :uint32)
-  (tv-usec :uint32)
-  (sequence :uint32)
-  (crtc-id :uint32))
-
-
-;; (defun read-drm-event (buffer)
-  ;; ())
-
-
 (defcfun ("drmHandleEvent" handle-event) :int
   (fd :int)
   (event-context (:pointer (:struct event-context))))
@@ -213,17 +217,14 @@
 ;; │  │└─┐├─┘└┬┘
 ;; ┴─┘┴└─┘┴   ┴
 
-;; TODO: Maybe conflicting with crtc-mode in the lisp struct
-(defcstruct mode-crtc
-  (crtc-id :uint32)
-  (buffer-id :uint32)
-  (x :uint32)
-  (y :uint32)
-  (width :uint32)
-  (height :uint32)
-  (mode-valid :int)
-  (mode (:struct mode-mode-info))
-  (gamma-size :int))
+;; ┌─┐┬ ┬┌┐┌┌─┐┌─┐
+;; ├┤ │ │││││  └─┐
+;; └  └─┘┘└┘└─┘└─┘
+
+(defun set-crtc (fd crtc-id buffer-id x y connectors mode &optional (count (length connectors)))
+  (with-foreign-objects ((connectors-p ':uint32 count))
+    (dotimes (i count) (setf (mem-aref connectors-p ':uint32 i) (nth i connectors)))
+    (mode-set-crtc fd crtc-id buffer-id x y connectors-p count mode)))
 
 (defstruct (crtc! (:constructor map-crtc
 		     (id buffer-id x y width height mode-valid mode gamma-size pointer)))
@@ -271,10 +272,6 @@
   (count-encodes nil)
   (encoders nil)
   (pointer nil))
-
-;; ┬ ┬┌┬┐┬┬  ┌─┐
-;; │ │ │ ││  └─┐
-;; └─┘ ┴ ┴┴─┘└─┘
 
 (defstruct resources
   (resources nil)
