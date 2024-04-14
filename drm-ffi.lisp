@@ -254,11 +254,30 @@
 (defun free-crtc (crtc) (mode-free-crtc (crtc!-pointer crtc)))
 
 
+(defstruct connector!
+  (id nil)
+  (encoder-id nil)
+  (connector-type nil)
+  (connector-type-id nil)
+  (connection nil)
+  (mm-width nil)
+  (mm-height nil)
+  (subpixel nil)
+  (count-modes nil)
+  (modes nil)
+  (count-props nil)
+  (props nil)
+  (prop-values nil)
+  (count-encodes nil)
+  (encoders nil)
+  (pointer nil))
+
 ;; ┬ ┬┌┬┐┬┬  ┌─┐
 ;; │ │ │ ││  └─┐
 ;; └─┘ ┴ ┴┴─┘└─┘
 
 (defstruct resources
+  (resources nil)
   (fbs nil)
   (crtcs nil)
   (connectors nil)
@@ -275,6 +294,7 @@
   (let ((resources (mode-get-resources fd)))
     (with-foreign-slots ((crtcs count-crtcs connectors count-connectors fbs count-fbs encoders count-encoders min-width max-width min-height max-height) resources (:struct mode-res))
       (make-resources
+       :resources resources
        ;; :fbs (loop for i from 0 below count-fbs collect (mem-aref fbs i))
        :crtcs (loop for i from 0 below count-crtcs
 		    collect (progn (let ((crtc (mk-crtc (mode-get-crtc fd (mem-aref crtcs :uint32 i))))) crtc)))

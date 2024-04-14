@@ -45,16 +45,20 @@
   (format t "╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝~%")
   (format t "~%"))
 
-  ;; TODO: Add cleanup/restarts for crtc grabs
-(defun main ()
-  (setf *log-output* *standard-output*)
-  (heading)
-  (setf *smuks-exit* nil)
-
+(defun shutdown () (setf *smuks-exit* t) (cleanup))
+(defun cleanup ()
   ;; TODO: This kills off the client listener rather ungracefully
   (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
   (when (and *drm-thread* (bt:thread-alive-p *drm-thread*)) (bt:destroy-thread *drm-thread*) (setf *drm-thread* nil))
   (when *active-crtc* (free-crtc *drm-dev*) (setf *active-crtc* nil))
+  (when *drm-dev* (close-drm *drm-dev*) (setf *drm-dev* nil)))
+
+  ;; TODO: Add cleanup/restarts for crtc grabs
+(defun main ()
+  (setf *log-output* *standard-output*)
+  (setf *smuks-exit* nil)
+  (heading)
+  (cleanup)
 
   ;; NOTE: Maybe setup kill signals for the process
   ;; TODO: Maybe add a "restart" to set *smuks-exit* to true
@@ -93,6 +97,7 @@
 ;; TODO: Kernel docus on possible DRM debug funcs
 ;; https://www.kernel.org/doc/html/v6.8/gpu/drm-internals.html?highlight=page+flip
 ;; This might be for driver development
+;; TODO: When reevaluating code - starts to die with -9:EBADF
 (defun drm-page-flip (drm-dev framebuffer)
   (let ((result (drm::mode-page-flip
 		 (fd drm-dev)
@@ -123,21 +128,24 @@
 	 (shaders "NOT IMPLEMENTED"))
     (gl:enable :blend)
     (gl:blend-func :src-alpha :one-minus-src-alpha)
-    (gl:clear-color 1.0 0.5 0.5 1.0)
+    (gl:clear-color 0.0 0.0 1.0 1.0)
     (gl:viewport 0 0 (width drm-device) (height drm-device))
 
     (values main-vbo shaders)))
+
+(defun process-drm-message (buffer)
+  (let ((count (sb-unix:unix-read (fd *drm-dev*) buffer 1024)))
+    (when count
+	       ;; (loop for i from 0 below count
+		     ;; do (log! "~a" (cffi:mem-ref buffer :uint8 i)))
+      ;; (log! "~%"))
+      )))
 
 ;; TODO: Unfinished. Still in debug mode
 (defun drm-listener ()
   (let ((buffer (cffi:foreign-alloc :uint8 :count 1024)))
     (loop while (not *smuks-exit*)
-	  ;; TODO: SBCL EXCLUSIVE
-	  for count = (sb-unix:unix-read (fd *drm-dev*) buffer 1024)
-	  do (when count
-	       (loop for i from 0 below count
-		     do (log! "~a" (cffi:mem-ref buffer :uint8 i)))
-	       (log! "~%")))))
+	  do (process-drm-message buffer))))
 
 (defun client-listener ()
   (loop until *smuks-exit*
@@ -200,8 +208,8 @@
     (gl:framebuffer-texture-2d :framebuffer :color-attachment0 :texture-2d texture 0)
     (check-gl-fb-status "After attaching texture")
 
-    (gl:bind-texture :texture-2d 0)
-    (gl:bind-framebuffer :framebuffer 0)
+    ;; (gl:bind-texture :texture-2d 0)
+    ;; (gl:bind-framebuffer :framebuffer 0)
 
     (values framebuffer texture)))
 

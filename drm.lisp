@@ -6,6 +6,8 @@
 
 (defclass gbm-device ()
   ((fd :initarg :fd :accessor fd)
+   (fd-stream :initarg :fd-stream :accessor fd-stream)
+   (resources :initarg :resources :accessor resources)
    (gbm-pointer :initarg :gbm-pointer :accessor gbm-pointer)
    (framebuffers :initarg :framebuffers :accessor framebuffers)
    (crtcs :initarg :crtcs :accessor crtcs)
@@ -16,10 +18,12 @@
    (height :initarg :height :accessor height)))
 
 (defmethod initialize-instance :after ((device gbm-device) &key file)
-  (let ((fd (SB-SYS:FD-STREAM-FD file)))
+  ;; TODO: SBCL EXCLUSIVE
+  (let ((fd (sb-sys:fd-stream-fd file)))
+    (setf (fd-stream device) file)
     (setf (fd device) fd)
     (setf (gbm-pointer device) (gbm:create-device fd))
-    (let* ((resources (drm:get-resources fd))
+    (let* ((resources (setf (resources device) (drm:get-resources fd)))
 	   (crtcs      (setf (crtcs device) (drm:resources-crtcs resources)))
 	   (connectors (setf (connectors device) (drm:resources-connectors resources)))
 	   (valid      (find-if (lambda (crtc) (> (drm::crtc!-mode-valid crtc) 0)) crtcs)))
@@ -35,7 +39,10 @@
 
 ;; TODO: Check if you need to close any of the drm resources
 (defmethod close-drm ((device gbm-device))
-  (gbm:device-destroy (fd device)))
+  (drm::mode-free-connector (car (connected-connectors device)))
+  (drm::mode-free-resources (drm::resources-resources (resources device)))
+  (gbm:device-destroy (gbm-pointer device))
+  (close (fd-stream device)))
 
 (defun add-framebuffer (fd width height depth bpp pitch handle)
   (cffi:with-foreign-objects ((buf-id :uint32 1))
