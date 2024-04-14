@@ -22,7 +22,7 @@ The xdg_wm_base interface is exposed as a global object enabling clients
 "))
 
 (DEFMETHOD EVT-PING ((OBJ XDG_WM_BASE) STREAM SERIAL)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-PING)))
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-PING)))
     ";; check if the client is alive
 
 The ping event asks the client if it's still alive. Pass the
@@ -540,7 +540,7 @@ An interface that may be implemented by a wl_surface, for
 "))
 
 (DEFMETHOD EVT-CONFIGURE ((OBJ XDG_SURFACE) STREAM SERIAL)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-CONFIGURE)))
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-CONFIGURE)))
     ";; suggest a surface change
 
 The configure event marks the end of a configure sequence. A configure
@@ -786,7 +786,7 @@ This interface defines an xdg_surface role which allows a surface to,
 "))
 
 (DEFMETHOD EVT-CONFIGURE ((OBJ XDG_TOPLEVEL) STREAM WIDTH HEIGHT STATES)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-CONFIGURE)))
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-CONFIGURE)))
     ";; suggest a surface change
 
 This configure event asks the client to resize its toplevel surface or
@@ -817,7 +817,7 @@ states::array: NIL
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD EVT-CLOSE ((OBJ XDG_TOPLEVEL) STREAM)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-CLOSE)))
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-CLOSE)))
     ";; surface wants to be closed
 
 The close event is sent by the compositor when the user
@@ -832,7 +832,7 @@ The close event is sent by the compositor when the user
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD EVT-CONFIGURE_BOUNDS ((OBJ XDG_TOPLEVEL) STREAM WIDTH HEIGHT)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-CONFIGURE_BOUNDS)))
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-CONFIGURE_BOUNDS)))
     ";; recommended window geometry bounds
 
 The configure_bounds event may be sent prior to a xdg_toplevel.configure
@@ -858,7 +858,7 @@ height::int: NIL
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD EVT-WM_CAPABILITIES ((OBJ XDG_TOPLEVEL) STREAM CAPABILITIES)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-WM_CAPABILITIES)))
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-WM_CAPABILITIES)))
     ";; compositor capabilities
 
 This event advertises the capabilities supported by the compositor. If
@@ -1444,7 +1444,7 @@ A popup surface is a short-lived, temporary surface. It can be used to
 "))
 
 (DEFMETHOD EVT-CONFIGURE ((OBJ XDG_POPUP) STREAM X Y WIDTH HEIGHT)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-CONFIGURE)))
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-CONFIGURE)))
     ";; configure the popup surface
 
 This event asks the popup surface to configure itself given the
@@ -1469,7 +1469,7 @@ height::int: window geometry height
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD EVT-POPUP_DONE ((OBJ XDG_POPUP) STREAM)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-POPUP_DONE)))
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-POPUP_DONE)))
     ";; popup interaction is done
 
 The popup_done event is sent out when a popup is dismissed by the
@@ -1479,7 +1479,7 @@ The popup_done event is sent out when a popup is dismissed by the
     (ERROR "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package.")))
 
 (DEFMETHOD EVT-REPOSITIONED ((OBJ XDG_POPUP) STREAM TOKEN)
-  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ EVT-REPOSITIONED)))
+  (LET ((OPCODE (MATCH-EVENT-OPCODE OBJ 'EVT-REPOSITIONED)))
     ";; signal the completion of a repositioned request
 
 The repositioned event is sent as part of a popup configuration

@@ -40,7 +40,7 @@
   `(defmethod ,(ev-name event) ((obj ,(read-from-string interface))
 			 stream
 			 ,@(mapcar 'do-arg (args event)))
-     (let ((opcode (match-event-opcode obj ,(symbolize-event event))))
+     (let ((opcode (match-event-opcode obj ',(symbolize-event event))))
        ,(format nil ";; ~a" (description event))
        (error "UNIMPLEMENTED. YOU DECIDED TO IMPLEMENT IT IN THE smuks package."))))
 
