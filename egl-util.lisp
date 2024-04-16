@@ -43,6 +43,11 @@
     (values frame-buffer egl-image)))
 
 
+(defun create-fake-wl-display ()
+  (cffi:with-foreign-objects ((wl-display '(:pointer (:struct smuks-wl-ffi::wl_display)) 1))
+    wl-display))
+
+
 ;; NOTE: libwayland egl code
 ;; https://gitlab.freedesktop.org/wayland/wayland/-/tree/main/egl?ref_type=heads
 ;; NOTE: Nvidia eglstream code for binding egl to wayland
@@ -71,7 +76,7 @@
 ;; So far from the mesa code - i don't see any of the struct fields being directly accessed
 (defun init-egl (drm-dev)
   (egl:init-egl-wayland)
-  (let* ((wayland-display-ptr (cffi:null-pointer))
+  (let* ((wayland-display-ptr (create-fake-wl-display))
 	 (display (egl:get-display (gbm-pointer drm-dev)))
 	 ;; TODO: Possibly i did not need to find a config for the fancy gbm buffers
 	 ;; Check as you go along. Worst case revert a bit

@@ -47,6 +47,7 @@
   :components ((:file "util")
 	       (:file "drm")
 	       (:file "gl-util")
+	       (:file "wayland-ffi")
 	       (:file "egl-util")
 	       (:file "package")
 	       (:file "wl-base")
