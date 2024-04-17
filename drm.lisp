@@ -47,7 +47,7 @@
 ;; TODO: Free connector is expecting a pointer
 ;; but receiving a full connector structure
 (defmethod close-drm ((device gbm-device))
-  (drm::mode-free-connector (car (connected-connectors device)))
+  (drm::mode-free-connector (drm::connector!-pointer (car (connected-connectors device))))
   (drm::mode-free-resources (drm::resources-resources (resources device)))
   (gbm:device-destroy (gbm-pointer device))
   (close (fd-stream device)))
@@ -59,20 +59,20 @@
 
 (defmethod connected-connectors ((device gbm-device))
   (loop for connector in (connectors device)
-	when (eq :connected (getf connector 'drm::connection))
+	when (eq :connected (drm::connector!-connection connector))
 	  collect connector))
 
 
 (defmethod set-crtc ((device gbm-device) framebuffer)
   (let* ((crtc (crtc device))
 	 (connector (car (connected-connectors device)))
-	 (modes (getf connector 'drm::modes)))
+	 (modes (drm::connector!-modes connector)))
     (let ((result (drm:set-crtc
 		   (fd device)
 		   (drm::crtc!-id crtc)
 		   framebuffer
 		   0 0
-		   (list (getf connector 'drm::connector-id))
+		   (list (drm::connector!-id connector))
 		   ;; TODO: I'm using the pointer to all the modes in hopes that i the first one is valid
 		   ;; And that set-crtc will read exactly the first one
 		   modes)))

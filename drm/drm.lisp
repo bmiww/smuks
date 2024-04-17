@@ -74,6 +74,25 @@
 
 (defun free-crtc (crtc) (mode-free-crtc (crtc!-pointer crtc)))
 
+(defun mk-connector (c-connector)
+  (let ((de-pointerd (mem-ref c-connector '(:struct mode-connector))))
+    (make-connector! :id (getf de-pointerd 'connector-id)
+		:encoder-id (getf de-pointerd 'encoder-id)
+		:connector-type (getf de-pointerd 'connector-type)
+		:connector-type-id (getf de-pointerd 'connector-type-id)
+		:connection (getf de-pointerd 'connection)
+		:mm-width (getf de-pointerd 'mm-width)
+		:mm-height (getf de-pointerd 'mm-height)
+		:subpixel (getf de-pointerd 'subpixel)
+		:count-modes (getf de-pointerd 'count-modes)
+		:modes (getf de-pointerd 'modes)
+		:count-props (getf de-pointerd 'count-props)
+		:props (getf de-pointerd 'props)
+		:prop-values (getf de-pointerd 'prop-values)
+		:count-encodes (getf de-pointerd 'count-encodes)
+		:encoders (getf de-pointerd 'encoders)
+		:pointer c-connector)))
+
 ;; TODO: create lisp structures for at minimum the crtc
 ;; I am currently missing pointers to CRTC for the sake of freeing them
 (defun get-resources (fd)
@@ -83,9 +102,9 @@
        :resources resources
        ;; :fbs (loop for i from 0 below count-fbs collect (mem-aref fbs i))
        :crtcs (loop for i from 0 below count-crtcs
-		    collect (progn (let ((crtc (mk-crtc (mode-get-crtc fd (mem-aref crtcs :uint32 i))))) crtc)))
+		    collect (mk-crtc (mode-get-crtc fd (mem-aref crtcs :uint32 i))))
        :connectors (loop for i from 0 below count-connectors
-			 collect (mem-ref (mode-get-connector fd (mem-aref connectors :uint32 i)) '(:struct mode-connector)))
+			 collect (mk-connector (mode-get-connector fd (mem-aref connectors :uint32 i))))
        ;; :encoders (loop for i from 0 below count-encoders collect (mode-get-encoder fd (mem-aref encoders :uint32 i)))
        :min-width min-width
        :max-width max-width

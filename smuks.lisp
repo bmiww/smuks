@@ -81,7 +81,8 @@
 
   (livesupport:continuable
     (loop while (not *smuks-exit*)
-	  do (render-frame))))
+	  do (render-frame)))
+  (setf *smuks-exit* nil))
 
 
 (defun render-frame ()
