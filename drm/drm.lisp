@@ -133,3 +133,11 @@
        :max-width max-width
        :min-height min-height
        :max-height max-height))))
+
+;; TODO: Check if the order of freeing things here should be in any way different
+;; TODO: Add a field to track the original CRTC - so that we can return to it once done
+(defun free-resources (resources)
+  (loop for crtc in (resources-crtcs resources) do (free-crtc crtc))
+  (loop for connector in (resources-connectors resources) do (mode-free-connector (connector!-pointer connector)))
+  (loop for encoder in (resources-encoders resources) do (mode-free-encoder (encoder!-pointer encoder)))
+  (mode-free-resources (resources-resources resources)))
