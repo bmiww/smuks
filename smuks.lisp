@@ -110,7 +110,7 @@
   (livesupport:update-repl-link)
   (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
   (gl:clear :color-buffer-bit)
-  (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect :x 10.0 :y 400.0 :w 100.0 :h 40.0
+  (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect :x 10.0 :y 300.0 :w 100.0 :h 40.0
 									 :color '(0.2 0.2 0.2 1.0))))
   (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect :x 30.0 :y 500.0 :w 200.0 :h 50.0
 									 :color '(0.2 0.9 0.2 1.0))))

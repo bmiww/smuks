@@ -77,40 +77,7 @@
 	  (coerce (* -1.0 (copysign (+ (multf (clem:mref projection 0 1) y)
 				       (multf (clem:mref projection 1 1) y)))) 'double-float))
 
-    (setf projection (clem:m* projection *rotx-180*))
-
     (let ((projection (clem::matrix->list projection)))
       (make-array (list (length projection)) :initial-contents projection))))
 
-
-;; ┌┬┐┌─┐┌┬┐┬─┐┬─┐ ┬  ┬ ┬┌┬┐┬┬  ┌─┐
-;; │││├─┤ │ ├┬┘│┌┴┬┘  │ │ │ ││  └─┐
-;; ┴ ┴┴ ┴ ┴ ┴└─┴┴ └─  └─┘ ┴ ┴┴─┘└─┘
 (defun copysign (val) (if (>= val 0) 1 -1))
-
-(defun rotx (angle)
-  (let* ((rad (* pi (/ angle 180.0)))
-      (matrix (clem:identity-matrix 3))
-      (sin (coerce (sin rad) 'double-float))
-      (cos (coerce (cos rad) 'double-float)))
-    (setf (clem:mref matrix 1 1) cos)
-    (setf (clem:mref matrix 1 2) (- sin ))
-    (setf (clem:mref matrix 2 1) sin)
-    (setf (clem:mref matrix 2 2) cos)
-    matrix))
-
-(defun roty (angle)
-  (let* ((rad (* pi (/ angle 180.0)))
-      (matrix (clem:identity-matrix 3))
-      (sin (coerce (sin rad) 'double-float))
-      (cos (coerce (cos rad) 'double-float)))
-    (setf (clem:mref matrix 0 0) cos)
-    (setf (clem:mref matrix 0 2) sin)
-    (setf (clem:mref matrix 2 0) (- sin))
-    (setf (clem:mref matrix 2 2) cos)
-    matrix))
-
-(defparameter *rotx-180* (rotx 180))
-(defparameter *roty-180* (roty 180))
-
-(define-modify-macro multf (&optional (number 1)) *)
