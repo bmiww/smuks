@@ -45,13 +45,18 @@
       (setf (height device) (drm::crtc!-height valid)))))
 
 
+
 ;; TODO: Free connector is expecting a pointer
 ;; but receiving a full connector structure
-(defmethod close-drm ((device gbm-device) frame-buffer buffer-object)
-  (drm:free-crtc (crtc device))
-  (drm::mode-free-connector (drm::connector!-pointer (car (connected-connectors device))))
-  (drm::mode-free-resources (drm::resources-resources (resources device)))
-  (drm::mode-remove-framebuffer (fd device) frame-buffer)
+(defmethod close-drm ((device gbm-device) framebuffer buffer-object)
+  (print "STARTING SET")
+  (restart-case (set-original-crtc device framebuffer)
+    (continue-cleanup () :report "Continue cleanup ignoring the error"))
+
+  (print "STARTING REMOVE FB")
+  (drm::mode-remove-framebuffer (fd device) framebuffer)
+
+  (drm::free-resources (resources device))
   (gbm:bo-destroy buffer-object)
   (gbm:device-destroy (gbm-pointer device))
   (close (fd-stream device)))
@@ -66,11 +71,28 @@
 	when (eq :connected (drm::connector!-connection connector))
 	  collect connector))
 
+(defmethod set-original-crtc ((device gbm-device) framebuffer)
+  (let* ((crtc (crtc device))
+	 (connector (car (connected-connectors device)))
+	 (result (drm:set-crtc
+		  (fd device)
+		  (drm::crtc!-id crtc)
+		  framebuffer
+		  (drm::crtc!-x crtc)
+		  (drm::crtc!-y crtc)
+		  (list (drm::connector!-id connector))
+		  (drm::crtc!-mode-ptr crtc))))
+
+    (unless (eq 0 result) (error (format nil "Failed to set original CRTC. ERR: ~a~%" result)))
+    crtc))
+
+
 
 (defmethod set-crtc ((device gbm-device) framebuffer)
   (let* ((crtc (crtc device))
 	 (connector (car (connected-connectors device)))
 	 (modes (drm::connector!-modes connector)))
+
     (let ((result (drm:set-crtc
 		   (fd device)
 		   (drm::crtc!-id crtc)

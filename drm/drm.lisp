@@ -9,8 +9,7 @@
 (in-package :drm)
 
 ;; TODO: Does not need the fancy constructor
-(defstruct (crtc! (:constructor map-crtc
-		      (id buffer-id x y width height mode-valid mode gamma-size pointer)))
+(defstruct crtc!
   (id nil)
   (buffer-id nil)
   (x nil)
@@ -19,6 +18,7 @@
   (height nil)
   (mode-valid nil)
   (mode nil)
+  (mode-ptr nil)
   (gamma-size nil)
   (pointer nil))
 
@@ -63,22 +63,27 @@
 ;; ├┤ │ │││││  └─┐
 ;; └  └─┘┘└┘└─┘└─┘
 (defun set-crtc (fd crtc-id buffer-id x y connectors mode &optional (count (length connectors)))
-  (with-foreign-objects ((connectors-p ':uint32 count))
-    (dotimes (i count) (setf (mem-aref connectors-p ':uint32 i) (nth i connectors)))
+  ;; (let ((mode (if (pointerp mode) mode (convert-to-foreign)))))
+  (with-foreign-objects ((connectors-p :uint32 count))
+    (dotimes (i count) (setf (mem-aref connectors-p :uint32 i) (nth i connectors)))
     (mode-set-crtc fd crtc-id buffer-id x y connectors-p count mode)))
+
+(defun get-crtc (fd crtc-id)
+  (mode-get-crtc fd crtc-id))
 
 (defun mk-crtc (c-crtc)
   (let ((de-pointerd (mem-ref c-crtc '(:struct mode-crtc))))
-    (map-crtc (getf de-pointerd 'crtc-id)
-	      (getf de-pointerd 'buffer-id)
-	      (getf de-pointerd 'x)
-	      (getf de-pointerd 'y)
-	      (getf de-pointerd 'width)
-	      (getf de-pointerd 'height)
-	      (getf de-pointerd 'mode-valid)
-	      (getf de-pointerd 'crtc-mode)
-	      (getf de-pointerd 'gamma-size)
-	      c-crtc)))
+    (make-crtc! :id         (getf de-pointerd 'crtc-id)
+		:buffer-id  (getf de-pointerd 'buffer-id)
+		:x          (getf de-pointerd 'x)
+		:y          (getf de-pointerd 'y)
+		:width      (getf de-pointerd 'width)
+		:height     (getf de-pointerd 'height)
+		:mode-valid (getf de-pointerd 'mode-valid)
+		:mode       (getf de-pointerd 'mode)
+		:mode-ptr   (foreign-slot-pointer c-crtc '(:struct mode-crtc) 'mode)
+		:gamma-size (getf de-pointerd 'gamma-size)
+		:pointer    c-crtc)))
 
 (defun free-crtc (crtc) (mode-free-crtc (crtc!-pointer crtc)))
 

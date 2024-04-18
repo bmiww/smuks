@@ -44,9 +44,43 @@
   ;; TODO: This kills off the client listener rather ungracefully
   (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
   (when (and *drm-thread* (bt:thread-alive-p *drm-thread*)) (bt:destroy-thread *drm-thread*) (setf *drm-thread* nil))
-  (when *egl* (egl:destroy-context *egl* *egl-context*) (setf *egl* nil) (setf *egl-context* nil))
-  (when *drm-dev* (close-drm *drm-dev* *frame-buffer* *buffer-object*)
-	(setf *drm-dev* nil) (setf *frame-buffer* nil) (setf *buffer-object* nil)))
+  (cleanup-egl)
+  (cleanup-drm))
+
+(defun cleanup-egl ()
+  (when *egl* (egl:destroy-context *egl* *egl-context*) (setf *egl* nil) (setf *egl-context* nil)))
+
+(defun cleanup-drm ()
+  (when *drm-dev*
+    (close-drm *drm-dev* *frame-buffer* *buffer-object*)
+    (setf *drm-dev* nil) (setf *frame-buffer* nil) (setf *buffer-object* nil)))
+
+(defun main-after-drm ()
+  (setf (values *egl* *egl-context*) (init-egl *drm-dev*))
+
+  (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
+  (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
+
+  (setf (values *main-vbo* *shaders*) (prep-gl-implementation *drm-dev* *frame-buffer*))
+
+  (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
+
+  ;; TODO: For now disabling since it seems to be locking up other threads from erroring out for some reason...
+  ;; (log! "Starting DRM fd listener. Waiting for events...~%")
+  ;; (setf *drm-thread* (bt:make-thread 'drm-listener))
+
+  ;; (log! "Starting wayland socket listener. Waiting for clients...~%")
+  ;; (setf *client-thread* (bt:make-thread 'client-listener))
+
+  (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
+
+  ;; (test-app *test-program*)
+
+  (livesupport:continuable
+    (loop while (not *smuks-exit*)
+	  do (render-frame)))
+  (setf *smuks-exit* nil)
+  (cleanup))
 
   ;; TODO: Add cleanup/restarts for crtc grabs
 (defun main ()
@@ -61,32 +95,10 @@
 
   (setf *socket* (init-socket))
   (setf *wayland* (make-instance 'smuks-wl:wayland))
+  ;; TODO: Can sometimes fail on retrying
   (setf *drm-dev* (init-drm))
-  (setf (values *egl* *egl-context*) (init-egl *drm-dev*))
-
-  (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
-  (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
-
-  (setf (values *main-vbo* *shaders*) (prep-gl-implementation *drm-dev* *frame-buffer*))
-
-  (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*))
-
-  ;; TODO: For now disabling since it seems to be locking up other threads from erroring out for some reason...
-  (log! "Starting DRM fd listener. Waiting for events...~%")
-  (setf *drm-thread* (bt:make-thread 'drm-listener))
-
-  (log! "Starting wayland socket listener. Waiting for clients...~%")
-  (setf *client-thread* (bt:make-thread 'client-listener))
-
-  (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
-
-  (test-app *test-program*)
-
-  (livesupport:continuable
-    (loop while (not *smuks-exit*)
-	  do (render-frame)))
-  (setf *smuks-exit* nil)
-  (cleanup))
+  (restart-case (main-after-drm)
+    (retry () (cleanup-egl) (main-after-drm) )))
 
 
 (defun render-frame ()
@@ -96,8 +108,8 @@
   (gl:clear :color-buffer-bit)
   (gl:flush)
   (gl:finish)
-  (drm-page-flip *drm-dev* *frame-buffer*))
-
+  (restart-case (drm-page-flip *drm-dev* *frame-buffer*)
+    (ignore () (log! "Ignoring page flip error"))))
 
 ;; ┬  ┬┌─┐┌┬┐┌─┐┌┐┌┌─┐┬─┐┌─┐
 ;; │  │└─┐ │ ├┤ │││├┤ ├┬┘└─┐

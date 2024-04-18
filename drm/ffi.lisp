@@ -86,6 +86,7 @@
   (possible-crtcs :uint32)
   (possible-clones :uint32))
 
+  ;; NOTE: The CRTC mode field is rather annoying. It is a
 (defcstruct mode-crtc
   (crtc-id :uint32)
   (buffer-id :uint32)
@@ -108,17 +109,6 @@
   (tv-usec :uint32)
   (sequence :uint32)
   (crtc-id :uint32))
-
-(defcstruct mode-crtc
-  (crtc-id :uint32)
-  (buffer-id :uint32)
-  (x :uint32)
-  (y :uint32)
-  (width :uint32)
-  (height :uint32)
-  (mode-valid :int)
-  (mode (:struct mode-mode-info))
-  (gamma-size :int))
 
 (defcstruct event-context
   (version :int)
