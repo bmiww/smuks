@@ -74,10 +74,18 @@
 
   (livesupport:continuable
     (cl-async:start-event-loop
-     (unless *smuks-exit* (cl-async:delay 'render-frame :time 0.016))))
+     (lambda ()
+       (log! "Starting DRM fd listener. Waiting for events...~%")
+       (setf *drm-poller* (drm-listener))
+       (recursively-render-frame))))
 
   (setf *smuks-exit* nil)
   (cleanup))
+
+(defun recursively-render-frame ()
+  (when *smuks-exit* (cl-async:exit-event-loop))
+  (render-frame)
+  (cl-async:delay 'recursively-render-frame :time 0.016))
 
   ;; TODO: Add cleanup/restarts for crtc grabs
 (defun main ()
@@ -95,9 +103,6 @@
   ;; TODO: Can sometimes fail on retrying
   (setf *drm-dev* (init-drm))
 
-  (log! "Starting DRM fd listener. Waiting for events...~%")
-  (setf *drm-poller* (drm-listener))
-
   (restart-case (main-after-drm)
     (retry () (cleanup-egl) (main-after-drm) )))
 
@@ -107,21 +112,18 @@
   (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
   (gl:clear :color-buffer-bit)
   (gl:flush)
-  (gl:finish)
-  (restart-case (drm-page-flip *drm-dev* *frame-buffer*)
-    (ignore () (log! "Ignoring page flip error"))))
+  (gl:finish))
 
 ;; ┬  ┬┌─┐┌┬┐┌─┐┌┐┌┌─┐┬─┐┌─┐
 ;; │  │└─┐ │ ├┤ │││├┤ ├┬┘└─┐
 ;; ┴─┘┴└─┘ ┴ └─┘┘└┘└─┘┴└─└─┘
-;; TODO: Unfinished. Still in debug mode
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
 
 (defun drm-callback (events)
-  ;; TODO: Could be removed - just check how the :readable, :writeable events look like when printed
-  (print events)
-  (log! "DRM event detected.~%")
-  (drm:handle-event (fd *drm-dev*)))
+  (when (member :readable events)
+    (drm:handle-event (fd *drm-dev*) :page-flip 'page-flip)))
+
+(defun page-flip () (drm-page-flip *drm-dev* *frame-buffer*))
 
 (defun client-listener ()
   (loop until *smuks-exit*

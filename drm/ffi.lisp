@@ -13,7 +13,7 @@
 ;; ┌─┐┌─┐┌┐┌┌─┐┌┬┐┌─┐┌┐┌┌┬┐┌─┐
 ;; │  │ ││││└─┐ │ ├─┤│││ │ └─┐
 ;; └─┘└─┘┘└┘└─┘ ┴ ┴ ┴┘└┘ ┴ └─┘
-(defcvar ("DRM_EVENT_CONTEXT" +drm-event-context+ :read-only t) :int)
+(defconstant +drm-event-context+ 3)
 
 (defcenum mode-connection
   (:connected 1)

@@ -65,5 +65,6 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
     (9  "EBADF - Bad file descriptor number")
     (12 "ENOMEM - Out of memory")
     (13 "EACCESS - Permission denied")
+    (16 "EBUSY - Device or resource busy")
     (25 "ENOTTY - Not a typewriter")
     (t (format nil "UNKNOWN ERROR CODE - ~a" code))))
