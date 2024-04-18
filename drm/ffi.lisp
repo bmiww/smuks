@@ -39,7 +39,7 @@
   (count-connectors :int)
   (connectors (:pointer :uint32))
   (count-encoders :int)
-  (encoders :uint32)
+  (encoders (:pointer :uint32))
   (min-width :uint32)
   (max-width :uint32)
   (min-height :uint32)

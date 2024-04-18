@@ -22,7 +22,8 @@
    (connectors :initarg :connectors :accessor connectors)
    (encoders :initarg :encoders :accessor encoders)
    (width :initarg :width :accessor width)
-   (height :initarg :height :accessor height)))
+   (height :initarg :height :accessor height)
+   (original-crtc :initarg :original-crtc :accessor original-crtc)))
 
 (defmethod initialize-instance :after ((device gbm-device) &key file)
   ;; TODO: SBCL EXCLUSIVE

@@ -40,6 +40,14 @@
   (encoders nil)
   (pointer nil))
 
+(defstruct encoder!
+  (id nil)
+  (encoder-type nil)
+  (crtc-id nil)
+  (possible-crtcs nil)
+  (possible-clones nil)
+  (pointer nil))
+
 (defstruct resources
   (resources nil)
   (fbs nil)
@@ -93,19 +101,32 @@
 		:encoders (getf de-pointerd 'encoders)
 		:pointer c-connector)))
 
-;; TODO: create lisp structures for at minimum the crtc
-;; I am currently missing pointers to CRTC for the sake of freeing them
+(defun mk-encoder (c-encoder)
+  (let ((de-pointerd (mem-ref c-encoder '(:struct mode-encoder))))
+    (make-encoder! :id (getf de-pointerd 'encoder-id)
+		   :encoder-type (getf de-pointerd 'encoder-type)
+		   :crtc-id (getf de-pointerd 'crtc-id)
+		   :possible-crtcs (getf de-pointerd 'possible-crtcs)
+		   :possible-clones (getf de-pointerd 'possible-clones)
+		   :pointer c-encoder)))
+
+
 (defun get-resources (fd)
   (let ((resources (mode-get-resources fd)))
-    (with-foreign-slots ((crtcs count-crtcs connectors count-connectors fbs count-fbs encoders count-encoders min-width max-width min-height max-height) resources (:struct mode-res))
+    (with-foreign-slots
+	((crtcs count-crtcs connectors count-connectors
+		fbs count-fbs encoders count-encoders
+		min-width max-width min-height max-height)
+	 resources (:struct mode-res))
       (make-resources
        :resources resources
        ;; :fbs (loop for i from 0 below count-fbs collect (mem-aref fbs i))
-       :crtcs (loop for i from 0 below count-crtcs
-		    collect (mk-crtc (mode-get-crtc fd (mem-aref crtcs :uint32 i))))
+       :crtcs      (loop for i from 0 below count-crtcs
+			 collect (mk-crtc (mode-get-crtc fd (mem-aref crtcs :uint32 i))))
        :connectors (loop for i from 0 below count-connectors
 			 collect (mk-connector (mode-get-connector fd (mem-aref connectors :uint32 i))))
-       ;; :encoders (loop for i from 0 below count-encoders collect (mode-get-encoder fd (mem-aref encoders :uint32 i)))
+       :encoders   (loop for i from 0 below count-encoders
+			 collect (mk-encoder (mode-get-encoder fd (mem-aref encoders :uint32 i))))
        :min-width min-width
        :max-width max-width
        :min-height min-height
