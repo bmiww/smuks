@@ -23,7 +23,7 @@
 (defvar *frame-buffer* nil)
 (defvar *gl-frame-buffer* nil)
 (defvar *texture* nil)
-(defvar *shaders* nil)
+(defvar *rect-shader* nil)
 (defvar *active-crtc* nil)
 
 (defvar *client-thread* nil)
@@ -61,7 +61,7 @@
   (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
   (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
-  (setf (values *main-vbo* *shaders*) (prep-gl-implementation *drm-dev* *frame-buffer*))
+  (setf (values *main-vbo* *rect-shader*) (prep-gl-implementation *drm-dev* *frame-buffer*))
 
   (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
 
@@ -111,6 +111,7 @@
   (livesupport:update-repl-link)
   (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
   (gl:clear :color-buffer-bit)
+  (shaders.rectangle:draw *rect-shader* `(,(shaders.rect:make-⬛ :x 300 :y 200 :width 500 :height 550)))
   (gl:flush)
   (gl:finish))
 

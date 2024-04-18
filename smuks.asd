@@ -41,6 +41,8 @@
 	       #:bordeaux-threads
 	       #:swank
 	       #:str
+	       #:bm-shaders
+	       #:clem
 	       ;; NOTE: Required by the wl-generator module
 	       #:xmls
 	       #:split-sequence)

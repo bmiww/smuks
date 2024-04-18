@@ -45,16 +45,20 @@
 
     (values framebuffer texture)))
 
-(defun prep-gl-implementation (drm-device framebuffer)
+(defun build-initial-shaders (projection)
+  (make-instance 'shaders.rectangle:shader :projection projection))
+
+(defun prep-gl-implementation (device framebuffer)
   (gl:bind-framebuffer :framebuffer framebuffer)
   (let* ((main-vbo (init-instanced-verts))
-	 (shaders "NOT IMPLEMENTED"))
+	 (projection (make-projection-matrix (width device) (height device)))
+	 (rect-shader (build-initial-shaders projection)))
     (gl:enable :blend)
     (gl:blend-func :src-alpha :one-minus-src-alpha)
     (gl:clear-color 0.0 0.0 1.0 1.0)
-    (gl:viewport 0 0 (width drm-device) (height drm-device))
+    (gl:viewport 0 0 (width device) (height device))
 
-    (values main-vbo shaders)))
+    (values main-vbo rect-shader)))
 
 
 ;; ┌─┐┬─┐┬─┐┌─┐┬─┐  ┌─┐┬ ┬┌─┐┌─┐┬┌─┌─┐
@@ -84,3 +88,25 @@
 	       (:framebuffer-undefined "Framebuffer undefined")
 	       (t (error "Uncovered GL framebuffer error code")))))
     (when msg (error (format nil "~a: ~a~%" prefix msg)))))
+
+
+;; ┌┬┐┌─┐┌┬┐┬─┐┬┌─┐┌─┐┌─┐
+;; │││├─┤ │ ├┬┘││  ├┤ └─┐
+;; ┴ ┴┴ ┴ ┴ ┴└─┴└─┘└─┘└─┘
+(defun make-projection-matrix (width height)
+  (let* ((projection (clem:identity-matrix 3))
+	 (x (/ 2.0 width))
+	 (y (/ 2.0 height)))
+
+    (setf (clem:mref projection 2 0)
+	  (coerce (* -1.0 (copysign (+ (multf (clem:mref projection 0 0) x)
+				       (multf (clem:mref projection 1 0) x)))) 'double-float))
+
+    (setf (clem:mref projection 2 1)
+	  (coerce (* -1.0 (copysign (+ (multf (clem:mref projection 0 1) y)
+				       (multf (clem:mref projection 1 1) y)))) 'double-float))
+
+    (setf projection (clem:m* projection *rotx-180*))
+
+    (let ((projection (clem::matrix->list projection)))
+      (make-array (list (length projection)) :initial-contents projection))))
