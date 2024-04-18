@@ -61,7 +61,8 @@
   (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
   (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
-  (setf (values *main-vbo* *rect-shader*) (prep-gl-implementation *drm-dev* *frame-buffer*))
+  (setf *main-vbo* (prep-gl-implementation *drm-dev* *frame-buffer*))
+  (setf *rect-shader* (create-rect-shader *drm-dev*))
 
   (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
 
@@ -111,7 +112,8 @@
   (livesupport:update-repl-link)
   (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
   (gl:clear :color-buffer-bit)
-  (shaders.rectangle:draw *rect-shader* `(,(shaders.rect:make-⬛ :x 300 :y 200 :width 500 :height 550)))
+  (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect :x 10.0 :y 400.0 :w 500.0 :h 550.0
+									 :color '(0.2 0.2 0.2 1.0))))
   (gl:flush)
   (gl:finish))
 

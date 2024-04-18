@@ -1,14 +1,20 @@
 
+;;  ██████╗ ██╗      ██╗   ██╗████████╗██╗██╗
+;; ██╔════╝ ██║      ██║   ██║╚══██╔══╝██║██║
+;; ██║  ███╗██║█████╗██║   ██║   ██║   ██║██║
+;; ██║   ██║██║╚════╝██║   ██║   ██║   ██║██║
+;; ╚██████╔╝███████╗ ╚██████╔╝   ██║   ██║███████╗
+;;  ╚═════╝ ╚══════╝  ╚═════╝    ╚═╝   ╚═╝╚══════╝
 (defpackage :smuks-gl-util
-  (:use :cl :sdrm)
+  (:use :cl :sdrm :smuks-util)
   (:nicknames :sglutil)
   (:export
+   create-rect-shader
    check-gl-error
    check-gl-fb-status
    prep-gl-implementation
    create-gl-framebuffer))
 (in-package :smuks-gl-util)
-
 
 ;; ┌─┐┬    ┌─┐┬─┐┌─┐┌─┐
 ;; │ ┬│    ├─┘├┬┘├┤ ├─┘
@@ -34,60 +40,25 @@
     (%gl:egl-image-target-texture-2d-oes :texture-2d image)
     (check-gl-error "egl-image-target-texture-2d-oes")
     (gl:bind-framebuffer :framebuffer framebuffer)
-    ;; (log! "First check~%")
-    ;; (check-gl-fb-status)
 
     (gl:framebuffer-texture-2d :framebuffer :color-attachment0 :texture-2d texture 0)
     (check-gl-fb-status "After attaching texture")
 
-    ;; (gl:bind-texture :texture-2d 0)
-    ;; (gl:bind-framebuffer :framebuffer 0)
-
     (values framebuffer texture)))
 
-(defun build-initial-shaders (projection)
-  (make-instance 'shaders.rectangle:shader :projection projection))
+(defun create-rect-shader (device)
+  (let* ((projection (make-projection-matrix (width device) (height device)))
+	 (rect-shader (make-instance 'shaders.rectangle:shader :projection projection)))
+    rect-shader))
 
 (defun prep-gl-implementation (device framebuffer)
   (gl:bind-framebuffer :framebuffer framebuffer)
-  (let* ((main-vbo (init-instanced-verts))
-	 (projection (make-projection-matrix (width device) (height device)))
-	 (rect-shader (build-initial-shaders projection)))
+  (let* ((main-vbo (init-instanced-verts)))
     (gl:enable :blend)
     (gl:blend-func :src-alpha :one-minus-src-alpha)
     (gl:clear-color 0.0 0.0 1.0 1.0)
     (gl:viewport 0 0 (width device) (height device))
-
-    (values main-vbo rect-shader)))
-
-
-;; ┌─┐┬─┐┬─┐┌─┐┬─┐  ┌─┐┬ ┬┌─┐┌─┐┬┌─┌─┐
-;; ├┤ ├┬┘├┬┘│ │├┬┘  │  ├─┤├┤ │  ├┴┐└─┐
-;; └─┘┴└─┴└─└─┘┴└─  └─┘┴ ┴└─┘└─┘┴ ┴└─┘
-(defun check-gl-error (&optional (prefix "GL Error"))
-  (let ((msg (case (gl:get-error)
-	       (:zero nil)
-	       (:invalid-enum "Invalid enum")
-	       (:invalid-value "Invalid value")
-	       (:invalid-operation "Invalid operation")
-	       (:stack-overflow "Stack overflow")
-	       (:stack-underflow "Stack underflow")
-	       (:out-of-memory "Out of memory")
-	       (t "Unknown error"))))
-    (when msg (error (format nil "~a: ~a" prefix msg)))))
-
-(defun check-gl-fb-status (&optional (prefix "FB status"))
-  (let ((msg (case (gl:check-framebuffer-status :framebuffer)
-	       (:framebuffer-complete-oes nil)
-	       (:framebuffer-complete nil)
-	       (:zero (check-gl-error))
-	       (:framebuffer-incomplete-attachment "Framebuffer incomplete attachment")
-	       (:framebuffer-incomplete-missing-attachment "Framebuffer incomplete missing attachment")
-	       (:framebuffer-unsupported "Framebuffer unsupported")
-	       (:framebuffer-incomplete-multisample "Framebuffer incomplete multisample")
-	       (:framebuffer-undefined "Framebuffer undefined")
-	       (t (error "Uncovered GL framebuffer error code")))))
-    (when msg (error (format nil "~a: ~a~%" prefix msg)))))
+    main-vbo))
 
 
 ;; ┌┬┐┌─┐┌┬┐┬─┐┬┌─┐┌─┐┌─┐
@@ -110,3 +81,36 @@
 
     (let ((projection (clem::matrix->list projection)))
       (make-array (list (length projection)) :initial-contents projection))))
+
+
+;; ┌┬┐┌─┐┌┬┐┬─┐┬─┐ ┬  ┬ ┬┌┬┐┬┬  ┌─┐
+;; │││├─┤ │ ├┬┘│┌┴┬┘  │ │ │ ││  └─┐
+;; ┴ ┴┴ ┴ ┴ ┴└─┴┴ └─  └─┘ ┴ ┴┴─┘└─┘
+(defun copysign (val) (if (>= val 0) 1 -1))
+
+(defun rotx (angle)
+  (let* ((rad (* pi (/ angle 180.0)))
+      (matrix (clem:identity-matrix 3))
+      (sin (coerce (sin rad) 'double-float))
+      (cos (coerce (cos rad) 'double-float)))
+    (setf (clem:mref matrix 1 1) cos)
+    (setf (clem:mref matrix 1 2) (- sin ))
+    (setf (clem:mref matrix 2 1) sin)
+    (setf (clem:mref matrix 2 2) cos)
+    matrix))
+
+(defun roty (angle)
+  (let* ((rad (* pi (/ angle 180.0)))
+      (matrix (clem:identity-matrix 3))
+      (sin (coerce (sin rad) 'double-float))
+      (cos (coerce (cos rad) 'double-float)))
+    (setf (clem:mref matrix 0 0) cos)
+    (setf (clem:mref matrix 0 2) sin)
+    (setf (clem:mref matrix 2 0) (- sin))
+    (setf (clem:mref matrix 2 2) cos)
+    matrix))
+
+(defparameter *rotx-180* (rotx 180))
+(defparameter *roty-180* (roty 180))
+
+(define-modify-macro multf (&optional (number 1)) *)

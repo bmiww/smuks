@@ -7,7 +7,8 @@
 ;;  ╚═════╝    ╚═╝   ╚═╝╚══════╝
 (defpackage :smuks-util
   (:use :cl)
-  (:export dohash log! *log-output* match-kernel-errcode heading))
+  (:export dohash log! *log-output* match-kernel-errcode heading
+	   check-egl-error check-gl-error))
 (in-package :smuks-util)
 
 (defun heading ()
@@ -68,3 +69,31 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
     (16 "EBUSY - Device or resource busy")
     (25 "ENOTTY - Not a typewriter")
     (t (format nil "UNKNOWN ERROR CODE - ~a" code))))
+
+;; ┌─┐┬
+;; │ ┬│
+;; └─┘┴─┘
+(defun check-gl-error (&optional (prefix "GL Error"))
+  (let ((msg (case (gl:get-error)
+	       (:zero nil)
+	       (:invalid-enum "Invalid enum")
+	       (:invalid-value "Invalid value")
+	       (:invalid-operation "Invalid operation")
+	       (:stack-overflow "Stack overflow")
+	       (:stack-underflow "Stack underflow")
+	       (:out-of-memory "Out of memory")
+	       (t "Unknown error"))))
+    (when msg (error (format nil "~a: ~a" prefix msg)))))
+
+(defun check-gl-fb-status (&optional (prefix "FB status"))
+  (let ((msg (case (gl:check-framebuffer-status :framebuffer)
+	       (:framebuffer-complete-oes nil)
+	       (:framebuffer-complete nil)
+	       (:zero (check-gl-error))
+	       (:framebuffer-incomplete-attachment "Framebuffer incomplete attachment")
+	       (:framebuffer-incomplete-missing-attachment "Framebuffer incomplete missing attachment")
+	       (:framebuffer-unsupported "Framebuffer unsupported")
+	       (:framebuffer-incomplete-multisample "Framebuffer incomplete multisample")
+	       (:framebuffer-undefined "Framebuffer undefined")
+	       (t (error "Uncovered GL framebuffer error code")))))
+    (when msg (error (format nil "~a: ~a~%" prefix msg)))))

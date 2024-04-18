@@ -41,13 +41,14 @@
 	       #:bordeaux-threads
 	       #:swank
 	       #:str
-	       #:bm-shaders
 	       #:clem
 	       ;; NOTE: Required by the wl-generator module
 	       #:xmls
 	       #:split-sequence)
   :components ((:file "util")
 	       (:file "drm")
+	       (:file "shaders")
+	       (:file "shader-rect")
 	       (:file "gl-util")
 	       (:file "wayland-ffi")
 	       (:file "egl-util")
