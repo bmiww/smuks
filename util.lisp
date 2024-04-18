@@ -8,7 +8,7 @@
 (defpackage :smuks-util
   (:use :cl)
   (:export dohash log! *log-output* match-kernel-errcode heading
-	   check-egl-error check-gl-error))
+	   check-gl-fb-status check-gl-error))
 (in-package :smuks-util)
 
 (defun heading ()

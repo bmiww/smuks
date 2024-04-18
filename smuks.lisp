@@ -42,6 +42,7 @@
 (defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
   ;; TODO: This kills off the client listener rather ungracefully
+  (print "Cleanup was called")
   (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
   (when *drm-poller* (cl-async:free-poller *drm-poller*) (setf *drm-poller* nil))
   (cleanup-egl)
@@ -83,8 +84,9 @@
   (setf *smuks-exit* nil)
   (cleanup))
 
+;; TODO: Stupid cl-async is not really exiting the event loop seemingly
 (defun recursively-render-frame ()
-  (when *smuks-exit* (cl-async:exit-event-loop))
+  (when *smuks-exit* (print "Cancelling framez") (cl-async:exit-event-loop))
   (render-frame)
   (cl-async:delay 'recursively-render-frame :time 0.016))
 
@@ -92,10 +94,6 @@
 (defun main ()
   (setf *log-output* *standard-output*)
   (heading)
-
-  ;; NOTE: Maybe setup kill signals for the process
-  ;; TODO: Maybe add a "restart" to set *smuks-exit* to true
-  ;; (mapcar (lambda (signal) (sb-sys:enable-interrupt signal (lambda () (setf *smuks-exit* t)))) '(SIGINT SIGTERM))
 
   (smuks-wl:reset-globals)
 
