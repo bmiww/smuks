@@ -12,7 +12,7 @@
 (defvar *wayland* nil)
 (defvar *smuks-exit* nil)
 (defvar *drm-dev* nil)
-(defvar *drm-thread* nil)
+(defvar *drm-poller* nil)
 (defvar *main-vbo* nil)
 
 (defvar *egl* nil)
@@ -43,7 +43,7 @@
 (defun cleanup ()
   ;; TODO: This kills off the client listener rather ungracefully
   (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
-  (when (and *drm-thread* (bt:thread-alive-p *drm-thread*)) (bt:destroy-thread *drm-thread*) (setf *drm-thread* nil))
+  (when *drm-poller* (cl-async:free-poller *drm-poller*) (setf *drm-poller* nil))
   (cleanup-egl)
   (cleanup-drm))
 
@@ -64,10 +64,6 @@
   (setf (values *main-vbo* *shaders*) (prep-gl-implementation *drm-dev* *frame-buffer*))
 
   (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
-
-  ;; TODO: For now disabling since it seems to be locking up other threads from erroring out for some reason...
-  ;; (log! "Starting DRM fd listener. Waiting for events...~%")
-  ;; (setf *drm-thread* (bt:make-thread 'drm-listener))
 
   ;; (log! "Starting wayland socket listener. Waiting for clients...~%")
   ;; (setf *client-thread* (bt:make-thread 'client-listener))
@@ -97,6 +93,11 @@
   (setf *wayland* (make-instance 'smuks-wl:wayland))
   ;; TODO: Can sometimes fail on retrying
   (setf *drm-dev* (init-drm))
+
+  ;; TODO: For now disabling since it seems to be locking up other threads from erroring out for some reason...
+  (log! "Starting DRM fd listener. Waiting for events...~%")
+  (setf *drm-thread* (bt:make-thread 'drm-listener))
+
   (restart-case (main-after-drm)
     (retry () (cleanup-egl) (main-after-drm) )))
 
@@ -115,18 +116,13 @@
 ;; │  │└─┐ │ ├┤ │││├┤ ├┬┘└─┐
 ;; ┴─┘┴└─┘ ┴ └─┘┘└┘└─┘┴└─└─┘
 ;; TODO: Unfinished. Still in debug mode
-(defun drm-listener ()
-  (let ((buffer (cffi:foreign-alloc :uint8 :count 1024)))
-    (loop while (not *smuks-exit*)
-	  do (process-drm-message buffer))))
+(defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
 
-(defun process-drm-message (buffer)
-  (let ((count (sb-unix:unix-read (fd *drm-dev*) buffer 1024)))
-    (when count
-	       ;; (loop for i from 0 below count
-		     ;; do (log! "~a" (cffi:mem-ref buffer :uint8 i)))
-      ;; (log! "~%"))
-      )))
+(defun drm-callback (events)
+  ;; TODO: Could be removed - just check how the :readable, :writeable events look like when printed
+  (print events)
+  (log! "DRM event detected.~%")
+  (drm:handle-event (fd *drm-dev*)))
 
 (defun client-listener ()
   (loop until *smuks-exit*

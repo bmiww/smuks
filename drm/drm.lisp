@@ -146,3 +146,32 @@
   (loop for connector in (resources-connectors resources) do (mode-free-connector (connector!-pointer connector)))
   (loop for encoder in (resources-encoders resources) do (mode-free-encoder (encoder!-pointer encoder)))
   (mode-free-resources (resources-resources resources)))
+
+
+(defvar *vblank-callback*)
+(cl-async::define-c-callback vblank :void ((fd :int) (sequence :uint) (tv-sec :uint) (tv-usec :uint) (data :uint64))
+    (if *vblank-callback*
+	(funcall *vblank-callback* fd sequence tv-sec tv-usec data))
+  (format t "Vblank arguments: ~a ~a ~a ~a~%" fd sequence tv-sec tv-usec)
+  (print "No vblank callback set"))
+
+
+(defvar *page-flip-callback*)
+(cl-async::define-c-callback page-flip :void ((fd :int) (sequence :uint) (tv-sec :uint) (tv-usec :uint) (data :uint64))
+    (if *page-flip-callback*
+	(funcall *page-flip-callback* fd sequence tv-sec tv-usec data))
+  (format t "Flip arguments: ~a ~a ~a ~a~%" fd sequence tv-sec tv-usec)
+  (print "No page flip callback set"))
+
+(defvar *event-context*)
+(defun handle-event (fd &key vblank page-flip)
+  (unless *event-context*
+    (with-foreign-object (event-context '(:struct event-context) 1)
+      (setf (foreign-slot-value event-context '(:struct event-context) 'version) +drm-event-context+)
+      (setf (foreign-slot-value event-context '(:struct event-context) 'vblank-handler) (callback vblank))
+      (setf (foreign-slot-value event-context '(:struct event-context) 'page-flip-handler) (callback page-flip))))
+
+  (when vblank (setf *vblank-callback* vblank))
+  (when page-flip (setf *page-flip-callback* page-flip))
+
+  (drm-handle-event fd *event-context*))

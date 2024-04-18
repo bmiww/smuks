@@ -41,6 +41,7 @@
 	       #:bordeaux-threads
 	       #:swank
 	       #:str
+	       #:cl-async
 	       ;; NOTE: Required by the wl-generator module
 	       #:xmls
 	       #:split-sequence)

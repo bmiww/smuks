@@ -17,4 +17,5 @@
    free-crtc
 
    mode-crtc-width
-   mode-crtc-height))
+   mode-crtc-height
+   handle-event))

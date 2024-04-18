@@ -9,9 +9,12 @@
 (define-foreign-library libdrm (t (:default "libdrm")))
 (use-foreign-library libdrm)
 
-;; ┌─┐┌┐┌┬ ┬┌┬┐┌─┐
-;; ├┤ ││││ ││││└─┐
-;; └─┘┘└┘└─┘┴ ┴└─┘
+
+;; ┌─┐┌─┐┌┐┌┌─┐┌┬┐┌─┐┌┐┌┌┬┐┌─┐
+;; │  │ ││││└─┐ │ ├─┤│││ │ └─┐
+;; └─┘└─┘┘└┘└─┘ ┴ ┴ ┴┘└┘ ┴ └─┘
+(defcvar ("DRM_EVENT_CONTEXT" +drm-event-context+ :read-only t) :int)
+
 (defcenum mode-connection
   (:connected 1)
   (:disconnected 2)
@@ -177,6 +180,6 @@
   (flags PageFlipFlags)
   (user-data :pointer))
 
-(defcfun ("drmHandleEvent" handle-event) :int
+(defcfun ("drmHandleEvent" drm-handle-event) :int
   (fd :int)
   (event-context (:pointer (:struct event-context))))
