@@ -110,6 +110,8 @@
 		   :possible-clones (getf de-pointerd 'possible-clones)
 		   :pointer c-encoder)))
 
+(defun get-encoder-by-id (resources id)
+  (find-if (lambda (encoder) (= id (encoder!-id encoder))) (resources-encoders resources)))
 
 (defun get-resources (fd)
   (let ((resources (mode-get-resources fd)))
