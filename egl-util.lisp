@@ -40,7 +40,7 @@
 					  :dma-buf-plane0-pitch-ext stride
 					  :dma-buf-plane0-offset-ext offset
 					  :none)))
-    (values frame-buffer egl-image)))
+    (values frame-buffer egl-image buffer-object)))
 
 
 (defun create-fake-wl-display ()
@@ -89,9 +89,9 @@
     (let* ((context (apply 'egl:create-context `(,display ,config ,(cffi:null-pointer) ,@context-attribs))))
       (check-egl-error "Initializing egl context")
       (when (cffi:null-pointer-p context) (error "Failed to create context (was null pointer)"))
-      (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context))
-    (when (cffi:null-pointer-p (egl:get-current-context)) (error "Context not CURRENT (was null pointer)"))
-    display))
+      (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context)
+      (when (cffi:null-pointer-p (egl:get-current-context)) (error "Context not CURRENT (was null pointer)"))
+      (values display context))))
 
 
 ;; ┌─┐┬─┐┬─┐┌─┐┬─┐  ┌─┐┬ ┬┌─┐┌─┐┬┌─┌─┐

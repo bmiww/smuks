@@ -13,9 +13,13 @@
 (defvar *smuks-exit* nil)
 (defvar *drm-dev* nil)
 (defvar *drm-thread* nil)
-(defvar *egl* nil)
 (defvar *main-vbo* nil)
+
+(defvar *egl* nil)
+(defvar *egl-context* nil)
 (defvar *egl-image* nil)
+
+(defvar *buffer-object* nil)
 (defvar *frame-buffer* nil)
 (defvar *gl-frame-buffer* nil)
 (defvar *texture* nil)
@@ -35,20 +39,19 @@
 ;; https://github.com/emersion/hello-wayland/blob/master/main.c
 ;; (defvar *test-program* "hello-wayland")
 
-(defun shutdown () (setf *smuks-exit* t) (cleanup))
+(defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
   ;; TODO: This kills off the client listener rather ungracefully
   (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
   (when (and *drm-thread* (bt:thread-alive-p *drm-thread*)) (bt:destroy-thread *drm-thread*) (setf *drm-thread* nil))
-  (when *active-crtc* (free-crtc *drm-dev*) (setf *active-crtc* nil))
-  (when *drm-dev* (close-drm *drm-dev*) (setf *drm-dev* nil)))
+  (when *egl* (egl:destroy-context *egl* *egl-context*) (setf *egl* nil) (setf *egl-context* nil))
+  (when *drm-dev* (close-drm *drm-dev* *frame-buffer* *buffer-object*)
+	(setf *drm-dev* nil) (setf *frame-buffer* nil) (setf *buffer-object* nil)))
 
   ;; TODO: Add cleanup/restarts for crtc grabs
 (defun main ()
   (setf *log-output* *standard-output*)
-  (setf *smuks-exit* nil)
   (heading)
-  (cleanup)
 
   ;; NOTE: Maybe setup kill signals for the process
   ;; TODO: Maybe add a "restart" to set *smuks-exit* to true
@@ -59,9 +62,9 @@
   (setf *socket* (init-socket))
   (setf *wayland* (make-instance 'smuks-wl:wayland))
   (setf *drm-dev* (init-drm))
-  (setf *egl* (init-egl *drm-dev*))
+  (setf (values *egl* *egl-context*) (init-egl *drm-dev*))
 
-  (setf (values *frame-buffer* *egl-image*) (create-framebuffer *egl* *drm-dev*))
+  (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
   (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
   (setf (values *main-vbo* *shaders*) (prep-gl-implementation *drm-dev* *frame-buffer*))
@@ -82,7 +85,8 @@
   (livesupport:continuable
     (loop while (not *smuks-exit*)
 	  do (render-frame)))
-  (setf *smuks-exit* nil))
+  (setf *smuks-exit* nil)
+  (cleanup))
 
 
 (defun render-frame ()

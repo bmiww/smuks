@@ -46,9 +46,12 @@
 
 ;; TODO: Free connector is expecting a pointer
 ;; but receiving a full connector structure
-(defmethod close-drm ((device gbm-device))
+(defmethod close-drm ((device gbm-device) frame-buffer buffer-object)
+  (drm:free-crtc (crtc device))
   (drm::mode-free-connector (drm::connector!-pointer (car (connected-connectors device))))
   (drm::mode-free-resources (drm::resources-resources (resources device)))
+  (drm::mode-remove-framebuffer (fd device) frame-buffer)
+  (gbm:bo-destroy buffer-object)
   (gbm:device-destroy (gbm-pointer device))
   (close (fd-stream device)))
 
@@ -78,9 +81,6 @@
 		   modes)))
       (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))
       crtc)))
-
-(defmethod free-crtc ((device gbm-device)) (drm:free-crtc (crtc device)))
-
 
 (defun init-drm ()
   (let ((card (loop for i from 0 below 32
