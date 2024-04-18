@@ -18,7 +18,7 @@
   :author "bmiww <bmiww@bky.one>" ;; TODO: Add the original author to the list.
   :license "GPLv3" ;; TODO: Check if the license actually matches somewhat.
   :version "0.0.1"
-  :depends-on (#:cffi)
+  :depends-on (#:cffi #:cl-async)
   :components ((:module "drm"
 		:components ((:file "package")
 			     (:file "ffi")
@@ -41,7 +41,6 @@
 	       #:bordeaux-threads
 	       #:swank
 	       #:str
-	       #:cl-async
 	       ;; NOTE: Required by the wl-generator module
 	       #:xmls
 	       #:split-sequence)
