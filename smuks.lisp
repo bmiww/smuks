@@ -73,8 +73,9 @@
   ;; (test-app *test-program*)
 
   (livesupport:continuable
-    (loop while (not *smuks-exit*)
-	  do (render-frame)))
+    (cl-async:start-event-loop
+     (unless *smuks-exit* (cl-async:delay 'render-frame :time 0.016))))
+
   (setf *smuks-exit* nil)
   (cleanup))
 
@@ -94,9 +95,8 @@
   ;; TODO: Can sometimes fail on retrying
   (setf *drm-dev* (init-drm))
 
-  ;; TODO: For now disabling since it seems to be locking up other threads from erroring out for some reason...
   (log! "Starting DRM fd listener. Waiting for events...~%")
-  (setf *drm-thread* (bt:make-thread 'drm-listener))
+  (setf *drm-poller* (drm-listener))
 
   (restart-case (main-after-drm)
     (retry () (cleanup-egl) (main-after-drm) )))
@@ -104,7 +104,6 @@
 
 (defun render-frame ()
   (livesupport:update-repl-link)
-  (sleep 1)
   (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
   (gl:clear :color-buffer-bit)
   (gl:flush)
