@@ -9,7 +9,6 @@
   (:use :cl :wl :wl-wire :smuks-util)
   (:export display registry client read-wayland-message
 	   wayland
-	   add-client
 	   write-wayland-message))
 (in-package :smuks-wl)
 
@@ -23,18 +22,6 @@
 ;; └┴┘┴ ┴ ┴ ┴─┘┴ ┴┘└┘─┴┘
 (defclass wayland ()
   ((display :initarg :display :accessor display)))
-
-(defmethod add-client ((wayland wayland) client)
-  (let* ((client (make-instance 'smuks-wl:client :socket client))
-	 (stream (sock-stream client)))
-    ;; TODO: This being a list is possibly problematic for removal?
-    ;; Depends on the amount of clients i guess. And only member/ref access rather than id
-    (push client (clients (display wayland)))
-    (log! "CLIENT CONNECTED~%")
-    (bt:make-thread (lambda ()
-		      (loop (read-wayland-message wayland client stream))
-		      (log! "Exiting client~%")
-		      (unix-sockets:close-unix-socket (socket client))))))
 
 (defmethod initialize-instance :after ((wayland wayland) &key)
   (setf (display wayland) (make-instance 'smuks-wl:display :id 1))

@@ -70,7 +70,6 @@
 
   (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
 
-
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
   ;; (test-app *test-program*)
@@ -80,8 +79,9 @@
      (lambda ()
        (log! "Starting DRM fd listener. Waiting for events...~%")
        (setf *drm-poller* (drm-listener))
-       ;; (log! "Starting wayland socket listener. Waiting for clients...~%")
-       ;; (setf *client-thread* (bt:make-thread 'client-listener))
+       ;; TODO: For now spawning a thread. Could technically also be part of polling
+       (log! "Starting wayland socket listener. Waiting for clients...~%")
+       (setf *client-thread* (bt:make-thread 'client-listener))
        (recursively-render-frame))))
 
   (setf *smuks-exit* nil)
@@ -132,7 +132,7 @@
 (defun client-listener ()
   (loop until *smuks-exit*
 	do (let* ((client (unix-sockets:accept-unix-socket *socket*)))
-	     (smuks-wl:add-client *wayland* client))))
+	     (wl:create-client *wayland* (unix-sockets::fd client)))))
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
