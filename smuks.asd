@@ -39,7 +39,6 @@
 	       #:unix-sockets
 	       #:alexandria
 	       #:bordeaux-threads
-	       #:swank
 	       #:str
 	       #:clem
 	       #:split-sequence)
