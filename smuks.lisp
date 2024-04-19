@@ -96,10 +96,8 @@
   (setf *log-output* *standard-output*)
   (heading)
 
-  (smuks-wl:reset-globals)
-
   (setf *socket* (init-socket))
-  (setf *wayland* (make-instance 'smuks-wl:wayland))
+  (setf *wayland* (wl:display-create))
   ;; TODO: Can sometimes fail on retrying
   (setf *drm-dev* (init-drm))
 

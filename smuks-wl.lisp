@@ -10,15 +10,13 @@
   (:export display registry client read-wayland-message
 	   wayland
 	   add-client
-	   write-wayland-message
-	   reset-globals))
+	   write-wayland-message))
 (in-package :smuks-wl)
 
 ;; TODO: Maybe put this into the display class. For now - not that important
 (defvar *globals* (make-hash-table :test 'equal))
 (defvar *global-id* #xFF000000)
 (defun next-global-id () (incf *global-id*))
-(defun reset-globals () (clrhash *globals*) (setq *global-id* #xFF000000))
 
 ;; ┬ ┬┌─┐┬ ┬┬  ┌─┐┌┐┌┌┬┐
 ;; │││├─┤└┬┘│  ├─┤│││ ││
