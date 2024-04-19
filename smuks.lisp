@@ -5,6 +5,8 @@
 ;; ╚════██║██║╚██╔╝██║██║   ██║██╔═██╗ ╚════██║
 ;; ███████║██║ ╚═╝ ██║╚██████╔╝██║  ██╗███████║
 ;; ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
+;; TODO: SWC is a decent source of checking examples of what happens in a compositor
+;; https://github.com/michaelforney/swc/blob/master/libswc/swc.c
 (in-package :smuks)
 
 (defvar *socket-file* "/tmp/smuks.socket")
@@ -68,8 +70,6 @@
 
   (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
 
-  ;; (log! "Starting wayland socket listener. Waiting for clients...~%")
-  ;; (setf *client-thread* (bt:make-thread 'client-listener))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
@@ -80,6 +80,8 @@
      (lambda ()
        (log! "Starting DRM fd listener. Waiting for events...~%")
        (setf *drm-poller* (drm-listener))
+       ;; (log! "Starting wayland socket listener. Waiting for clients...~%")
+       ;; (setf *client-thread* (bt:make-thread 'client-listener))
        (recursively-render-frame))))
 
   (setf *smuks-exit* nil)

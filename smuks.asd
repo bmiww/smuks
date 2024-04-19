@@ -42,8 +42,6 @@
 	       #:swank
 	       #:str
 	       #:clem
-	       ;; NOTE: Required by the wl-generator module
-	       #:xmls
 	       #:split-sequence)
   :components ((:file "util")
 	       (:file "drm")
@@ -53,12 +51,4 @@
 	       (:file "wayland-ffi")
 	       (:file "egl-util")
 	       (:file "package")
-	       (:file "wl-base")
-	       (:file "WAYLAND-SERVER")
-	       (:file "XDG-SHELL")
-	       (:file "wl-wire")
-	       (:file "smuks-wl")
-	       (:file "smuks")
-	       (:module "wl-generator"
-		:components ((:file "wayland-parser")
-			     (:file "wayland-generator")))))
+	       (:file "smuks")))
