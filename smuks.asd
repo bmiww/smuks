@@ -33,7 +33,7 @@
   :depends-on ("cl-drm"
 	       #:cl-opengl
 	       #:cl-egl
-	       #:cl-wayland
+	       #:bm-cl-wayland
 	       #:cl-gbm
 	       #:livesupport
 	       #:unix-sockets
