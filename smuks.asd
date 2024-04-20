@@ -41,7 +41,8 @@
 	       #:bordeaux-threads
 	       #:str
 	       #:clem
-	       #:split-sequence)
+	       #:split-sequence
+	       #:bm-cl-wayland.wayland-core)
   :components ((:file "util")
 	       (:file "drm")
 	       (:file "shaders")

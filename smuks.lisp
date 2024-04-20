@@ -99,9 +99,17 @@
   (heading)
 
   (setf *socket* (init-socket))
-  (setf *wayland* (wl:display-create))
   ;; TODO: Can sometimes fail on retrying
   (setf *drm-dev* (init-drm))
+
+  (setf *wayland* (wl:display-create))
+
+  ;; TODO: Also iterate and generate globals for outputs here
+  (make-instance 'wl-compositor:global)
+  (make-instance 'wl-subcompositor:global)
+  (make-instance 'wl-shm:global)
+  (make-instance 'wl-seat:global)
+  (make-instance 'wl-data-device-manager:global)
 
   (restart-case (main-after-drm)
     (retry () (cleanup-egl) (main-after-drm) )))
