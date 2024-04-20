@@ -64,6 +64,8 @@
 ;; ┌┬┐┌─┐┌┬┐┬─┐┬┌─┐┌─┐┌─┐
 ;; │││├─┤ │ ├┬┘││  ├┤ └─┐
 ;; ┴ ┴┴ ┴ ┴ ┴└─┴└─┘└─┘└─┘
+(define-modify-macro multf (&optional (number 1)) *)
+
 (defun make-projection-matrix (width height)
   (let* ((projection (clem:identity-matrix 3))
 	 (x (/ 2.0 width))
