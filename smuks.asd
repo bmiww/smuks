@@ -42,7 +42,8 @@
 	       #:str
 	       #:clem
 	       #:split-sequence
-	       #:bm-cl-wayland.wayland-core)
+	       #:bm-cl-wayland.wayland-core
+	       #:bm-cl-wayland.xdg-shell)
   :components ((:file "util")
 	       (:file "drm")
 	       (:file "shaders")

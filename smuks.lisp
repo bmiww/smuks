@@ -60,15 +60,15 @@
     (setf *drm-dev* nil) (setf *frame-buffer* nil) (setf *buffer-object* nil)))
 
 (defun main-after-drm ()
-  (setf (values *egl* *egl-context*) (init-egl *drm-dev*))
+  ;; (setf (values *egl* *egl-context*) (init-egl *drm-dev*))
 
-  (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
-  (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
+  ;; (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
+  ;; (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
-  (setf *main-vbo* (prep-gl-implementation *drm-dev* *frame-buffer*))
-  (setf *rect-shader* (create-rect-shader *drm-dev*))
+  ;; (setf *main-vbo* (prep-gl-implementation *drm-dev* *frame-buffer*))
+  ;; (setf *rect-shader* (create-rect-shader *drm-dev*))
 
-  (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
+  ;; (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
@@ -77,8 +77,8 @@
   (livesupport:continuable
     (cl-async:start-event-loop
      (lambda ()
-       (log! "Starting DRM fd listener. Waiting for events...~%")
-       (setf *drm-poller* (drm-listener))
+       ;; (log! "Starting DRM fd listener. Waiting for events...~%")
+       ;; (setf *drm-poller* (drm-listener))
        ;; TODO: For now spawning a thread. Could technically also be part of polling
        (log! "Starting wayland socket listener. Waiting for clients...~%")
        (setf *client-thread* (bt:make-thread 'client-listener))
@@ -91,8 +91,14 @@
   (if *smuks-exit*
       (cl-async:exit-event-loop)
       (progn
-	(render-frame)
+	;; (render-frame)
+	(do-nothing)
 	(cl-async:delay 'recursively-render-frame :time 0.016))))
+
+(defun do-nothing ()
+  (livesupport:update-repl-link)
+  ;; (log! "Doing nothing~%")
+  )
 
 (defun main ()
   (setf *log-output* *standard-output*)
@@ -100,16 +106,17 @@
 
   (setf *socket* (init-socket))
   ;; TODO: Can sometimes fail on retrying
-  (setf *drm-dev* (init-drm))
+  ;; (setf *drm-dev* (init-drm))
 
   (setf *wayland* (wl:display-create))
 
   ;; TODO: Also iterate and generate globals for outputs here
-  (make-instance 'wl-compositor:global)
-  (make-instance 'wl-subcompositor:global)
-  (make-instance 'wl-shm:global)
-  (make-instance 'wl-seat:global)
-  (make-instance 'wl-data-device-manager:global)
+  (make-instance 'wl-compositor:global :display *wayland*)
+  (make-instance 'wl-subcompositor:global :display *wayland*)
+  (make-instance 'wl-shm:global :display *wayland*)
+  (make-instance 'wl-seat:global :display *wayland*)
+  (make-instance 'wl-data-device-manager:global :display *wayland*)
+  (make-instance 'xdg-wm-base:global :display *wayland*)
 
   (restart-case (main-after-drm)
     (retry () (cleanup-egl) (main-after-drm) )))
@@ -139,8 +146,9 @@
 
 (defun client-listener ()
   (loop until *smuks-exit*
-	do (let* ((client (unix-sockets:accept-unix-socket *socket*)))
-	     (wl:create-client *wayland* (unix-sockets::fd client)))))
+	do (progn
+	     (let* ((client (unix-sockets:accept-unix-socket *socket*)))
+	       (wl:create-client *wayland* (unix-sockets::fd client))))))
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
