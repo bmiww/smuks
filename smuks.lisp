@@ -12,6 +12,10 @@
 (defvar *socket-file* "/tmp/smuks.socket")
 (defvar *socket* nil)
 (defvar *wayland* nil)
+(defvar *wl-event-fd* nil)
+(defvar *wl-event-loop* nil)
+(defvar *wl-poller* nil)
+
 (defvar *smuks-exit* nil)
 (defvar *drm-dev* nil)
 (defvar *drm-poller* nil)
@@ -80,9 +84,11 @@
        ;; (log! "Starting DRM fd listener. Waiting for events...~%")
        ;; (setf *drm-poller* (drm-listener))
        ;; TODO: For now spawning a thread. Could technically also be part of polling
-       (log! "Starting wayland socket listener. Waiting for clients...~%")
+       (log! "Starting wayland client socket listener. Waiting for clients...~%")
        (setf *client-thread* (bt:make-thread 'client-listener))
-       (wl:display-run *wayland*)
+       (log! "Starting wayland event loop listener. Waiting for events...~%")
+       (setf *wl-poller* (wayland-listener))
+
        (recursively-render-frame))))
 
   (setf *smuks-exit* nil)
@@ -112,6 +118,10 @@
   (setf *wayland* (wl:display-create))
   (wl:display-add-socket-fd *wayland* (unix-sockets::fd *socket*))
 
+  (setf *wl-event-loop* (wl:display-get-event-loop *wayland*))
+  (setf *wl-event-fd* (wl:event-loop-get-fd *wl-event-loop*))
+
+
   ;; TODO: Also iterate and generate globals for outputs here
   (make-instance 'wl-compositor:global :display *wayland*)
   (make-instance 'wl-subcompositor:global :display *wayland*)
@@ -138,6 +148,15 @@
 ;; ┬  ┬┌─┐┌┬┐┌─┐┌┐┌┌─┐┬─┐┌─┐
 ;; │  │└─┐ │ ├┤ │││├┤ ├┬┘└─┐
 ;; ┴─┘┴└─┘ ┴ └─┘┘└┘└─┘┴└─└─┘
+(defun wayland-listener () (cl-async:poll *wl-event-fd* 'wayland-callback :poll-for '(:readable)))
+
+(defun wayland-callback (events)
+  (when (member :readable events)
+    (handle-wayland-event *wl-event-fd*)))
+
+(defun handle-wayland-event (fd)
+  (print "What do?"))
+
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
 
 (defun drm-callback (events)
