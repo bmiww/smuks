@@ -109,6 +109,7 @@
   ;; (setf *drm-dev* (init-drm))
 
   (setf *wayland* (wl:display-create))
+  (wl:display-add-socket-fd *wayland* (unix-sockets::fd *socket*))
 
   ;; TODO: Also iterate and generate globals for outputs here
   (make-instance 'wl-compositor:global :display *wayland*)
