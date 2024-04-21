@@ -82,6 +82,7 @@
        ;; TODO: For now spawning a thread. Could technically also be part of polling
        (log! "Starting wayland socket listener. Waiting for clients...~%")
        (setf *client-thread* (bt:make-thread 'client-listener))
+       (wl:display-run *wayland*)
        (recursively-render-frame))))
 
   (setf *smuks-exit* nil)
