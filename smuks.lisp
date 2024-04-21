@@ -104,8 +104,7 @@
 
 (defun do-nothing ()
   (livesupport:update-repl-link)
-  ;; (log! "Doing nothing~%")
-  )
+  (wl:display-flush-clients *wayland*))
 
 (defun main ()
   (setf *log-output* *standard-output*)
@@ -120,7 +119,6 @@
 
   (setf *wl-event-loop* (wl:display-get-event-loop *wayland*))
   (setf *wl-event-fd* (wl:event-loop-get-fd *wl-event-loop*))
-
 
   ;; TODO: Also iterate and generate globals for outputs here
   (make-instance 'wl-compositor:global :display *wayland*)
@@ -143,19 +141,19 @@
   (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect :x 30.0 :y 500.0 :w 200.0 :h 50.0
 									 :color '(0.2 0.9 0.2 1.0))))
   (gl:flush)
-  (gl:finish))
+  (gl:finish)
+  (wl:display-flush-clients *wayland*))
 
 ;; ┬  ┬┌─┐┌┬┐┌─┐┌┐┌┌─┐┬─┐┌─┐
 ;; │  │└─┐ │ ├┤ │││├┤ ├┬┘└─┐
 ;; ┴─┘┴└─┘ ┴ └─┘┘└┘└─┘┴└─└─┘
 (defun wayland-listener () (cl-async:poll *wl-event-fd* 'wayland-callback :poll-for '(:readable)))
+(defun wayland-callback (events) (when (member :readable events) (handle-wayland-event)))
 
-(defun wayland-callback (events)
-  (when (member :readable events)
-    (handle-wayland-event *wl-event-fd*)))
-
-(defun handle-wayland-event (fd)
-  (print "What do?"))
+(defun handle-wayland-event ()
+  (let ((result (wl:event-loop-dispatch *wl-event-loop* 0)))
+    (when (< result 0)
+      (error "Error in wayland event loop dispatch: ~A" result))))
 
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
 
