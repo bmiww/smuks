@@ -32,7 +32,7 @@
 (defvar *rect-shader* nil)
 (defvar *active-crtc* nil)
 
-(defvar *client-thread* nil)
+(defvar *client-poller* nil)
 
 (defun kill-all-threads ()
   (mapcar (lambda (thread) (thread:destroy-thread thread)) (thread:all-threads)))
@@ -50,7 +50,7 @@
   (print "Cleanup was called")
   ;; TODO: This kills off the client listener rather ungracefully
   ;; TODO: Turn this into a poller also
-  (when *client-thread* (bt:destroy-thread *client-thread*) (setf *client-thread* nil))
+  (when *client-poller* (cl-async:free-poller *client-poller*) (setf *client-poller* nil))
   (when *drm-poller* (cl-async:free-poller *drm-poller*) (setf *drm-poller* nil))
   (cleanup-egl)
   (cleanup-drm))
@@ -85,7 +85,7 @@
        ;; (setf *drm-poller* (drm-listener))
        ;; TODO: For now spawning a thread. Could technically also be part of polling
        (log! "Starting wayland client socket listener. Waiting for clients...~%")
-       (setf *client-thread* (bt:make-thread 'client-listener))
+       (setf *client-poller* (client-listener))
        (log! "Starting wayland event loop listener. Waiting for events...~%")
        (setf *wl-poller* (wayland-listener))
 
@@ -148,6 +148,9 @@
 ;; │  │└─┐ │ ├┤ │││├┤ ├┬┘└─┐
 ;; ┴─┘┴└─┘ ┴ └─┘┘└┘└─┘┴└─└─┘
 (defun wayland-listener () (cl-async:poll *wl-event-fd* 'wayland-callback :poll-for '(:readable)))
+(defun client-listener () (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t))
+(defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
+
 (defun wayland-callback (events) (when (member :readable events) (handle-wayland-event)))
 
 (defun handle-wayland-event ()
@@ -155,7 +158,6 @@
     (when (< result 0)
       (error "Error in wayland event loop dispatch: ~A" result))))
 
-(defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
 
 (defun drm-callback (events)
   (when (member :readable events)
@@ -163,11 +165,10 @@
 
 (defun page-flip () (drm-page-flip *drm-dev* *frame-buffer*))
 
-(defun client-listener ()
-  (loop until *smuks-exit*
-	do (progn
-	     (let* ((client (unix-sockets:accept-unix-socket *socket*)))
-	       (wl:create-client *wayland* (unix-sockets::fd client))))))
+(defun client-callback (events)
+  (unless (member :readable events) (error "Client callback called without readable event"))
+  (let ((client (unix-sockets:accept-unix-socket *socket*)))
+    (wl:create-client *wayland* (unix-sockets::fd client))))
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
