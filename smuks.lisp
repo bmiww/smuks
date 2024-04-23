@@ -190,7 +190,6 @@
 (defun test-app (app-name)
   (bt:make-thread
    (lambda ()
-     (sleep 1)
      (log! "🟢 ~a: Starting an app~%" app-name)
      (let ((process (uiop:launch-program `(,app-name) :output :stream :error-output *standard-output*)))
        (loop while (uiop/launch-program:process-alive-p process)
