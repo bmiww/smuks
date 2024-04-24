@@ -43,10 +43,6 @@
     (values frame-buffer egl-image buffer-object)))
 
 
-(defun create-fake-wl-display ()
-  (cffi:with-foreign-objects ((wl-display '(:pointer (:struct smuks-wl-ffi::wl_display)) 1))
-    wl-display))
-
 
 ;; NOTE: libwayland egl code
 ;; https://gitlab.freedesktop.org/wayland/wayland/-/tree/main/egl?ref_type=heads
@@ -74,16 +70,13 @@
 
 ;; TODO: Check if you can just malloc the display and pass it to eglGetDisplay
 ;; So far from the mesa code - i don't see any of the struct fields being directly accessed
-(defun init-egl (drm-dev)
+(defun init-egl (drm-dev wl-display)
   (egl:init-egl-wayland)
-  (let* ((wayland-display-ptr (create-fake-wl-display))
-	 (display (egl:get-display (gbm-pointer drm-dev)))
+  (let* ((display (egl:get-display (gbm-pointer drm-dev)))
 	 ;; TODO: Possibly i did not need to find a config for the fancy gbm buffers
-	 ;; Check as you go along. Worst case revert a bit
+	 ;; Check as you go along.
 	 (config (cffi:null-pointer)))
-    ;; TODO: This one is problematic - since i don't exactly have the wl_display struct around here.
-    ;; https://elixir.bootlin.com/mesa/mesa-19.0.6/source/docs/specs/WL_bind_wayland_display.spec
-    (egl:bind-wayland-display display wayland-display-ptr)
+    (egl:bind-wayland-display display wl-display)
     (egl:initialize display)
     (egl:bind-api :opengl-es-api)
     (let* ((context (apply 'egl:create-context `(,display ,config ,(cffi:null-pointer) ,@context-attribs))))

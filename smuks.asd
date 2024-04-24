@@ -49,7 +49,6 @@
 	       (:file "shaders")
 	       (:file "shader-rect")
 	       (:file "gl-util")
-	       (:file "wayland-ffi")
 	       (:file "egl-util")
 	       (:file "package")
 	       (:module "wl-classes"
