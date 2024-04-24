@@ -121,7 +121,7 @@
   (setf *wl-event-fd* (wl:event-loop-get-fd *wl-event-loop*))
 
   ;; TODO: Also iterate and generate globals for outputs here
-  (make-instance 'wl-compositor:global :display *wayland*)
+  (make-instance 'wl-compositor:global :display *wayland* :dispatch-impl 'compositor)
   (make-instance 'wl-subcompositor:global :display *wayland*)
   (make-instance 'wl-shm:global :display *wayland*)
   (make-instance 'wl-seat:global :display *wayland*)
@@ -151,12 +151,12 @@
 (defun client-listener () (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t))
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
 
-(defun wayland-callback (events) (when (member :readable events) (handle-wayland-event)))
-
 (defun handle-wayland-event ()
   (let ((result (wl:event-loop-dispatch *wl-event-loop* 0)))
     (when (< result 0)
       (error "Error in wayland event loop dispatch: ~A" result))))
+
+(defun wayland-callback (events) (when (member :readable events) (handle-wayland-event)))
 
 
 (defun drm-callback (events)

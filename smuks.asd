@@ -52,4 +52,6 @@
 	       (:file "wayland-ffi")
 	       (:file "egl-util")
 	       (:file "package")
+	       (:module "wl-classes"
+		:components ((:file "compositor")))
 	       (:file "smuks")))
