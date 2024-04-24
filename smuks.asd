@@ -52,5 +52,6 @@
 	       (:file "egl-util")
 	       (:file "package")
 	       (:module "wl-classes"
-		:components ((:file "compositor")))
+		:components ((:file "surface")
+			     (:file "compositor")))
 	       (:file "smuks")))
