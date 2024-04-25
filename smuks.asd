@@ -56,5 +56,6 @@
 	       (:file "package")
 	       (:module "wl-classes"
 		:components ((:file "surface")
-			     (:file "compositor")))
+			     (:file "compositor")
+			     (:file "shm")))
 	       (:file "smuks")))

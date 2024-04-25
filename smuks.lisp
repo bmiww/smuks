@@ -5,7 +5,7 @@
 ;; ╚════██║██║╚██╔╝██║██║   ██║██╔═██╗ ╚════██║
 ;; ███████║██║ ╚═╝ ██║╚██████╔╝██║  ██╗███████║
 ;; ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
-;; TODO: SWC is a decent source of checking examples of what happens in a compositor
+;; NOTE: SWC is a decent source of checking examples of what happens in a compositor
 ;; https://github.com/michaelforney/swc/blob/master/libswc/swc.c
 (in-package :smuks)
 
@@ -123,10 +123,10 @@
   ;; TODO: Also iterate and generate globals for outputs here
   (make-instance 'wl-compositor:global :display *wayland* :dispatch-impl 'compositor)
   (make-instance 'wl-subcompositor:global :display *wayland*)
-  (make-instance 'wl-shm:global :display *wayland*)
+  (make-instance 'wl-shm:global :display *wayland* :dispatch-impl 'shm)
   (make-instance 'wl-seat:global :display *wayland*)
   (make-instance 'wl-data-device-manager:global :display *wayland*)
-  (make-instance 'xdg-wm-base:global :display *wayland*)
+  ;; (make-instance 'xdg-wm-base:global :display *wayland*)
 
   (restart-case (main-after-drm)
     (retry () (cleanup-egl) (main-after-drm) )))
@@ -142,6 +142,10 @@
 									 :color '(0.2 0.9 0.2 1.0))))
   (gl:flush)
   (gl:finish)
+  (flush-clients)
+  )
+
+(defun flush-clients ()
   (wl:display-flush-clients *wayland*))
 
 ;; ┬  ┬┌─┐┌┬┐┌─┐┌┐┌┌─┐┬─┐┌─┐
