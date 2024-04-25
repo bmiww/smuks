@@ -30,6 +30,9 @@
   :author "bmiww <bmiww@bky.one>"
   :license "GPLv3"
   :version "0.0.1"
+  :build-operation program-op
+  :build-pathname "smuks"
+  :entry-point "smuks::main"
   :depends-on ("cl-drm"
 	       #:cl-opengl
 	       #:cl-egl
