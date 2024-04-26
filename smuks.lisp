@@ -104,7 +104,7 @@
 
 (defun do-nothing ()
   (livesupport:update-repl-link)
-  (wl:display-flush-clients *wayland*))
+  (flush-clients))
 
 (defun main ()
   (setf *log-output* *standard-output*)
@@ -121,6 +121,8 @@
   (setf *wl-event-fd* (wl:event-loop-get-fd *wl-event-loop*))
 
   ;; TODO: Also iterate and generate globals for outputs here
+  ;; TODO: When you recompile the compiled classes - these globals aren't updated
+  ;; needing a rerun
   (make-instance 'wl-compositor:global :display *wayland* :dispatch-impl 'compositor)
   (make-instance 'wl-subcompositor:global :display *wayland*)
   (make-instance 'wl-shm:global :display *wayland* :dispatch-impl 'shm)
@@ -142,8 +144,7 @@
 									 :color '(0.2 0.9 0.2 1.0))))
   (gl:flush)
   (gl:finish)
-  (flush-clients)
-  )
+  (flush-clients))
 
 (defun flush-clients ()
   (wl:display-flush-clients *wayland*))
