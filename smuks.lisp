@@ -111,11 +111,12 @@
   (heading)
 
   (setf (uiop/os:getenv "WAYLAND_DEBUG") "1")
-
   (setf *socket* (init-socket))
+
   ;; TODO: Can sometimes fail on retrying
   ;; (setf *drm-dev* (init-drm))
 
+  (wl:init-interface-definitions)
   (setf *wayland* (wl:display-create))
   (wl:display-add-socket-fd *wayland* (unix-sockets::fd *socket*))
 
