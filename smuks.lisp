@@ -110,6 +110,8 @@
   (setf *log-output* *standard-output*)
   (heading)
 
+  (setf (uiop/os:getenv "WAYLAND_DEBUG") "1")
+
   (setf *socket* (init-socket))
   ;; TODO: Can sometimes fail on retrying
   ;; (setf *drm-dev* (init-drm))
