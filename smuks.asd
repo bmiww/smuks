@@ -57,5 +57,6 @@
 	       (:module "wl-classes"
 		:components ((:file "surface")
 			     (:file "compositor")
-			     (:file "shm")))
+			     (:file "shm")
+			     (:file "xdg-wm-base")))
 	       (:file "smuks")))
