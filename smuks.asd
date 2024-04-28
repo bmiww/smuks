@@ -36,7 +36,6 @@
   :depends-on ("cl-drm"
 	       #:cl-opengl
 	       #:cl-egl
-	       #:bm-cl-wayland
 	       #:cl-gbm
 	       #:livesupport
 	       #:unix-sockets
@@ -45,6 +44,7 @@
 	       #:str
 	       #:clem
 	       #:split-sequence
+	       #:bm-cl-wayland
 	       #:bm-cl-wayland.wayland-core
 	       #:bm-cl-wayland.xdg-shell)
   :components ((:file "util")
