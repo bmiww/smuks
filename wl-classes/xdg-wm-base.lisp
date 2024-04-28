@@ -16,8 +16,7 @@
 (defmethod xdg-wm-base:get-xdg-surface ((xdg wm-base) id surface)
   (let ((xdg-surface (wl:mk-if 'xdg-surface xdg id :wl-surface surface)))
     (setf (gethash id (xdg-surfaces xdg)) xdg-surface)
-    (setf (role surface) xdg-surface)
-    xdg-surface))
+    (setf (role surface) xdg-surface)))
 
 ;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
@@ -30,7 +29,9 @@
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((toplevel (wl:mk-if 'toplevel xdg id)))
     (setf (toplevel xdg) toplevel)
-    toplevel))
+    ;; TODO: One for maximized - get the enum stuff in order
+    (xdg-toplevel:send-configure toplevel 840 600 '(1))
+    (xdg-surface:send-configure xdg (incf (configure-serial (wl-surface xdg))))))
 
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
 ;; The configuration sequence. Applying pending state or whatnot. Not sure

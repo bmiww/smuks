@@ -37,6 +37,7 @@
 	       #:cl-opengl
 	       #:cl-egl
 	       #:cl-gbm
+	       #:mmap
 	       #:livesupport
 	       #:unix-sockets
 	       #:alexandria

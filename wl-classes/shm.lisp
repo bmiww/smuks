@@ -38,7 +38,26 @@
 (defclass pool (wl-shm-pool:dispatch)
   ((buffers :initform (make-hash-table :test 'equal) :accessor buffers)
    (size :initarg :size :accessor size)
-   (fd :initarg :fd :accessor fd)))
+   (fd :initarg :fd :accessor fd)
+   (pool-ptr :accessor pool-ptr)
+   (pool-fd :accessor pool-fd)
+   (pool-size :accessor pool-size)))
+
+(defmethod initialize-instance :after ((pool pool) &key)
+  (multiple-value-bind (ptr fd size) (mmap:mmap (fd pool) :size (size pool) :mmap '(:shared))
+    (setf (pool-ptr pool) ptr)
+    (setf (pool-fd pool) fd)
+    (setf (pool-size pool) size)))
+
+(defmethod wl-shm-pool:destroy :before ((pool pool))
+  (mmap:munmap (pool-ptr pool) (pool-size pool) (pool-size pool)))
+
+(defmethod wl-shm-pool:resize ((pool pool) size)
+  (mmap:munmap (pool-ptr pool) (pool-fd pool) (pool-size pool))
+  (multiple-value-bind (ptr fd size) (mmap:mmap (fd pool) :size size :mmap '(:shared))
+    (setf (pool-ptr pool) ptr)
+    (setf (pool-fd pool) fd)
+    (setf (pool-size pool) size)))
 
 (defmethod wl-shm-pool:create-buffer ((pool pool) id offset width height stride pixel-format)
   (setf (gethash id (buffers pool))
