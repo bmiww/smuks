@@ -39,29 +39,22 @@
   ((buffers :initform (make-hash-table :test 'equal) :accessor buffers)
    (size :initarg :size :accessor size)
    (fd :initarg :fd :accessor fd)
-   (pool-ptr :accessor pool-ptr)
-   (pool-fd :accessor pool-fd)
-   (pool-size :accessor pool-size)))
+   (mmap-pool :initform nil :accessor mmap-pool)))
 
 (defmethod initialize-instance :after ((pool pool) &key)
   (multiple-value-bind (ptr fd size) (mmap:mmap (fd pool) :size (size pool) :mmap '(:shared))
-    (setf (pool-ptr pool) ptr)
-    (setf (pool-fd pool) fd)
-    (setf (pool-size pool) size)))
-
-(defmethod wl-shm-pool:destroy :before ((pool pool))
-  (mmap:munmap (pool-ptr pool) (pool-size pool) (pool-size pool)))
+    (setf (mmap-pool pool) (make-mmap-pool :ptr ptr :fd fd :size size))))
 
 (defmethod wl-shm-pool:resize ((pool pool) size)
-  (mmap:munmap (pool-ptr pool) (pool-fd pool) (pool-size pool))
+  (munmap (mmap-pool pool))
   (multiple-value-bind (ptr fd size) (mmap:mmap (fd pool) :size size :mmap '(:shared))
-    (setf (pool-ptr pool) ptr)
-    (setf (pool-fd pool) fd)
-    (setf (pool-size pool) size)))
+    (setf (mmap-pool pool) (make-mmap-pool :ptr ptr :fd fd :size size))))
 
 (defmethod wl-shm-pool:create-buffer ((pool pool) id offset width height stride pixel-format)
   (setf (gethash id (buffers pool))
-	(wl:mk-if 'buffer pool id :offset offset :width width :height height :stride stride :pixel-format pixel-format)))
+	(wl:mk-if 'buffer pool id :offset offset :width width :height height
+				  :stride stride :pixel-format pixel-format
+				  :mmap-pool (mmap-pool pool))))
 
 ;; ┌┐ ┬ ┬┌─┐┌─┐┌─┐┬─┐
 ;; ├┴┐│ │├┤ ├┤ ├┤ ├┬┘
@@ -71,4 +64,15 @@
    (width :initarg :width :accessor width)
    (height :initarg :height :accessor height)
    (stride :initarg :stride :accessor stride)
-   (pixel-format :initarg :pixel-format :accessor pixel-format)))
+   (pixel-format :initarg :pixel-format :accessor pixel-format)
+   (mmap-pool :initarg :mmap-pool :accessor mmap-pool)))
+
+(defmethod pool-ptr ((buffer buffer)) (mmap-pool-ptr (mmap-pool buffer)))
+
+;; ┌┬┐┌┬┐┌─┐┌─┐  ┌─┐┌─┐┌─┐┬
+;; ││││││├─┤├─┘  ├─┘│ ││ ││
+;; ┴ ┴┴ ┴┴ ┴┴    ┴  └─┘└─┘┴─┘
+(defstruct mmap-pool ptr fd size)
+
+(defun munmap (pool)
+  (mmap:munmap (mmap-pool-ptr pool) (mmap-pool-fd pool) (mmap-pool-size pool)))
