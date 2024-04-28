@@ -13,7 +13,9 @@
    (pending-buffer :initform nil :accessor pending-buffer)
    (texture :initform nil :accessor texture)
    (pending-damage :initform nil :accessor pending-damage)
-   (damage :initform nil :accessor damage)))
+   (damage :initform nil :accessor damage)
+   (pending-frame-callbacks :initform nil :accessor pending-frame-callbacks)
+   (frame-callbacks :initform nil :accessor frame-callbacks)))
 
 
 ;; ┌─┐┌─┐┌┬┐┌┬┐┬┌┬┐
@@ -30,7 +32,11 @@
     (setf (texture surface)
 	  (gen-texture (pending-buffer surface)))
     (wl-buffer:send-release (pending-buffer surface))
-    (setf (pending-buffer surface) nil)))
+    (setf (pending-buffer surface) nil))
+  (when (pending-frame-callbacks surface)
+    (setf (frame-callbacks surface) (pending-frame-callbacks surface))
+    (setf (pending-frame-callbacks surface) nil)))
+
 
 
 ;; TODO: Make this be based off of the used format
@@ -38,9 +44,6 @@
 ;; TODO: Possibly move this closer to the GL code
 ;; TODO: Maybe i can use the mmap ptr directly for pumping into the GL texture???
 (defun gen-texture (pending-buffer)
-  (log! "Generating texture from buffer")
-  (describe pending-buffer)
-  (describe (mmap-pool pending-buffer))
   (let ((texture (gl:gen-texture)))
     (gl:bind-texture :texture-2d texture)
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
@@ -64,6 +67,11 @@
   (unless (= x 0) (error "x must be 0"))
   (unless (= y 0) (error "y must be 0"))
   (setf (pending-buffer surface) buffer))
+
+(defmethod wl-surface:frame ((surface surface) callback)
+  (log! "Frame requested")
+  (print callback)
+  (setf (frame-callbacks surface) (cons callback (frame-callbacks surface))))
 
 (defmethod wl-surface:damage ((surface surface) x y width height)
   (setf (pending-damage surface) (make-damage :x x :y y :width width :height height)))

@@ -51,9 +51,11 @@
   :components ((:file "util")
 	       (:file "drm")
 	       (:file "shaders")
-	       (:file "shader-rect")
 	       (:file "gl-util")
 	       (:file "egl-util")
+	       (:file "shader-rect")
+	       (:file "shader-texture")
+	       (:file "shader-init")
 	       (:file "package")
 	       (:module "wl-classes"
 		:components ((:file "surface")

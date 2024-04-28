@@ -64,15 +64,16 @@
     (setf *drm-dev* nil) (setf *frame-buffer* nil) (setf *buffer-object* nil)))
 
 (defun main-after-drm ()
-  ;; (setf (values *egl* *egl-context*) (init-egl *drm-dev*))
+  (setf (values *egl* *egl-context*) (init-egl *drm-dev*))
 
-  ;; (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
-  ;; (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
+  (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
+  (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
-  ;; (setf *main-vbo* (prep-gl-implementation *drm-dev* *frame-buffer*))
-  ;; (setf *rect-shader* (create-rect-shader *drm-dev*))
+  (setf *main-vbo* (prep-gl-implementation *drm-dev* *frame-buffer*))
+  (setf *rect-shader* (shader-init:create-rect-shader *drm-dev*))
+  (setf *texture-shader* (shader-init:create-texture-shader *drm-dev*))
 
-  ;; (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
+  (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
@@ -81,9 +82,8 @@
   (livesupport:continuable
     (cl-async:start-event-loop
      (lambda ()
-       ;; (log! "Starting DRM fd listener. Waiting for events...~%")
-       ;; (setf *drm-poller* (drm-listener))
-       ;; TODO: For now spawning a thread. Could technically also be part of polling
+       (log! "Starting DRM fd listener. Waiting for events...~%")
+       (setf *drm-poller* (drm-listener))
        (log! "Starting wayland client socket listener. Waiting for clients...~%")
        (setf *client-poller* (client-listener))
        (log! "Starting wayland event loop listener. Waiting for events...~%")
@@ -98,8 +98,8 @@
   (if *smuks-exit*
       (cl-async:exit-event-loop)
       (progn
-	;; (render-frame)
-	(do-nothing)
+	(render-frame)
+	;; (do-nothing)
 	(cl-async:delay 'recursively-render-frame :time 0.016))))
 
 (defun do-nothing ()
@@ -114,7 +114,7 @@
   (setf *socket* (init-socket))
 
   ;; TODO: Can sometimes fail on retrying
-  ;; (setf *drm-dev* (init-drm))
+  (setf *drm-dev* (init-drm))
 
   (wl:init-interface-definitions)
   (setf *wayland* (wl:display-create))
@@ -136,6 +136,24 @@
   (restart-case (main-after-drm)
     (retry () (cleanup-egl) (main-after-drm) )))
 
+;; egl.shaders.texture_abgr.as_mut().expect("Texture program not found")
+;; .draw(
+      ;; texture_id, render_props.surface_position,
+      ;; (width, height),
+      ;; render_props.transform)
+
+(defun render-surface (surface)
+  (let ((texture (texture surface)))
+    (shaders.texture:draw *texture-shader* texture
+			  ;; (surface-dimensions surface))))
+			  '(0 0 840 600))))
+
+(defun render-clients ()
+  (let* ((clients (alexandria:hash-table-values wl:*client-tracker*))
+	 (surfaces (mapcar (lambda (object) (typep object 'surface)) (wl:objects clients))))
+    (mapcar (lambda (surface) (render-surface surface)) surfaces)))
+
+
 
 (defun render-frame ()
   (livesupport:update-repl-link)
@@ -145,6 +163,8 @@
 									 :color '(0.2 0.2 0.2 1.0))))
   (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect :x 30.0 :y 500.0 :w 200.0 :h 50.0
 									 :color '(0.2 0.9 0.2 1.0))))
+
+  (render-clients)
   (gl:flush)
   (gl:finish)
   (flush-clients))

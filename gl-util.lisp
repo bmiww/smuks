@@ -9,11 +9,11 @@
   (:use :cl :sdrm :smuks-util)
   (:nicknames :sglutil)
   (:export
-   create-rect-shader
    check-gl-error
    check-gl-fb-status
    prep-gl-implementation
-   create-gl-framebuffer))
+   create-gl-framebuffer
+   make-position-matrix))
 (in-package :smuks-gl-util)
 
 ;; ┌─┐┬    ┌─┐┬─┐┌─┐┌─┐
@@ -46,11 +46,6 @@
 
     (values framebuffer texture)))
 
-(defun create-rect-shader (device)
-  (let* ((projection (make-projection-matrix (width device) (height device)))
-	 (rect-shader (make-instance 'shaders.rectangle:shader :projection projection)))
-    rect-shader))
-
 (defun prep-gl-implementation (device framebuffer)
   (gl:bind-framebuffer :framebuffer framebuffer)
   (let* ((main-vbo (init-instanced-verts)))
@@ -81,5 +76,13 @@
 
     (let ((projection (clem::matrix->list projection)))
       (make-array (list (length projection)) :initial-contents projection))))
+
+(defun make-position-matrix (x y)
+  (let* ((position (clem:identity-matrix 3)))
+    ;; TODO: Check if column major
+    (setf (clem:mref position 0 2) x)
+    (setf (clem:mref position 1 2) y)
+    (let ((position (clem::matrix->list position)))
+      (make-array (list (length position)) :initial-contents position))))
 
 (defun copysign (val) (if (>= val 0) 1 -1))
