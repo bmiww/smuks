@@ -16,20 +16,27 @@
 (defmethod xdg-wm-base:get-xdg-surface ((xdg wm-base) id surface)
   (let ((xdg-surface (wl:mk-if 'xdg-surface xdg id :wl-surface surface)))
     (setf (gethash id (xdg-surfaces xdg)) xdg-surface)
+    (setf (role surface) xdg-surface)
     xdg-surface))
 
 ;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
 (defclass xdg-surface (xdg-surface:dispatch)
-  ((role :initform nil :accessor role)
-   (wl-surface :initarg :wl-surface :accessor wl-surface)
-   (toplevel :initarg :toplevel :accessor toplevel)))
+  ((wl-surface :initarg :wl-surface :accessor wl-surface)
+   (toplevel :initarg :toplevel :accessor toplevel)
+   (popup :initarg :popup :accessor popup)))
 
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((toplevel (wl:mk-if 'toplevel xdg id)))
     (setf (toplevel xdg) toplevel)
     toplevel))
+
+;; NOTE: For now leaving empty - but could be used in some way to finalize
+;; The configuration sequence. Applying pending state or whatnot. Not sure
+(defmethod xdg-surface:ack-configure ((xdg xdg-surface) serial)
+  ())
+
 
 ;; ┌┬┐┌─┐┌─┐┬  ┌─┐┬  ┬┌─┐┬
 ;;  │ │ │├─┘│  ├┤ └┐┌┘├┤ │

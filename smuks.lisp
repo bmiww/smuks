@@ -131,7 +131,7 @@
   (make-instance 'wl-shm:global :display *wayland* :dispatch-impl 'shm)
   (make-instance 'wl-seat:global :display *wayland*)
   (make-instance 'wl-data-device-manager:global :display *wayland*)
-  (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'xdg-wm-base)
+  (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'wm-base)
 
   (restart-case (main-after-drm)
     (retry () (cleanup-egl) (main-after-drm) )))
