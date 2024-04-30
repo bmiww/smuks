@@ -28,6 +28,7 @@
 (defmethod initialize-instance :after ((device gbm-device) &key file)
   ;; TODO: SBCL EXCLUSIVE
   (let ((fd (sb-sys:fd-stream-fd file)))
+    (drm::set-master fd)
     (setf (fd-stream device) file)
     (setf (fd device) fd)
     (setf (gbm-pointer device) (gbm:create-device fd))
@@ -54,13 +55,14 @@
     (continue-cleanup () :report "Continue cleanup ignoring the error"))
 
   (print "STARTING REMOVE FB")
-  (drm::mode-remove-framebuffer (fd device) framebuffer)
+  (check-err (drm::mode-remove-framebuffer (fd device) framebuffer))
 
-  (drm::free-resources (resources device))
-  (gbm:bo-destroy buffer-object)
-  (gbm:device-destroy (gbm-pointer device))
-  (drm::drop-master (fd device))
-  (close (fd-stream device)))
+  (check-err (drm::free-resources (resources device)))
+  (check-err (gbm:bo-destroy buffer-object))
+  (check-err (gbm:device-destroy (gbm-pointer device)))
+  (check-err (drm::drop-master (fd device)))
+  (close (fd-stream device))
+  (print "Done with cleanup"))
 
 (defun add-framebuffer (fd width height depth bpp pitch handle)
   (cffi:with-foreign-objects ((buf-id :uint32 1))
@@ -107,12 +109,11 @@
       crtc)))
 
 (defun init-drm ()
-  (let ((card (loop for i from 0 below 32
-		    for path = (format nil "/dev/dri/card~A" i)
-		    when (probe-file path) return path))
-	(fd (open card :direction :io :if-exists :append)))
-    (make-instance 'gbm-device :file fd)
-    (drm::set-master fd)))
+  (let* ((card (loop for i from 0 below 32
+		     for path = (format nil "/dev/dri/card~A" i)
+		     when (probe-file path) return path))
+	 (fd (open card :direction :io :if-exists :append)))
+    (make-instance 'gbm-device :file fd)))
 
 
 (defun drm-page-flip (drm-dev framebuffer)

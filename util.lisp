@@ -7,7 +7,9 @@
 ;;  ╚═════╝    ╚═╝   ╚═╝╚══════╝
 (defpackage :smuks-util
   (:use :cl)
-  (:export dohash log! *log-output* match-kernel-errcode heading
+  (:export dohash log! *log-output*
+	   match-kernel-errcode check-err
+	   heading
 	   check-gl-fb-status check-gl-error))
 (in-package :smuks-util)
 
@@ -62,13 +64,22 @@ declarations. Finally the result-form is returned after the iteration completes.
 You can find example error codes here:
 https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
   (case code
+    (nil (format t "No error code provided"))
     (0 nil)
+    (2  "ENOENT - No such file or directory")
     (9  "EBADF - Bad file descriptor number")
     (12 "ENOMEM - Out of memory")
     (13 "EACCESS - Permission denied")
     (16 "EBUSY - Device or resource busy")
     (25 "ENOTTY - Not a typewriter")
     (t (format nil "UNKNOWN ERROR CODE - ~a" code))))
+
+(defmacro check-err (&body body)
+  `(let* ((result ,@body))
+     (when result
+	 (let ((err (smuks-util:match-kernel-errcode (abs result))))
+	   (when err (error err))))
+     result))
 
 ;; ┌─┐┬
 ;; │ ┬│

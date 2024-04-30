@@ -30,6 +30,7 @@
 (defvar *gl-frame-buffer* nil)
 (defvar *texture* nil)
 (defvar *rect-shader* nil)
+(defvar *texture-shader* nil)
 (defvar *active-crtc* nil)
 
 (defvar *client-poller* nil)
@@ -47,12 +48,6 @@
 
 (defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
-  (print "Cleanup was called")
-  ;; TODO: This kills off the client listener rather ungracefully
-  ;; TODO: Turn this into a poller also
-  (when *client-poller* (cl-async:free-poller *client-poller*) (setf *client-poller* nil))
-  (when *drm-poller* (cl-async:free-poller *drm-poller*) (setf *drm-poller* nil))
-  (when *wl-poller* (cl-async:free-poller *wl-poller*) (setf *wl-poller* nil))
   (cleanup-egl)
   (cleanup-drm))
 
@@ -119,26 +114,25 @@
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
 
-  (livesupport:continuable
-    (cl-async:start-event-loop
-     (lambda ()
-       (log! "Starting DRM fd listener. Waiting for events...~%")
-       (setf *drm-poller* (drm-listener))
-       (log! "Starting wayland client socket listener. Waiting for clients...~%")
-       (setf *client-poller* (client-listener))
-       (log! "Starting wayland event loop listener. Waiting for events...~%")
-       (setf *wl-poller* (wayland-listener))
+  (cl-async:start-event-loop
+   (lambda ()
+     (log! "Starting DRM fd listener. Waiting for events...~%")
+     (setf *drm-poller* (drm-listener))
+     (log! "Starting wayland client socket listener. Waiting for clients...~%")
+     (setf *client-poller* (client-listener))
+     (log! "Starting wayland event loop listener. Waiting for events...~%")
+     (setf *wl-poller* (wayland-listener))
 
-       (test-app "weston-simple-shm")
+     (test-app "weston-simple-shm")
 
-       (recursively-render-frame))))
-
-  (setf *smuks-exit* nil)
-  (cleanup))
+     (recursively-render-frame))))
 
 (defun main ()
-  (restart-case (mainer)
-    (start-over () (cleanup) (mainer))))
+  (restart-case
+      (unwind-protect (mainer)
+	(setf *smuks-exit* nil)
+	(cleanup))
+    (📍start-over () (cleanup) (mainer))))
 
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐
 ;; ├┤ ├┬┘├─┤│││├┤
@@ -235,3 +229,13 @@
        (loop while (uiop/launch-program:process-alive-p process)
 	     do (log! "🔴 ~a: ~a~%" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
        (log! "🟢 ~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))))
+
+
+;; NOTE: This is a fix for cl-async not having a handler for gracious :poll closing
+;; Weirdly enough - i expected them to crash, but they don't. They just hang.
+(defmethod cl-async::handle-cleanup ((handle-type (eql :poll)) handle)
+  (cond
+    ((cffi:pointer-eq (cl-async::poller-c *drm-poller*) handle) (cl-async:free-poller *drm-poller*))
+    ((cffi:pointer-eq (cl-async::poller-c *wl-poller*) handle) (cl-async:free-poller *wl-poller*))
+    ((cffi:pointer-eq (cl-async::poller-c *client-poller*) handle) (cl-async:free-poller *client-poller*))
+    (t (error "Unknown poller handle"))))

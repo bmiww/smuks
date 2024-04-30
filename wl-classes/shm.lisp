@@ -75,4 +75,5 @@
 (defstruct mmap-pool ptr fd size)
 
 (defun munmap (pool)
+  (break)
   (mmap:munmap (mmap-pool-ptr pool) (mmap-pool-fd pool) (mmap-pool-size pool)))
