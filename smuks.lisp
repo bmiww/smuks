@@ -89,6 +89,8 @@
        (log! "Starting wayland event loop listener. Waiting for events...~%")
        (setf *wl-poller* (wayland-listener))
 
+       (test-app "weston-simple-shm")
+
        (recursively-render-frame))))
 
   (setf *smuks-exit* nil)

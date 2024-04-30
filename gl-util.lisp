@@ -13,6 +13,7 @@
    check-gl-fb-status
    prep-gl-implementation
    create-gl-framebuffer
+   make-projection-matrix
    make-position-matrix))
 (in-package :smuks-gl-util)
 

@@ -33,7 +33,7 @@
 
 (defmethod initialize-instance :before ((program shader) &key projection)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position attr-color) program
-    (setf pointer (shaders:create-shader vertex-shader-rectangle fragment-shader-rectangle))
+    (setf pointer (shaders:create-shader vertex-shader-texture fragment-shader-abgr))
     (setf instanced-vbo (gl:gen-buffer))
     (setf runtime-vbo (gl:gen-buffer))
     (setf vao (gl:gen-vertex-array))
@@ -99,10 +99,10 @@ uniform mat3 matrix;
 uniform mat3 tex_matrix;
 uniform mat3 projection;
 
-attribute vec2 vert;
-attribute vec4 vert_position;
+in vec2 vert;
+in vec4 vert_position;
 
-varying vec2 v_tex_coords;
+out vec2 v_tex_coords;
 
 mat2 scale(vec2 scale_vec){
     return mat2(
@@ -126,10 +126,11 @@ void main() {
 precision mediump float;
 uniform sampler2D tex;
 uniform vec4 shade;
-varying vec2 v_tex_coords;
+in vec2 v_tex_coords;
+out vec4 color;
 
 void main() {
-    gl_FragColor = texture2D(tex, v_tex_coords) * shade;
+    color = texture2D(tex, v_tex_coords) * shade;
 }")
 
 (defstruct rect
