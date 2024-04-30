@@ -3,11 +3,14 @@
   (:use :cl :smuks-util)
   (:nicknames :sdrm)
   (:export
-   width height connectors crtc crtcs fd gbm-pointer
-   close-drm add-framebuffer free-crtc set-crtc
+   width height connectors  fd gbm-pointer
+   crtc crtcs set-original-crtc
+   close-drm
+   add-framebuffer rm-framebuffer
+   free-crtc set-crtc
+   create-bo destroy-bo
    init-drm drm-page-flip))
 (in-package :smuks-drm)
-;; (declaim (optimize (speed 0) (safety 0) (debug 3) (compilation-speed 0)))
 
 (defvar *default-card* "/dev/dri/card0")
 
@@ -49,20 +52,19 @@
 
 ;; TODO: Free connector is expecting a pointer
 ;; but receiving a full connector structure
-(defmethod close-drm ((device gbm-device) framebuffer buffer-object)
-  (print "STARTING SET")
-  (restart-case (set-original-crtc device framebuffer)
-    (continue-cleanup () :report "Continue cleanup ignoring the error"))
-
-  (print "STARTING REMOVE FB")
-  (check-err (drm::mode-remove-framebuffer (fd device) framebuffer))
-
+(defmethod close-drm ((device gbm-device))
   (check-err (drm::free-resources (resources device)))
-  (check-err (gbm:bo-destroy buffer-object))
   (check-err (gbm:device-destroy (gbm-pointer device)))
   (check-err (drm::drop-master (fd device)))
   (close (fd-stream device))
   (print "Done with cleanup"))
+
+(defvar *bo-flags* (logior gbm::BO_USE_SCANOUT gbm::BO_USE_RENDERING))
+(defun create-bo (device)
+  (gbm:bo-create (gbm-pointer device) (width device) (height device) gbm::FORMAT_XRGB8888 *bo-flags*))
+
+(defun destroy-bo (buffer-object) (check-err (gbm:bo-destroy buffer-object)))
+(defun rm-framebuffer (device framebuffer) (check-err (drm::mode-remove-framebuffer (fd device) framebuffer)))
 
 (defun add-framebuffer (fd width height depth bpp pitch handle)
   (cffi:with-foreign-objects ((buf-id :uint32 1))

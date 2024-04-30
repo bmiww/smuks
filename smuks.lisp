@@ -48,16 +48,16 @@
 
 (defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
-  (cleanup-egl)
-  (cleanup-drm))
+  (sdrm:set-original-crtc *drm-dev* *frame-buffer*)
 
-(defun cleanup-egl ()
-  (when *egl* (egl:destroy-context *egl* *egl-context*) (setf *egl* nil) (setf *egl-context* nil)))
+  (seglutil:destroy-image *egl* *egl-image*)
+  (sdrm:destroy-bo *buffer-object*)
+  (sdrm:rm-framebuffer *drm-dev* *frame-buffer*)
 
-(defun cleanup-drm ()
-  (when *drm-dev*
-    (close-drm *drm-dev* *frame-buffer* *buffer-object*)
-    (setf *drm-dev* nil) (setf *frame-buffer* nil) (setf *buffer-object* nil)))
+  (seglutil:cleanup-egl *egl* *wayland* *egl-context*)
+  (sdrm:close-drm *drm-dev*)
+
+  (setfnil *egl* *egl-context* *egl-image* *drm-dev* *frame-buffer* *buffer-object*))
 
 (defun recursively-render-frame ()
   (if *smuks-exit*
@@ -100,11 +100,9 @@
 
   (setf *wl-event-loop* (wl:display-get-event-loop *wayland*))
   (setf *wl-event-fd* (wl:event-loop-get-fd *wl-event-loop*))
-
   (init-globals)
 
   (setf (values *egl* *egl-context*) (init-egl *drm-dev* *wayland*))
-
   (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
   (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
@@ -130,9 +128,8 @@
 (defun main ()
   (restart-case
       (unwind-protect (mainer)
-	(setf *smuks-exit* nil)
 	(cleanup))
-    (📍start-over () (cleanup) (mainer))))
+    (📍start-over () (mainer))))
 
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐
 ;; ├┤ ├┬┘├─┤│││├┤

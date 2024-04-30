@@ -11,7 +11,9 @@
   (:export
    check-egl-error
    create-framebuffer
-   init-egl))
+   destroy-image
+   init-egl
+   cleanup-egl))
 (in-package :smuks-egl-util)
 
 (defvar context-attribs
@@ -21,16 +23,16 @@
    :none))
 
 ;; NOTE: Stride is pitch. Eh.
+;; TODO: Might make more sense to pass in a buffer-object rather than create it here
+;; TODO: Framebuffer also doesn't make much sense here. It has nothing to do with egl at this point
 (defun create-framebuffer (egl device)
   (let* ((width (width device))
 	 (height (height device))
-	 (buffer-object (gbm:bo-create (gbm-pointer device)
-				       width height gbm::FORMAT_XRGB8888
-				       (logior gbm::BO_USE_SCANOUT gbm::BO_USE_RENDERING)))
+	 (buffer-object (sdrm:create-bo device))
 	 (handle (gbm:bo-get-handle buffer-object))
 	 (stride (gbm:bo-get-stride buffer-object))
 	 (offset 0) (bpp 32) (depth 24)
-	 (frame-buffer (add-framebuffer (fd device) width height depth bpp stride handle))
+	 (framebuffer (add-framebuffer (fd device) width height depth bpp stride handle))
 	 ;; TODO: It's possible that the gl lib already has this extension defined. And that lib seems a bit more stable
 	 (egl-image (egl:create-image-khr egl (cffi:null-pointer) egl::LINUX_DMA_BUF_EXT (cffi:null-pointer)
 					  ;; TODO: In the rust thing this was an FD not a pointer
@@ -40,7 +42,7 @@
 					  :dma-buf-plane0-pitch-ext stride
 					  :dma-buf-plane0-offset-ext offset
 					  :none)))
-    (values frame-buffer egl-image buffer-object)))
+    (values framebuffer egl-image buffer-object)))
 
 
 
@@ -71,27 +73,47 @@
 ;; TODO: Check if you can just malloc the display and pass it to eglGetDisplay
 ;; So far from the mesa code - i don't see any of the struct fields being directly accessed
 (defun init-egl (drm-dev wl-display)
-  (egl:init-egl-wayland)
+  (egl:load-egl-extensions)
+  (check-egl-error "Binding extensions")
   (let* ((display (egl:get-display (gbm-pointer drm-dev)))
 	 ;; TODO: Possibly i did not need to find a config for the fancy gbm buffers
 	 ;; Check as you go along.
 	 (config (cffi:null-pointer)))
-    (egl:bind-wayland-display display wl-display)
     (egl:initialize display)
+    (check-egl-error "Initializing display")
+    (egl:bind-wl-display display wl-display)
+    (check-egl-error "Binding wayland")
     (egl:bind-api :opengl-es-api)
+    (check-egl-error "Binding api")
     (let* ((context (apply 'egl:create-context `(,display ,config ,(cffi:null-pointer) ,@context-attribs))))
       (check-egl-error "Initializing egl context")
       (when (cffi:null-pointer-p context) (error "Failed to create context (was null pointer)"))
+
+
+
+      (print display)
+      (print context)
+      (break)
       (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context)
+
+
+
       (when (cffi:null-pointer-p (egl:get-current-context)) (error "Context not CURRENT (was null pointer)"))
       (values display context))))
 
+(defun destroy-image (egl image) (egl:destroy-image egl image))
+
+(defun cleanup-egl (egl wl context)
+  (egl:unbind-wl-display egl wl)
+  (egl:destroy-context egl context)
+  (egl:terminate egl))
 
 ;; ┌─┐┬─┐┬─┐┌─┐┬─┐  ┌─┐┬ ┬┌─┐┌─┐┬┌─┌─┐
 ;; ├┤ ├┬┘├┬┘│ │├┬┘  │  ├─┤├┤ │  ├┴┐└─┐
 ;; └─┘┴└─┴└─└─┘┴└─  └─┘┴ ┴└─┘└─┘┴ ┴└─┘
 (defun check-egl-error (&optional (prefix "EGL Error"))
-  (let ((msg (case (egl:get-error)
+  (let* ((err (egl:get-error))
+	 (msg (case err
 	       (:success nil)
 	       (:bad-alloc "EGL_BAD_ALLOC")
 	       (:bad-config "EGL_BAD_CONFIG")
@@ -103,5 +125,6 @@
 	       (:bad-native-window "EGL_BAD_NATIVE_WINDOW")
 	       (:bad-parameter "EGL_BAD_PARAMETER")
 	       (:bad-surface "EGL_BAD_SURFACE")
-	       (t "TRAP: Unknown EGL error"))))
+	       (:not-initialized "Not initialized")
+	       (t (format nil "TRAP: Unknown EGL error: ~a" err)))))
     (when msg (error (format nil "~a: ~a" prefix msg)))))

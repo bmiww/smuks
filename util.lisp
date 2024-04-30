@@ -9,7 +9,7 @@
   (:use :cl)
   (:export dohash log! *log-output*
 	   match-kernel-errcode check-err
-	   heading
+	   heading setfnil
 	   check-gl-fb-status check-gl-error))
 (in-package :smuks-util)
 
@@ -53,6 +53,16 @@ declarations. Finally the result-form is returned after the iteration completes.
              (return ,result-form))
            (locally ,@body)
            (go ,repeat)))))
+
+
+;; ┬  ┬┌─┐┬─┐  ┌┬┐┌─┐┌─┐┬  ┌─┐
+;; └┐┌┘├─┤├┬┘   │ │ ││ ││  └─┐
+;;  └┘ ┴ ┴┴└─   ┴ └─┘└─┘┴─┘└─┘
+(defmacro setfnil (&rest args)
+  (if (null args)
+      (error "Needs at least one argument")
+      `(progn
+	 ,@(mapcar (lambda (arg) `(setf ,arg nil)) args))))
 
 
 ;; ┬  ┬┌┐┌┬ ┬─┐ ┬
