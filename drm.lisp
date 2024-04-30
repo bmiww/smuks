@@ -4,7 +4,7 @@
   (:nicknames :sdrm)
   (:export
    width height connectors  fd gbm-pointer
-   crtc crtcs set-original-crtc
+   crtc crtcs
    close-drm
    add-framebuffer rm-framebuffer
    free-crtc set-crtc
@@ -74,21 +74,6 @@
   (loop for connector in (connectors device)
 	when (eq :connected (drm::connector!-connection connector))
 	  collect connector))
-
-(defmethod set-original-crtc ((device gbm-device) framebuffer)
-  (let* ((crtc (crtc device))
-	 (connector (car (connected-connectors device)))
-	 (result (check-err (drm:set-crtc
-		  (fd device)
-		  (drm::crtc!-id crtc)
-		  framebuffer
-		  (drm::crtc!-x crtc)
-		  (drm::crtc!-y crtc)
-		  (list (drm::connector!-id connector))
-		  (drm::crtc!-mode-ptr crtc)))))
-    crtc))
-
-
 
 (defmethod set-crtc ((device gbm-device) framebuffer)
   (let* ((crtc (crtc device))
