@@ -59,6 +59,7 @@
   (drm::free-resources (resources device))
   (gbm:bo-destroy buffer-object)
   (gbm:device-destroy (gbm-pointer device))
+  (drm::drop-master (fd device))
   (close (fd-stream device)))
 
 (defun add-framebuffer (fd width height depth bpp pitch handle)
@@ -108,8 +109,10 @@
 (defun init-drm ()
   (let ((card (loop for i from 0 below 32
 		    for path = (format nil "/dev/dri/card~A" i)
-		    when (probe-file path) return path)))
-    (make-instance 'gbm-device :file (open card :direction :io :if-exists :append))))
+		    when (probe-file path) return path))
+	(fd (open card :direction :io :if-exists :append)))
+    (make-instance 'gbm-device :file fd)
+    (drm::set-master fd)))
 
 
 (defun drm-page-flip (drm-dev framebuffer)

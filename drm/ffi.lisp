@@ -121,6 +121,13 @@
 ;; ┌─┐ ┌─┐┬ ┬┌┐┌┌─┐┌─┐
 ;; │───├┤ │ │││││  └─┐
 ;; └─┘ └  └─┘┘└┘└─┘└─┘
+
+(defcfun ("drmSetMaster" set-master) :int
+  (fd :int))
+
+(defcfun ("drmDropMaster" drop-master) :int
+  (fd :int))
+
 (defcfun ("drmModeGetCrtc" mode-get-crtc) (:pointer (:struct mode-crtc))
   (fd :int)
   (crtc-id :uint32))
