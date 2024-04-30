@@ -48,14 +48,14 @@
 
 (defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
-  (sdrm:set-original-crtc *drm-dev* *frame-buffer*)
+  (when (and *drm-dev* *frame-buffer*) (sdrm:set-original-crtc *drm-dev* *frame-buffer*))
 
-  (seglutil:destroy-image *egl* *egl-image*)
-  (sdrm:destroy-bo *buffer-object*)
-  (sdrm:rm-framebuffer *drm-dev* *frame-buffer*)
+  (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
+  (when *buffer-object* (sdrm:destroy-bo *buffer-object*))
+  (when (and *drm-dev* *frame-buffer*) (sdrm:rm-framebuffer *drm-dev* *frame-buffer*))
 
-  (seglutil:cleanup-egl *egl* *wayland* *egl-context*)
-  (sdrm:close-drm *drm-dev*)
+  (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* *wayland* *egl-context*))
+  (when *drm-dev* (sdrm:close-drm *drm-dev*))
 
   (setfnil *egl* *egl-context* *egl-image* *drm-dev* *frame-buffer* *buffer-object*))
 

@@ -88,16 +88,7 @@
     (let* ((context (apply 'egl:create-context `(,display ,config ,(cffi:null-pointer) ,@context-attribs))))
       (check-egl-error "Initializing egl context")
       (when (cffi:null-pointer-p context) (error "Failed to create context (was null pointer)"))
-
-
-
-      (print display)
-      (print context)
-      (break)
       (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context)
-
-
-
       (when (cffi:null-pointer-p (egl:get-current-context)) (error "Context not CURRENT (was null pointer)"))
       (values display context))))
 
@@ -105,6 +96,7 @@
 
 (defun cleanup-egl (egl wl context)
   (egl:unbind-wl-display egl wl)
+  (egl:make-current egl (cffi:null-pointer) (cffi:null-pointer) (cffi:null-pointer))
   (egl:destroy-context egl context)
   (egl:terminate egl))
 
