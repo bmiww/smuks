@@ -64,7 +64,7 @@
     (setf *drm-dev* nil) (setf *frame-buffer* nil) (setf *buffer-object* nil)))
 
 (defun main-after-drm ()
-  (setf (values *egl* *egl-context*) (init-egl *drm-dev*))
+  (setf (values *egl* *egl-context*) (init-egl *drm-dev* *wayland*))
 
   (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
   (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))

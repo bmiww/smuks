@@ -8,7 +8,7 @@
 (defpackage :shaders.texture
   (:use :cl :sglutil)
   (:export shader update-projection update-matrix draw))
-(in-package :shaders.rectangle)
+(in-package :shaders.texture)
 
 (defclass shader ()
   ((pointer :accessor pointer)

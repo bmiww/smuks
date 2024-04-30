@@ -1,6 +1,6 @@
 
 (defpackage :shader-init
-  (:use :cl :sdrm :smuks-util)
+  (:use :cl :sdrm :smuks-util :sglutil)
   (:export create-rect-shader create-texture-shader))
 (in-package :shader-init)
 
