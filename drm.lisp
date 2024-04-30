@@ -56,8 +56,7 @@
   (check-err (drm::free-resources (resources device)))
   (check-err (gbm:device-destroy (gbm-pointer device)))
   (check-err (drm::drop-master (fd device)))
-  (close (fd-stream device))
-  (print "Done with cleanup"))
+  (close (fd-stream device)))
 
 (defvar *bo-flags* (logior gbm::BO_USE_SCANOUT gbm::BO_USE_RENDERING))
 (defun create-bo (device)
@@ -79,16 +78,14 @@
 (defmethod set-original-crtc ((device gbm-device) framebuffer)
   (let* ((crtc (crtc device))
 	 (connector (car (connected-connectors device)))
-	 (result (drm:set-crtc
+	 (result (check-err (drm:set-crtc
 		  (fd device)
 		  (drm::crtc!-id crtc)
 		  framebuffer
 		  (drm::crtc!-x crtc)
 		  (drm::crtc!-y crtc)
 		  (list (drm::connector!-id connector))
-		  (drm::crtc!-mode-ptr crtc))))
-
-    (unless (eq 0 result) (error (format nil "Failed to set original CRTC. ERR: ~a~%" result)))
+		  (drm::crtc!-mode-ptr crtc)))))
     crtc))
 
 

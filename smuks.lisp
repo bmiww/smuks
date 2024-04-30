@@ -129,7 +129,7 @@
   (restart-case
       (unwind-protect (mainer)
 	(cleanup))
-    (📍start-over () (mainer))))
+    (📍start-over () (main))))
 
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐
 ;; ├┤ ├┬┘├─┤│││├┤
@@ -170,7 +170,7 @@
 					    :x 30.0 :y 500.0 :w 200.0 :h 50.0
 					    :color '(0.2 0.9 0.2 1.0))))
 
-  (render-clients)
+  ;; (render-clients)
   (gl:flush)
   (gl:finish)
   (wl:display-flush-clients *wayland*))
