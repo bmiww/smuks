@@ -12,8 +12,6 @@
 (defvar *socket-file* "/tmp/smuks.socket")
 (defvar *socket* nil)
 (defvar *wayland* nil)
-(defvar *wl-event-fd* nil)
-(defvar *wl-event-loop* nil)
 (defvar *wl-poller* nil)
 
 (defvar *smuks-exit* nil)
@@ -93,11 +91,7 @@
   (setf *drm-dev* (init-drm))
 
   (wl:init-interface-definitions)
-  (setf *wayland* (wl:display-create))
-  (wl:display-add-socket-fd *wayland* (unix-sockets::fd *socket*))
-
-  (setf *wl-event-loop* (wl:display-get-event-loop *wayland*))
-  (setf *wl-event-fd* (wl:event-loop-get-fd *wl-event-loop*))
+  (setf *wayland* (make-instance 'wl:display :fd (unix-sockets::fd *socket*)))
   (init-globals)
 
   (setf (values *egl* *egl-context*) (init-egl *drm-dev* *wayland*))
@@ -147,7 +141,7 @@
 
 (defun do-nothing ()
   (livesupport:update-repl-link)
-  (wl:display-flush-clients *wayland*))
+  (wl:flush-clients *wayland*))
 
 (defun render-frame ()
   (livesupport:update-repl-link)
@@ -165,17 +159,17 @@
   (render-clients)
   (gl:flush)
   (gl:finish)
-  (wl:display-flush-clients *wayland*))
+  (wl:flush-clients *wayland*))
 
 ;; ┬  ┬┌─┐┌┬┐┌─┐┌┐┌┌─┐┬─┐┌─┐
 ;; │  │└─┐ │ ├┤ │││├┤ ├┬┘└─┐
 ;; ┴─┘┴└─┘ ┴ └─┘┘└┘└─┘┴└─└─┘
-(defun wayland-listener () (cl-async:poll *wl-event-fd* 'wayland-callback :poll-for '(:readable)))
+(defun wayland-listener () (cl-async:poll (wl:event-loop-fd *wayland*) 'wayland-callback :poll-for '(:readable)))
 (defun client-listener () (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t))
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
 
 (defun handle-wayland-event ()
-  (let ((result (wl:event-loop-dispatch *wl-event-loop* 0)))
+  (let ((result (wl:dispatch-event-loop *wayland*)))
     (when (< result 0)
       (error "Error in wayland event loop dispatch: ~A" result))))
 
