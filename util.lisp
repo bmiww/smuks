@@ -7,10 +7,12 @@
 ;;  ╚═════╝    ╚═╝   ╚═╝╚══════╝
 (defpackage :smuks-util
   (:use :cl)
+  (:nicknames :util)
   (:export dohash log! *log-output*
 	   match-kernel-errcode check-err
 	   heading setfnil
-	   check-gl-fb-status check-gl-error))
+	   check-gl-fb-status check-gl-error
+	   flatten))
 (in-package :smuks-util)
 
 (defun heading ()
@@ -90,6 +92,20 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 	 (let ((err (smuks-util:match-kernel-errcode (abs result))))
 	   (when err (error err))))
      result))
+
+
+;; ┌─┐┬  ┌─┐┌┬┐┌┬┐┌─┐┌┐┌
+;; ├┤ │  ├─┤ │  │ ├┤ │││
+;; └  ┴─┘┴ ┴ ┴  ┴ └─┘┘└┘
+;; NOTE: Taken from https://stackoverflow.com/a/25866646
+(defun flatten (lst)
+  (labels ((rflatten (lst1 acc)
+             (dolist (el lst1)
+               (if (listp el)
+                   (setf acc (rflatten el acc))
+                   (push el acc)))
+             acc))
+    (reverse (rflatten lst nil))))
 
 ;; ┌─┐┬
 ;; │ ┬│

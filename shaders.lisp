@@ -58,14 +58,6 @@
     (gl:buffer-data :array-buffer :static-draw arr)))
 
 
-(defun flatten (lst &aux (result '()))
-  (labels ((rflatten (lst1)
-             (dolist (el lst1 result)
-               (if (listp el)
-                 (rflatten el)
-                 (push el result)))))
-      (nreverse (rflatten lst))))
-
 ;; ┌─┐┌─┐┌┐┌┌─┐┌┬┐┌─┐
 ;; │  │ ││││└─┐ │ └─┐
 ;; └─┘└─┘┘└┘└─┘ ┴ └─┘

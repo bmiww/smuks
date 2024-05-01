@@ -75,7 +75,7 @@
 	 runtime-vbo
 	 (concatenate
 	  'simple-vector
-	  (shaders::flatten (loop for rect in position collect (space-tuple rect)))))
+	  (util:flatten (loop for rect in position collect (space-tuple rect)))))
 
 	(gl:bind-buffer :array-buffer runtime-vbo)
 	(gl:enable-vertex-attrib-array attr-position)
@@ -125,12 +125,11 @@ void main() {
 
 precision mediump float;
 uniform sampler2D tex;
-uniform vec4 shade;
 in vec2 v_tex_coords;
 out vec4 color;
 
 void main() {
-    color = texture2D(tex, v_tex_coords) * shade;
+    color = texture2D(tex, v_tex_coords);
 }")
 
 (defstruct rect

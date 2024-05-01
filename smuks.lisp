@@ -133,21 +133,15 @@
 ;; ├┤ ├┬┘├─┤│││├┤
 ;; └  ┴└─┴ ┴┴ ┴└─┘
 
-;; egl.shaders.texture_abgr.as_mut().expect("Texture program not found")
-;; .draw(
-      ;; texture_id, render_props.surface_position,
-      ;; (width, height),
-      ;; render_props.transform)
-
 (defun render-surface (surface)
   (let ((texture (texture surface)))
     (shaders.texture:draw *texture-shader* texture
-			  ;; (surface-dimensions surface))))
 			  '(0 0 840 600))))
 
 (defun render-clients ()
   (let* ((clients (alexandria:hash-table-values wl:*client-tracker*))
-	 (surfaces (mapcar (lambda (object) (typep object 'surface)) (wl:objects clients))))
+	 (surfaces (mapcar (lambda (object) (typep object 'surface)) (util:flatten (mapcar 'wl:objects clients))))
+	 (surfaces (remove-if-not 'identity surfaces)))
     (mapcar (lambda (surface) (render-surface surface)) surfaces)))
 
 
@@ -161,14 +155,14 @@
   (gl:clear :color-buffer-bit)
 
   (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-					    :x 10.0 :y 300.0 :w 100.0 :h 40.0
+					    :x 10.0 :y 350.0 :w 100.0 :h 40.0
 					    :color '(0.2 0.2 0.2 1.0))))
 
   (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
 					    :x 30.0 :y 500.0 :w 200.0 :h 50.0
 					    :color '(0.2 0.9 0.2 1.0))))
 
-  ;; (render-clients)
+  (render-clients)
   (gl:flush)
   (gl:finish)
   (wl:display-flush-clients *wayland*))

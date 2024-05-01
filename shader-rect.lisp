@@ -55,8 +55,8 @@
      runtime-vbo
      (concatenate
       'simple-vector
-      (shaders::flatten (loop for rect in rects collect (space-tuple rect)))
-      (shaders::flatten (loop for rect in rects collect (rect-color rect)))))
+      (util:flatten (loop for rect in rects collect (space-tuple rect)))
+      (util:flatten (loop for rect in rects collect (rect-color rect)))))
 
     (gl:bind-buffer :array-buffer runtime-vbo)
     (gl:enable-vertex-attrib-array attr-position)
