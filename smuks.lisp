@@ -139,12 +139,12 @@
 (defun render-surface (surface)
   (let ((texture (texture surface)))
     (shaders.texture:draw *texture-shader* texture
-			  '(0 0 840 600))))
+			  '(0.0 0.0 840.0 600.0))))
 
 (defun render-clients ()
   (let* ((clients (wl:all-clients *wayland*))
 	 (compositors (remove-if-not 'identity (mapcar 'compositor clients)))
-	 (surfaces (util:flatten (mapcar 'all-surfaces compositors))))
+	 (surfaces (util:flatten (mapcar 'all-ready-surfaces compositors))))
     (mapcar (lambda (surface) (render-surface surface)) surfaces)))
 
 

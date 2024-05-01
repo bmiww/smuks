@@ -4,6 +4,11 @@
   ((surfaces :initform (make-hash-table :test 'equal) :accessor surfaces)))
 
 (defmethod all-surfaces ((compositor compositor)) (alexandria:hash-table-values (surfaces compositor)))
+(defmethod all-ready-surfaces ((compositor compositor))
+  (let* ((all (all-surfaces compositor))
+	 (ready (remove-if-not #'texture all)))
+    ready))
+
 
 (defmethod wl-compositor:create-surface ((compositor compositor) id)
   (let ((surface (wl:mk-if 'surface compositor id)))
