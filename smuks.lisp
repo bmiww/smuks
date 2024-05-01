@@ -50,7 +50,7 @@
   (when *buffer-object* (sdrm:destroy-bo *buffer-object*))
   (when (and *drm-dev* *frame-buffer*) (sdrm:rm-framebuffer *drm-dev* *frame-buffer*))
 
-  (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* *wayland* *egl-context*))
+  (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
   (when *drm-dev* (sdrm:close-drm *drm-dev*))
 
   (setfnil *egl* *egl-context* *egl-image* *drm-dev* *frame-buffer* *buffer-object* *smuks-exit* *active-crtc*))
@@ -94,7 +94,7 @@
   (setf *wayland* (make-instance 'wl:display :fd (unix-sockets::fd *socket*)))
   (init-globals)
 
-  (setf (values *egl* *egl-context*) (init-egl *drm-dev* *wayland*))
+  (setf (values *egl* *egl-context*) (init-egl *drm-dev* (wl:display-ptr *wayland*)))
   (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
   (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
