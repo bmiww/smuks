@@ -9,14 +9,13 @@
 ;; https://github.com/michaelforney/swc/blob/master/libswc/swc.c
 (in-package :smuks)
 
-(defvar *socket-file* "/tmp/smuks.socket")
+(defconstant +socket-file+ "/tmp/smuks.socket")
+
 (defvar *socket* nil)
 (defvar *wayland* nil)
-(defvar *wl-poller* nil)
 
 (defvar *smuks-exit* nil)
 (defvar *drm-dev* nil)
-(defvar *drm-poller* nil)
 (defvar *main-vbo* nil)
 
 (defvar *egl* nil)
@@ -27,11 +26,14 @@
 (defvar *frame-buffer* nil)
 (defvar *gl-frame-buffer* nil)
 (defvar *texture* nil)
-(defvar *rect-shader* nil)
-(defvar *texture-shader* nil)
 (defvar *active-crtc* nil)
 
+(defvar *rect-shader* nil)
+(defvar *texture-shader* nil)
+
 (defvar *client-poller* nil)
+(defvar *wl-poller* nil)
+(defvar *drm-poller* nil)
 
 (defun kill-all-threads ()
   (mapcar (lambda (thread) (thread:destroy-thread thread)) (thread:all-threads)))
@@ -53,7 +55,14 @@
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
   (when *drm-dev* (sdrm:close-drm *drm-dev*))
 
-  (setfnil *egl* *egl-context* *egl-image* *drm-dev* *frame-buffer* *buffer-object* *smuks-exit* *active-crtc*))
+  (when *wayland* (wl:destroy *wayland*))
+
+  (when *socket*
+    (unix-sockets:close-unix-socket *socket*)
+    (delete-file +socket-file+))
+
+  (setfnil *egl* *egl-context* *egl-image* *drm-dev* *frame-buffer* *buffer-object* *smuks-exit* *active-crtc*
+	   *wayland* *socket*))
 
 (defun recursively-render-frame ()
   (if *smuks-exit*
@@ -102,7 +111,7 @@
 
   (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
 
-  (setf (uiop/os:getenv "WAYLAND_DISPLAY") *socket-file*)
+  (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
 
   (cl-async:start-event-loop
    (lambda ()
