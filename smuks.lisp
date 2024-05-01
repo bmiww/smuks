@@ -9,7 +9,7 @@
 ;; https://github.com/michaelforney/swc/blob/master/libswc/swc.c
 (in-package :smuks)
 
-(defconstant +socket-file+ "/tmp/smuks.socket")
+(defvar +socket-file+ "/tmp/smuks.socket")
 
 (defvar *socket* nil)
 (defvar *wayland* nil)
@@ -143,8 +143,8 @@
 
 (defun render-clients ()
   (let* ((clients (wl:all-clients *wayland*))
-	 (surfaces (mapcar (lambda (object) (typep object 'surface)) (util:flatten (mapcar 'wl:objects clients))))
-	 (surfaces (remove-if-not 'identity surfaces)))
+	 (compositors (remove-if-not 'identity (mapcar 'compositor clients)))
+	 (surfaces (util:flatten (mapcar 'all-surfaces compositors))))
     (mapcar (lambda (surface) (render-surface surface)) surfaces)))
 
 
@@ -170,6 +170,20 @@
   (gl:finish)
   (wl:flush-clients *wayland*))
 
+
+;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
+;; │  │  │├┤ │││ │
+;; └─┘┴─┘┴└─┘┘└┘ ┴
+(defclass client (wl:client)
+  ((compositor :initform nil)))
+
+(defmethod compositor ((client client)) (slot-value client 'compositor))
+(defmethod (setf compositor) (compositor (client client))
+  (setf (slot-value client 'compositor) compositor))
+
+(defmethod (setf wl::iface) :after (iface (client client) interface)
+  (when (typep iface 'compositor) (setf (compositor client) iface)))
+
 ;; ┬  ┬┌─┐┌┬┐┌─┐┌┐┌┌─┐┬─┐┌─┐
 ;; │  │└─┐ │ ├┤ │││├┤ ├┬┘└─┐
 ;; ┴─┘┴└─┘ ┴ └─┘┘└┘└─┘┴└─└─┘
@@ -194,7 +208,7 @@
 (defun client-callback (events)
   (unless (member :readable events) (error "Client callback called without readable event"))
   (let ((client (unix-sockets:accept-unix-socket *socket*)))
-    (wl:create-client *wayland* (unix-sockets::fd client))))
+    (wl:create-client *wayland* (unix-sockets::fd client) :class 'client)))
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
