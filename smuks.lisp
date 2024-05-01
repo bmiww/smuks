@@ -139,7 +139,8 @@
 (defun render-surface (surface)
   (let ((texture (texture surface)))
     (shaders.texture:draw *texture-shader* texture
-			  '(0.0 0.0 840.0 600.0))))
+			  '(0.0 0.0 840.0 600.0))
+    (flush-frame-callbacks surface)))
 
 (defun render-clients ()
   (let* ((clients (wl:all-clients *wayland*))
@@ -215,14 +216,14 @@
 ;; └─┘└─┘└─┘┴ ┴└─┘ ┴
 (defun init-socket ()
   (restart-case
-      (if (probe-file *socket-file*)
+      (if (probe-file +socket-file+)
 	  (error "Socket file already exists")
-	  (unix-sockets:make-unix-socket *socket-file*))
+	  (unix-sockets:make-unix-socket +socket-file+))
     (create-new-socket ()
       :report "Create new socket"
       (log! "Creating new socket~%")
-      (delete-file *socket-file*)
-      (unix-sockets:make-unix-socket *socket-file*))))
+      (delete-file +socket-file+)
+      (unix-sockets:make-unix-socket +socket-file+))))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││

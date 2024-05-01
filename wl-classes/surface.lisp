@@ -69,13 +69,22 @@
   (setf (pending-buffer surface) buffer))
 
 (defmethod wl-surface:frame ((surface surface) callback)
-  (log! "Frame requested")
-  (print callback)
-  (setf (frame-callbacks surface) (cons callback (frame-callbacks surface))))
+  (let ((cb-if (wl:mk-if 'callback surface callback)))
+    (setf (frame-callbacks surface) (cons cb-if (frame-callbacks surface)))))
+
+(defmethod flush-frame-callbacks ((surface surface))
+  (dolist (callback (frame-callbacks surface)) (done callback))
+  (setf (frame-callbacks surface) nil))
 
 (defmethod wl-surface:damage ((surface surface) x y width height)
   (setf (pending-damage surface) (make-damage :x x :y y :width width :height height)))
 
+
+;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─
+;; │  ├─┤│  │  ├┴┐├─┤│  ├┴┐
+;; └─┘┴ ┴┴─┘┴─┘└─┘┴ ┴└─┘┴ ┴
+(defclass callback (wl-callback:dispatch) ())
+(defmethod done ((callback callback)) (wl-callback:send-done callback (wl:id callback)))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
