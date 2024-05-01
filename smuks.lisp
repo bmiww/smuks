@@ -133,7 +133,7 @@
 			  '(0 0 840 600))))
 
 (defun render-clients ()
-  (let* ((clients (alexandria:hash-table-values wl:*client-tracker*))
+  (let* ((clients (wl:all-clients *wayland*))
 	 (surfaces (mapcar (lambda (object) (typep object 'surface)) (util:flatten (mapcar 'wl:objects clients))))
 	 (surfaces (remove-if-not 'identity surfaces)))
     (mapcar (lambda (surface) (render-surface surface)) surfaces)))
