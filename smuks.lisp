@@ -93,7 +93,7 @@
   (setf *log-output* *standard-output*)
   (heading)
 
-  (setf (uiop/os:getenv "WAYLAND_DEBUG") "1")
+  (setf (uiop/os:getenv "WAYLAND_DEBUG") "")
   (setf *socket* (init-socket))
 
   ;; TODO: Can sometimes fail on retrying
