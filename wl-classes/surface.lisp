@@ -12,6 +12,8 @@
    (configure-serial :initform 0 :accessor configure-serial)
    (pending-buffer :initform nil :accessor pending-buffer)
    (texture :initform nil :accessor texture)
+   (width :initform -1 :accessor width)
+   (height :initform -1 :accessor height)
    (pending-damage :initform nil :accessor pending-damage)
    (damage :initform nil :accessor damage)
    (pending-frame-callbacks :initform nil :accessor pending-frame-callbacks)
@@ -29,10 +31,20 @@
 
 (defmethod commit-toplevel ((surface surface))
   (when (pending-buffer surface)
-    (setf (texture surface)
-	  (gen-texture (pending-buffer surface)))
-    (wl-buffer:send-release (pending-buffer surface))
-    (setf (pending-buffer surface) nil))
+    (let ((new-dimensions? nil))
+      (unless (eq (width (pending-buffer surface)) (width surface))
+	(setf (width surface) (width (pending-buffer surface)))
+	(setf new-dimensions? t))
+
+      (unless (eq (height (pending-buffer surface)) (height surface))
+	(setf (height surface) (height (pending-buffer surface)))
+	(setf new-dimensions? t))
+
+      (setf (texture surface)
+	    (gen-texture (pending-buffer surface) (unless new-dimensions? (texture surface))))
+
+      (wl-buffer:send-release (pending-buffer surface))
+      (setf (pending-buffer surface) nil)))
   (when (pending-frame-callbacks surface)
     (setf (frame-callbacks surface) (pending-frame-callbacks surface))
     (setf (pending-frame-callbacks surface) nil)))
@@ -43,8 +55,8 @@
 (defvar *pixel-size* 4)
 ;; TODO: Possibly move this closer to the GL code
 ;; TODO: Maybe i can use the mmap ptr directly for pumping into the GL texture???
-(defun gen-texture (pending-buffer)
-  (let ((texture (gl:gen-texture)))
+(defmethod gen-texture (pending-buffer &optional texture)
+  (let ((texture (if texture texture (gl:gen-texture))))
     (gl:bind-texture :texture-2d texture)
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
     (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
