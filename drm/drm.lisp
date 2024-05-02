@@ -149,28 +149,24 @@
 
 
 (defvar *vblank-callback* nil)
-(cl-async::define-c-callback vblank :void ((fd :int) (sequence :uint) (tv-sec :uint) (tv-usec :uint) (data :uint64))
-    (if *vblank-callback*
-	(funcall *vblank-callback* fd sequence tv-sec tv-usec data))
-  (format t "Vblank arguments: ~a ~a ~a ~a~%" fd sequence tv-sec tv-usec)
-  (print "No vblank callback set"))
+(cl-async::define-c-callback vblank :void
+    ((fd :int) (sequence :uint) (tv-sec :uint) (tv-usec :uint) (data :pointer))
+  (when *vblank-callback* (funcall *vblank-callback* fd sequence tv-sec tv-usec data))
+  (format t "Vblank arguments: ~a ~a ~a ~a~%" fd sequence tv-sec tv-usec))
 
 
 (defvar *page-flip-callback* nil)
-(cl-async::define-c-callback page-flip :void ((fd :int) (sequence :uint) (tv-sec :uint) (tv-usec :uint) (data :uint64))
-    (if *page-flip-callback*
-	(funcall *page-flip-callback* fd sequence tv-sec tv-usec data))
-  (format t "Flip arguments: ~a ~a ~a ~a~%" fd sequence tv-sec tv-usec)
-  (print "No page flip callback set"))
+(cl-async::define-c-callback page-flip :void
+    ((fd :int) (sequence :uint) (tv-sec :uint) (tv-usec :uint) (data :pointer))
+  (when *page-flip-callback* (funcall *page-flip-callback* fd sequence tv-sec tv-usec data)))
 
 (defvar *event-context* nil)
 (defun handle-event (fd &key vblank page-flip)
   (unless *event-context*
-    (with-foreign-object (event-context '(:struct event-context) 1)
-      (setf (foreign-slot-value event-context '(:struct event-context) 'version) +drm-event-context+)
-      (setf (foreign-slot-value event-context '(:struct event-context) 'vblank-handler) (callback vblank))
-      (setf (foreign-slot-value event-context '(:struct event-context) 'page-flip-handler) (callback page-flip))
-      (setf *event-context* event-context)))
+    (setf *event-context* (foreign-alloc '(:struct event-context)))
+    (setf (foreign-slot-value *event-context* '(:struct event-context) 'version) +drm-event-context+)
+    (setf (foreign-slot-value *event-context* '(:struct event-context) 'vblank_handler) (callback vblank))
+    (setf (foreign-slot-value *event-context* '(:struct event-context) 'page_flip_handler) (callback page-flip)))
 
   (when vblank (setf *vblank-callback* vblank))
   (when page-flip (setf *page-flip-callback* page-flip))

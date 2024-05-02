@@ -30,7 +30,7 @@
   (let ((toplevel (wl:mk-if 'toplevel xdg id)))
     (setf (toplevel xdg) toplevel)
     ;; TODO: One for maximized - get the enum stuff in order
-    (xdg-toplevel:send-configure toplevel 840 600 '(1))
+    (xdg-toplevel:send-configure toplevel 200 200'(1))
     (xdg-surface:send-configure xdg (incf (configure-serial (wl-surface xdg))))))
 
 ;; NOTE: For now leaving empty - but could be used in some way to finalize

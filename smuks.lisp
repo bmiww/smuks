@@ -79,6 +79,7 @@
 
 (defun mainer ()
   (setf *log-output* *standard-output*)
+  (setf *frame-ready* t)
   (heading)
 
   (setf (uiop/os:getenv "WAYLAND_DEBUG") "")
@@ -123,11 +124,10 @@
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐
 ;; ├┤ ├┬┘├─┤│││├┤
 ;; └  ┴└─┴ ┴┴ ┴└─┘
-
 (defun render-surface (surface)
   (let ((texture (texture surface)))
     (shaders.texture:draw *texture-shader* texture
-			  '(0.0 0.0 840.0 600.0))
+			  '(0.0 0.0 200.0 200.0))
     (flush-frame-callbacks surface)))
 
 (defun render-clients ()
@@ -136,23 +136,28 @@
 	 (surfaces (util:flatten (mapcar 'all-ready-surfaces compositors))))
     (mapcar (lambda (surface) (render-surface surface)) surfaces)))
 
+(defvar *frame-ready* t)
 (defun render-frame ()
   (livesupport:update-repl-link)
-  (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
-  (gl:clear :color-buffer-bit)
+  (when *frame-ready*
+    (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
+    (gl:clear :color-buffer-bit)
 
-  (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-					    :x 10.0 :y 800.0 :w 100.0 :h 40.0
-					    :color '(0.2 0.2 0.2 1.0))))
+    (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
+					      :x 10.0 :y 800.0 :w 100.0 :h 40.0
+					      :color '(0.2 0.2 0.2 1.0))))
 
-  (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-					    :x 30.0 :y 700.0 :w 200.0 :h 50.0
-					    :color '(0.2 0.9 0.2 1.0))))
+    (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
+					      :x 30.0 :y 700.0 :w 200.0 :h 50.0
+					      :color '(0.2 0.9 0.2 1.0))))
 
-  (render-clients)
-  (gl:flush)
-  (gl:finish)
-  (wl:flush-clients *wayland*))
+    (render-clients)
+    (gl:flush)
+    (gl:finish)
+    (wl:flush-clients *wayland*)
+
+    (drm-page-flip *drm-dev* *frame-buffer*)
+    (setf *frame-ready* nil)))
 
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
@@ -180,14 +185,14 @@
     (when (< result 0)
       (error "Error in wayland event loop dispatch: ~A" result))))
 
-(defun wayland-callback (events) (when (member :readable events) (handle-wayland-event)))
+(defun wayland-callback (events)
+  (when (member :readable events) (handle-wayland-event)))
 
+(defun set-frame-ready (a b c d e) (setf *frame-ready* t))
 
 (defun drm-callback (events)
   (when (member :readable events)
-    (drm:handle-event (fd *drm-dev*) :page-flip 'page-flip)))
-
-(defun page-flip () (drm-page-flip *drm-dev* *frame-buffer*))
+    (drm:handle-event (fd *drm-dev*) :page-flip 'set-frame-ready)))
 
 (defun client-callback (events)
   (unless (member :readable events) (error "Client callback called without readable event"))

@@ -19,7 +19,6 @@
    (pending-frame-callbacks :initform nil :accessor pending-frame-callbacks)
    (frame-callbacks :initform nil :accessor frame-callbacks)))
 
-
 ;; ┌─┐┌─┐┌┬┐┌┬┐┬┌┬┐
 ;; │  │ ││││││││ │
 ;; └─┘└─┘┴ ┴┴ ┴┴ ┴
@@ -55,7 +54,7 @@
 (defvar *pixel-size* 4)
 ;; TODO: Possibly move this closer to the GL code
 ;; TODO: Maybe i can use the mmap ptr directly for pumping into the GL texture???
-(defmethod gen-texture (pending-buffer &optional texture)
+(defun gen-texture (pending-buffer &optional texture)
   (let ((texture (if texture texture (gl:gen-texture))))
     (gl:bind-texture :texture-2d texture)
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)

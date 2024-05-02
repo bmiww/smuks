@@ -106,5 +106,5 @@
 					 framebuffer
 					 :page-flip-event
 					 (cffi:null-pointer))))
-	 (error-msg (match-kernel-errcode  result)))
+	 (error-msg (match-kernel-errcode result)))
     (when error-msg (error (format nil "Page flip:: ~a:~a~%" result error-msg)))))
