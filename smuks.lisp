@@ -35,17 +35,6 @@
 (defvar *wl-poller* nil)
 (defvar *drm-poller* nil)
 
-(defun kill-all-threads ()
-  (mapcar (lambda (thread) (thread:destroy-thread thread)) (thread:all-threads)))
-
-(defvar *test-program* "weston-terminal")
-;; (defvar *test-program* "weston-flower")
-;; (defvar *test-program* "kitty")
-
-;; NOTE: Some very simple WL client you found here
-;; https://github.com/emersion/hello-wayland/blob/master/main.c
-;; (defvar *test-program* "hello-wayland")
-
 (defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
   (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
@@ -69,7 +58,6 @@
       (cl-async:exit-event-loop)
       (progn
 	(render-frame)
-	;; (do-nothing)
 	(cl-async:delay 'recursively-render-frame :time 0.016))))
 
 (defun init-shaders ()
@@ -147,11 +135,6 @@
 	 (compositors (remove-if-not 'identity (mapcar 'compositor clients)))
 	 (surfaces (util:flatten (mapcar 'all-ready-surfaces compositors))))
     (mapcar (lambda (surface) (render-surface surface)) surfaces)))
-
-
-(defun do-nothing ()
-  (livesupport:update-repl-link)
-  (wl:flush-clients *wayland*))
 
 (defun render-frame ()
   (livesupport:update-repl-link)
