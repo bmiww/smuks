@@ -14,7 +14,8 @@
    prep-gl-implementation
    create-gl-framebuffer
    make-projection-matrix
-   make-position-matrix))
+   make-position-matrix
+   matrix->array))
 (in-package :smuks-gl-util)
 
 ;; ┌─┐┬    ┌─┐┬─┐┌─┐┌─┐
@@ -62,6 +63,14 @@
 ;; ┴ ┴┴ ┴ ┴ ┴└─┴└─┘└─┘└─┘
 (define-modify-macro multf (&optional (number 1)) *)
 
+;; TODO: I have no idea what i was doing with the clem matrixes
+;; To transform them. This is inefficient. I should instead directly turn it into an array
+;; Or find the inner representation
+;; OR just use a decent matrix lib
+(defun matrix->array (clem-matrix)
+  (let ((list (clem::matrix->list clem-matrix)))
+    (make-array (list (length list)) :initial-contents list)))
+
 (defun make-projection-matrix (width height)
   (let* ((projection (clem:identity-matrix 3))
 	 (x (/ 2.0 width))
@@ -75,15 +84,14 @@
 	  (coerce (* -1.0 (copysign (+ (multf (clem:mref projection 0 1) y)
 				       (multf (clem:mref projection 1 1) y)))) 'double-float))
 
-    (let ((projection (clem::matrix->list projection)))
-      (make-array (list (length projection)) :initial-contents projection))))
+    (matrix->array projection)))
 
 (defun make-position-matrix (x y)
-  (let* ((position (clem:identity-matrix 3)))
+  (let* ((ident (clem:identity-matrix 3))
+	 (position (clem:identity-matrix 3)))
     ;; TODO: Check if column major
     (setf (clem:mref position 0 2) x)
     (setf (clem:mref position 1 2) y)
-    (let ((position (clem::matrix->list position)))
-      (make-array (list (length position)) :initial-contents position))))
+    (matrix->array (clem:m* ident position))))
 
 (defun copysign (val) (if (>= val 0) 1 -1))

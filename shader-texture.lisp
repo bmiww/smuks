@@ -18,6 +18,7 @@
    (uni-projection :accessor uni-projection)
    (uni-matrix :accessor uni-matrix)
    (uni-texture :accessor uni-texture)
+   (uni-sampler :accessor uni-sampler)
 
    (instanced-vbo :accessor instanced-vbo)
    (runtime-vbo :accessor runtime-vbo)
@@ -33,12 +34,14 @@
 
 (defmethod initialize-instance :before ((program shader) &key projection)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position
-	       uni-matrix uni-texture) program
+	       uni-matrix uni-texture uni-sampler) program
     (setf pointer (shaders:create-shader vertex-shader-texture fragment-shader-abgr))
+
     (setf instanced-vbo (gl:gen-buffer))
     (setf runtime-vbo (gl:gen-buffer))
     (setf vao (gl:gen-vertex-array))
 
+    (setf uni-sampler (gl:get-uniform-location pointer "sampler"))
     (setf uni-projection (gl:get-uniform-location pointer "projection"))
     (setf uni-matrix (gl:get-uniform-location pointer "matrix"))
     (setf uni-texture (gl:get-uniform-location pointer "tex_matrix"))
@@ -46,6 +49,8 @@
     (setf attr-vert (gl:get-attrib-location pointer "vert"))
     (setf attr-position (gl:get-attrib-location pointer "vert_position"))
 
+    (gl:use-program pointer)
+    (gl:uniformi uni-sampler 0)
     (shaders:array-buffer-data instanced-vbo shaders:*instanced-vert*)
 
     (when projection (update-projection program projection))))
@@ -59,31 +64,32 @@
 ;; TODO: TRANSFORM???
 (defmethod draw ((program shader) texture position)
   (destructuring-bind (x y width height) position
-    (let ((pos-matrix (make-position-matrix (coerce x 'double-float) (coerce y 'double-float))))
+    (let ((pos-matrix (make-position-matrix (coerce x 'double-float) (coerce y 'double-float)))
+	  (tex-matrix (texture-matrix width height)))
       (with-slots (vao pointer instanced-vbo runtime-vbo attr-vert attr-position
-		   uni-matrix) program
+		   uni-matrix uni-texture) program
 	(gl:use-program pointer)
 	(gl:bind-vertex-array vao)
 
-	(gl:bind-buffer :array-buffer instanced-vbo)
 	(gl:active-texture :texture0)
 	(gl:bind-texture :texture-2d texture)
 
 	(gl:tex-parameter :texture-2d :texture-min-filter :linear)
 	(gl:tex-parameter :texture-2d :texture-mag-filter :linear)
 
+	(gl:bind-buffer :array-buffer instanced-vbo)
 	(gl:enable-vertex-attrib-array attr-vert)
 	(gl:vertex-attrib-pointer attr-vert 2 :float nil (* 2 4) (cffi:null-pointer))
 
 	(gl:uniform-matrix-3fv uni-matrix pos-matrix nil)
+	(gl:uniform-matrix-3fv uni-texture tex-matrix nil)
 
+	(gl:bind-buffer :array-buffer runtime-vbo)
 	(shaders:array-buffer-data
 	 runtime-vbo
 	 (concatenate
 	  'simple-vector
-	  (util:flatten (loop for rect in `(,(make-rect :x x :y y :w width :h height)) collect (space-tuple rect)))))
-
-	(gl:bind-buffer :array-buffer runtime-vbo)
+	  (util:flatten (loop for rect in `(,(make-rect :x 0.0 :y 0.0 :w width :h height)) collect (space-tuple rect)))))
 	(gl:enable-vertex-attrib-array attr-position)
 	(gl:vertex-attrib-pointer attr-position 4 :float nil (* 4 4) (cffi:null-pointer))
 
@@ -127,13 +133,25 @@ void main() {
 #version 310 es
 
 precision mediump float;
-uniform sampler2D tex;
+uniform sampler2D sampler;
 in vec2 v_tex_coords;
 out vec4 color;
 
 void main() {
-    color = texture2D(tex, v_tex_coords);
+    color = texture2D(sampler, v_tex_coords);
 }")
+
+
+(defun from-nonuniform-scale (x y)
+  (let ((matrix (clem:identity-matrix 3)))
+    (setf (clem:mref matrix 0 0) x)
+    (setf (clem:mref matrix 1 1) y)
+    matrix))
+
+(defun texture-matrix (width height)
+  (matrix->array
+   (clem:m* (clem:identity-matrix 3)
+	    (from-nonuniform-scale (coerce (/ 1.0 width) 'double-float) (coerce (/ 1.0 height) 'double-float)))))
 
 (defstruct rect
   x y
