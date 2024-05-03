@@ -35,6 +35,8 @@
 (defvar *wl-poller* nil)
 (defvar *drm-poller* nil)
 
+(defvar *test-app* nil)
+
 (defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
   (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
@@ -111,7 +113,7 @@
      (log! "Starting wayland event loop listener. Waiting for events...~%")
      (setf *wl-poller* (wayland-listener))
 
-     (test-app "weston-simple-shm")
+     (setf *test-app* (test-app "weston-simple-shm"))
 
      (recursively-render-frame))))
 
@@ -236,14 +238,16 @@
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
+(defun stop-app (process) (uiop:terminate-process process))
 (defun test-app (app-name)
-  (bt:make-thread
-   (lambda ()
-     (log! "🟢 ~a: Starting an app~%" app-name)
-     (let ((process (uiop:launch-program `(,app-name) :output :stream :error-output *standard-output*)))
+  (log! "🟢 ~a: Starting an app~%" app-name)
+  (let ((process (uiop:launch-program `(,app-name) :output :stream :error-output *standard-output*)))
+    (bt:make-thread
+     (lambda ()
        (loop while (uiop/launch-program:process-alive-p process)
 	     do (log! "🔴 ~a: ~a~%" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
-       (log! "🟢 ~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))))
+       (log! "🟢 ~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))
+    process))
 
 
 ;; NOTE: This is a fix for cl-async not having a handler for gracious :poll closing
