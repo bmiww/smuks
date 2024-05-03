@@ -61,5 +61,6 @@
 		:components ((:file "surface")
 			     (:file "compositor")
 			     (:file "shm")
-			     (:file "xdg-wm-base")))
+			     (:file "xdg-wm-base")
+			     (:file "dd-manager")))
 	       (:file "smuks")))

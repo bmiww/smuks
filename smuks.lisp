@@ -74,9 +74,9 @@
   ;; needing a rerun
   (make-instance 'wl-compositor:global :display *wayland* :dispatch-impl 'compositor)
   (make-instance 'wl-subcompositor:global :display *wayland*)
-  (make-instance 'wl-shm:global :display *wayland* :dispatch-impl 'shm)
+  (make-instance 'shm-global :display *wayland* :dispatch-impl 'shm)
   (make-instance 'wl-seat:global :display *wayland*)
-  (make-instance 'wl-data-device-manager:global :display *wayland*)
+  (make-instance 'wl-data-device-manager:global :display *wayland* :dispatch-impl 'dd-manager)
   (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'wm-base))
 
 (defun mainer ()

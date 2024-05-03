@@ -46,7 +46,9 @@
     (setf (mmap-pool pool) (make-mmap-pool :ptr ptr :fd fd :size size))))
 
 (defmethod wl-shm-pool:resize ((pool pool) size)
-  (munmap (mmap-pool pool))
+  ;; TODO: Dunno if i really needed the munmap in the end.
+  ;; TODO: Also - you might actually need to munmap the pool yourself in case the client disconnects
+  ;; (munmap (mmap-pool pool))
   (multiple-value-bind (ptr fd size) (mmap:mmap (fd pool) :size size :mmap '(:shared))
     (setf (mmap-pool pool) (make-mmap-pool :ptr ptr :fd fd :size size))))
 
@@ -75,5 +77,4 @@
 (defstruct mmap-pool ptr fd size)
 
 (defun munmap (pool)
-  (break)
   (mmap:munmap (mmap-pool-ptr pool) (mmap-pool-fd pool) (mmap-pool-size pool)))
