@@ -11,6 +11,7 @@
   ((role :accessor role)
    (configure-serial :initform 0 :accessor configure-serial)
    (pending-buffer :initform nil :accessor pending-buffer)
+   (needs-redraw :initform nil :accessor needs-redraw)
    (texture :initform nil :accessor texture)
    (width :initform -1 :accessor width)
    (height :initform -1 :accessor height)
@@ -39,14 +40,19 @@
 	(setf (height surface) (height (pending-buffer surface)))
 	(setf new-dimensions? t))
 
+      ;; TODO: If a new texture is being generated - delete the old texture!!!
+      ;; aka new-dimensions is true - delete the old texture before reassigning
       (setf (texture surface)
 	    (gen-texture (pending-buffer surface) (unless new-dimensions? (texture surface))))
 
       (wl-buffer:send-release (pending-buffer surface))
-      (setf (pending-buffer surface) nil)))
+      (setf (pending-buffer surface) nil)
+      (setf (needs-redraw surface) t)))
+
   (when (pending-frame-callbacks surface)
     (setf (frame-callbacks surface) (pending-frame-callbacks surface))
-    (setf (pending-frame-callbacks surface) nil)))
+    (setf (pending-frame-callbacks surface) nil)
+    (setf (needs-redraw surface) t)))
 
 
 
@@ -59,13 +65,14 @@
     (gl:bind-texture :texture-2d texture)
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
     (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
-    (gl:pixel-store :unpack-row-length (/ (stride pending-buffer) 4))
+    (gl:pixel-store :unpack-row-length (/ (stride pending-buffer) *pixel-size*))
     ;; TODO: Format is hardcoded - should be taken from the buffer values and mapped to a gl format
     ;; Shouldn't be :rgba twice - i guess
     (gl:tex-image-2d :texture-2d 0 :rgba
 		     (width pending-buffer) (height pending-buffer)
 		     0 :rgba :unsigned-byte
 		     (cffi:inc-pointer (pool-ptr pending-buffer) (offset pending-buffer)))
+
     texture))
 
 ;; ┌─┐┌┬┐┌┬┐┌─┐┌─┐┬ ┬
@@ -81,7 +88,7 @@
 
 (defmethod wl-surface:frame ((surface surface) callback)
   (let ((cb-if (wl:mk-if 'callback surface callback)))
-    (setf (frame-callbacks surface) (cons cb-if (frame-callbacks surface)))))
+    (setf (pending-frame-callbacks surface) (cons cb-if (pending-frame-callbacks surface)))))
 
 (defmethod flush-frame-callbacks ((surface surface))
   (dolist (callback (frame-callbacks surface)) (done callback))
@@ -95,7 +102,8 @@
 ;; │  ├─┤│  │  ├┴┐├─┤│  ├┴┐
 ;; └─┘┴ ┴┴─┘┴─┘└─┘┴ ┴└─┘┴ ┴
 (defclass callback (wl-callback:dispatch) ())
-(defmethod done ((callback callback)) (wl-callback:send-done callback (wl:id callback)))
+(defmethod done ((callback callback))
+  (wl-callback:send-done callback (get-ms)))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
@@ -108,3 +116,31 @@
 
 (defun class-is? (object class)
   (typep object class))
+
+
+;; ┌┐ ┬ ┬┌┬┐┌─┐  ┬─┐┌─┐┌─┐┌┬┐
+;; ├┴┐└┬┘ │ ├┤   ├┬┘├┤ ├─┤ ││
+;; └─┘ ┴  ┴ └─┘  ┴└─└─┘┴ ┴─┴┘
+;; TODO: Keeping this around in case if i ever want to reuse it for doing screenshots?
+;; In any case - remove if unnecessary
+(defun read-all-bytes (pointer size)
+  (let ((new-string (make-array 0
+				:element-type '(signed-byte 8)
+				:fill-pointer 0
+				:adjustable t)))
+    (loop for i below size
+	  do (vector-push-extend (cffi:mem-ref pointer :char i) new-string))
+    ;; (flexi-streams:octets-to-string new-string :external-format :ascii)
+    new-string
+    ))
+
+(defvar *previous* nil)
+(defun compare-buffer-contents (buffer)
+  (let* ((pool (mmap-pool buffer))
+	 (ptr (mmap-pool-ptr pool))
+	 (size (mmap-pool-size pool))
+	 (contents (read-all-bytes ptr size)))
+    (when *previous*
+      (print "Mismatch?")
+      (print (mismatch contents *previous*)))
+    (setf *previous* contents)))

@@ -128,13 +128,23 @@
   (let ((texture (texture surface)))
     (shaders.texture:draw *texture-shader* texture
 			  '(0.0 0.0 200.0 200.0))
-    (flush-frame-callbacks surface)))
+    (flush-frame-callbacks surface)
+    (setf (needs-redraw surface) nil)))
 
 (defun render-clients ()
   (let* ((clients (wl:all-clients *wayland*))
 	 (compositors (remove-if-not 'identity (mapcar 'compositor clients)))
 	 (surfaces (util:flatten (mapcar 'all-ready-surfaces compositors))))
     (mapcar (lambda (surface) (render-surface surface)) surfaces)))
+
+(defvar *y-pos* 800.0)
+(defvar y-up t)
+(defun next-y-pos ()
+  (when (> *y-pos* 1000.0)
+    (setf y-up nil))
+  (when (< *y-pos* 800.0)
+    (setf y-up t))
+  (incf *y-pos* (if y-up 1 -1)))
 
 (defvar *frame-ready* t)
 (defun render-frame ()
@@ -144,7 +154,7 @@
     (gl:clear :color-buffer-bit)
 
     (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-					      :x 10.0 :y 800.0 :w 100.0 :h 40.0
+					      :x 10.0 :y (next-y-pos) :w 100.0 :h 40.0
 					      :color '(0.2 0.2 0.2 1.0))))
 
     (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
@@ -154,10 +164,19 @@
     (render-clients)
     (gl:flush)
     (gl:finish)
-    (wl:flush-clients *wayland*)
 
-    (drm-page-flip *drm-dev* *frame-buffer*)
-    (setf *frame-ready* nil)))
+    (setf *frame-ready* nil))
+
+  ;; TODO: Wasteful - also - didn't really help much at the moment.
+  ;; Try to bring it back inside the *frame-ready* check
+  (handler-case
+      (drm-page-flip *drm-dev* *frame-buffer*)
+    (error (err) ()))
+
+  ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
+  ;; Any events or changes that i could instead attach to?
+  ;; Maybe instead use per client flushes - for example when receiving commit from them
+  (wl:flush-clients *wayland*))
 
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
@@ -188,7 +207,8 @@
 (defun wayland-callback (events)
   (when (member :readable events) (handle-wayland-event)))
 
-(defun set-frame-ready (a b c d e) (setf *frame-ready* t))
+(defun set-frame-ready (a b c d e)
+  (setf *frame-ready* t))
 
 (defun drm-callback (events)
   (when (member :readable events)
@@ -216,6 +236,10 @@
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
+(defun get-ms ()
+  (let ((time (get-internal-real-time)))
+    (round (* (/ time internal-time-units-per-second) 1000))))
+
 (defun test-app (app-name)
   (bt:make-thread
    (lambda ()
