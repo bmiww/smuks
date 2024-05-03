@@ -23,6 +23,8 @@
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
 (defclass xdg-surface (xdg-surface:dispatch)
   ((wl-surface :initarg :wl-surface :accessor wl-surface)
+   (width :initform 0 :accessor width)
+   (height :initform 0 :accessor height)
    (toplevel :initarg :toplevel :accessor toplevel)
    (popup :initarg :popup :accessor popup)))
 
@@ -32,6 +34,11 @@
     ;; TODO: One for maximized - get the enum stuff in order
     (xdg-toplevel:send-configure toplevel 200 200'(1))
     (xdg-surface:send-configure xdg (incf (configure-serial (wl-surface xdg))))))
+
+(defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
+  (setf (width xdg) width)
+  (setf (height xdg) height))
+
 
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
 ;; The configuration sequence. Applying pending state or whatnot. Not sure
