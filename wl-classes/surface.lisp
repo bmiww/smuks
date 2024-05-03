@@ -97,6 +97,9 @@
 (defmethod wl-surface:damage ((surface surface) x y width height)
   (setf (pending-damage surface) (make-damage :x x :y y :width width :height height)))
 
+(defmethod wl-surface:set-opaque-region ((surface surface) region)
+  (log! "UNIMPLEMENTED: Set opaque region"))
+
 
 ;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─
 ;; │  ├─┤│  │  ├┴┐├─┤│  ├┴┐
