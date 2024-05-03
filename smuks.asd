@@ -62,5 +62,6 @@
 			     (:file "compositor")
 			     (:file "shm")
 			     (:file "xdg-wm-base")
+			     (:file "seat")
 			     (:file "dd-manager")))
 	       (:file "smuks")))

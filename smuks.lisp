@@ -75,7 +75,7 @@
   (make-instance 'wl-compositor:global :display *wayland* :dispatch-impl 'compositor)
   (make-instance 'wl-subcompositor:global :display *wayland*)
   (make-instance 'shm-global :display *wayland* :dispatch-impl 'shm)
-  (make-instance 'wl-seat:global :display *wayland*)
+  (make-instance 'seat-global :display *wayland* :dispatch-impl 'seat)
   (make-instance 'wl-data-device-manager:global :display *wayland* :dispatch-impl 'dd-manager)
   (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'wm-base))
 
@@ -185,7 +185,8 @@
 ;; │  │  │├┤ │││ │
 ;; └─┘┴─┘┴└─┘┘└┘ ┴
 (defclass client (wl:client)
-  ((compositor :initform nil)))
+  ((compositor :initform nil)
+   (seats :initform (make-hash-table :test 'equal) :accessor seats)))
 
 (defmethod compositor ((client client)) (slot-value client 'compositor))
 (defmethod (setf compositor) (compositor (client client))

@@ -12,8 +12,6 @@
    init-drm drm-page-flip))
 (in-package :smuks-drm)
 
-(defvar *default-card* "/dev/dri/card0")
-
 (defclass gbm-device ()
   ((fd :initarg :fd :accessor fd)
    (fd-stream :initarg :fd-stream :accessor fd-stream)
