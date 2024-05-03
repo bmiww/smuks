@@ -12,7 +12,7 @@
 	   match-kernel-errcode check-err
 	   heading setfnil
 	   check-gl-fb-status check-gl-error
-	   flatten))
+	   flatten get-ms))
 (in-package :smuks-util)
 
 (defun heading ()
@@ -106,6 +106,13 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
                    (push el acc)))
              acc))
     (reverse (rflatten lst nil))))
+
+
+;; ┌┬┐┬┌┬┐┌─┐
+;;  │ ││││├┤
+;;  ┴ ┴┴ ┴└─┘
+(defun get-ms () (round (* (/ (get-internal-real-time) internal-time-units-per-second) 1000)))
+
 
 ;; ┌─┐┬
 ;; │ ┬│

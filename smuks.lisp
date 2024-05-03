@@ -236,10 +236,6 @@
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
-(defun get-ms ()
-  (let ((time (get-internal-real-time)))
-    (round (* (/ time internal-time-units-per-second) 1000))))
-
 (defun test-app (app-name)
   (bt:make-thread
    (lambda ()
