@@ -34,11 +34,15 @@
 (defvar *client-poller* nil)
 (defvar *wl-poller* nil)
 (defvar *drm-poller* nil)
+(defvar *device-poller* nil)
 
+(defvar *device-folder* "/dev/input/")
+(defvar *event-nodes* nil)
 (defvar *test-app* nil)
 
 (defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
+  ;; (when *event-node-watcher* (notify:shutdown))
   (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
   (when *buffer-object* (sdrm:destroy-bo *buffer-object*))
   (when (and *drm-dev* *frame-buffer*) (sdrm:rm-framebuffer *drm-dev* *frame-buffer*))
@@ -53,7 +57,7 @@
     (delete-file +socket-file+))
 
   (setfnil *egl* *egl-context* *egl-image* *drm-dev* *frame-buffer* *buffer-object* *smuks-exit* *active-crtc*
-	   *wayland* *socket*))
+	   *wayland* *socket* *event-node-watcher*))
 
 (defun recursively-render-frame ()
   (if *smuks-exit*
@@ -92,6 +96,9 @@
 
   (wl:init-interface-definitions)
   (setf *wayland* (make-instance 'wl:display :fd (unix-sockets::fd *socket*)))
+
+  (setf *event-nodes* (directory "/dev/input/event*"))
+
   (init-globals)
 
   (setf (values *egl* *egl-context*) (init-egl *drm-dev* (wl:display-ptr *wayland*)))
@@ -112,6 +119,8 @@
      (setf *client-poller* (client-listener))
      (log! "Starting wayland event loop listener. Waiting for events...~%")
      (setf *wl-poller* (wayland-listener))
+     (log! "Starting event node watch poller. Waiting for device changes...~%")
+     (setf *device-poller* (notify-listener))
 
      (setf *test-app* (test-app "weston-simple-shm"))
 
@@ -173,7 +182,7 @@
   ;; Try to bring it back inside the *frame-ready* check
   (handler-case
       (drm-page-flip *drm-dev* *frame-buffer*)
-    (error (err) ()))
+    (error (err) (declare (ignore err)) ()))
 
   ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
   ;; Any events or changes that i could instead attach to?
@@ -201,6 +210,10 @@
 (defun wayland-listener () (cl-async:poll (wl:event-loop-fd *wayland*) 'wayland-callback :poll-for '(:readable)))
 (defun client-listener () (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t))
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
+(defun notify-listener ()
+  (notify::init)
+  (notify:watch *device-folder* :events '(:create :delete))
+  (cl-async:poll notify::*fd* 'notify-callback :poll-for '(:readable)))
 
 (defun handle-wayland-event ()
   (let ((result (wl:dispatch-event-loop *wayland*)))
@@ -211,11 +224,21 @@
   (when (member :readable events) (handle-wayland-event)))
 
 (defun set-frame-ready (a b c d e)
+  (declare (ignore a b c d e))
   (setf *frame-ready* t))
 
+(defun device-change (path change)
+  (when (str:contains? "/event" path)
+    (case change
+      (:create (unless (member path *event-nodes*) (push path *event-nodes*)))
+      (:delete (setf *event-nodes* (remove path *event-nodes*)))
+      (t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change)))))
+
+(defun notify-callback (events)
+  (when (member :readable events) (notify::process 'device-change)))
+
 (defun drm-callback (events)
-  (when (member :readable events)
-    (drm:handle-event (fd *drm-dev*) :page-flip 'set-frame-ready)))
+  (when (member :readable events) (drm:handle-event (fd *drm-dev*) :page-flip 'set-frame-ready)))
 
 (defun client-callback (events)
   (unless (member :readable events) (error "Client callback called without readable event"))
@@ -258,4 +281,7 @@
     ((cffi:pointer-eq (cl-async::poller-c *drm-poller*) handle) (cl-async:free-poller *drm-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *wl-poller*) handle) (cl-async:free-poller *wl-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *client-poller*) handle) (cl-async:free-poller *client-poller*))
+    ((cffi:pointer-eq (cl-async::poller-c *device-poller*) handle)
+     (notify:shutdown)
+     (cl-async:free-poller *device-poller*))
     (t (error "Unknown poller handle"))))

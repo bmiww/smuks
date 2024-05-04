@@ -45,6 +45,7 @@
 	       #:str
 	       #:clem
 	       #:split-sequence
+	       #:file-notify
 	       #:cl-wl
 	       #:cl-wl.wayland-core
 	       #:cl-wl.xdg-shell)
