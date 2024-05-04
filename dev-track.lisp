@@ -15,17 +15,24 @@
   ((context :initarg nil :accessor context)
    (devices :initform (make-hash-table :test 'equal) :accessor devices)))
 
-(defmethod initialize-instance :after ((track dev-track) &key device-paths)
+(defmethod initialize-instance :after ((track dev-track) &key)
   (setf (context track) (libinput:create-context))
-  (dolist (path device-paths)
+  (dolist (path (directory "/dev/input/event*"))
     (let ((dev (make-instance 'dev :path path :dev-track track)))
       (setf (gethash path (devices track)) dev))))
 
+(defmethod add-device ((track dev-track) path)
+  (if (gethash path (devices track))
+      (log! "Device already exists: ~a... Ignoring." path)
+      (setf (gethash path (devices track)) (make-instance 'dev :path path :dev-track track))))
+
 (defmethod rem-device ((track dev-track) path)
   (let ((dev (gethash path (devices track))))
-    (unless dev (error "Device not found: ~A" path))
-    (destroy dev)
-    (remhash path (devices track))))
+    (if dev
+	(progn
+	  (destroy dev)
+	  (remhash path (devices track)))
+	(log! "Device does not exist: ~a... Ignoring." path))))
 
 
 ;; ┌┬┐┌─┐┬  ┬┬┌─┐┌─┐

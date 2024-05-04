@@ -36,13 +36,10 @@
 (defvar *drm-poller* nil)
 (defvar *device-poller* nil)
 
-(defvar *device-folder* "/dev/input/")
-(defvar *event-nodes* nil)
 (defvar *test-app* nil)
 
 (defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
-  ;; (when *event-node-watcher* (notify:shutdown))
   (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
   (when *buffer-object* (sdrm:destroy-bo *buffer-object*))
   (when (and *drm-dev* *frame-buffer*) (sdrm:rm-framebuffer *drm-dev* *frame-buffer*))
@@ -57,7 +54,7 @@
     (delete-file +socket-file+))
 
   (setfnil *egl* *egl-context* *egl-image* *drm-dev* *frame-buffer* *buffer-object* *smuks-exit* *active-crtc*
-	   *wayland* *socket* *event-node-watcher*))
+	   *wayland* *socket*))
 
 (defun recursively-render-frame ()
   (if *smuks-exit*
@@ -95,9 +92,9 @@
   (setf *drm-dev* (init-drm))
 
   (wl:init-interface-definitions)
-  (setf *wayland* (make-instance 'wl:display :fd (unix-sockets::fd *socket*)))
-
-  (setf *event-nodes* (directory "/dev/input/event*"))
+  (setf *wayland* (make-instance 'display
+		     :fd (unix-sockets::fd *socket*)
+		     :libinput (make-instance 'dev-tracker)))
 
   (init-globals)
 
@@ -194,15 +191,15 @@
 ;; │  │  │├┤ │││ │
 ;; └─┘┴─┘┴└─┘┘└┘ ┴
 (defclass client (wl:client)
-  ((compositor :initform nil)
-   (seats :initform (make-hash-table :test 'equal) :accessor seats)))
+  ((compositor :initform nil :accessor compositor)
+   (seat :initform nil :accessor seats)))
 
-(defmethod compositor ((client client)) (slot-value client 'compositor))
-(defmethod (setf compositor) (compositor (client client))
-  (setf (slot-value client 'compositor) compositor))
-
-(defmethod (setf wl::iface) :after (iface (client client) interface)
+(defmethod (setf wl::iface) :after (iface (client client) id)
+  (declare (ignore id))
   (when (typep iface 'compositor) (setf (compositor client) iface)))
+
+(defmethod (setf wl::iface) :after ((iface seat) (client client) id)
+  (declare (ignore id)) (setf (seat client) iface))
 
 ;; ┬  ┬┌─┐┌┬┐┌─┐┌┐┌┌─┐┬─┐┌─┐
 ;; │  │└─┐ │ ├┤ │││├┤ ├┬┘└─┐
@@ -212,7 +209,7 @@
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
 (defun notify-listener ()
   (notify::init)
-  (notify:watch *device-folder* :events '(:create :delete))
+  (notify:watch "/dev/input/" :events '(:create :delete))
   (cl-async:poll notify::*fd* 'notify-callback :poll-for '(:readable)))
 
 (defun handle-wayland-event ()
@@ -230,8 +227,8 @@
 (defun device-change (path change)
   (when (str:contains? "/event" path)
     (case change
-      (:create (unless (member path *event-nodes*) (push path *event-nodes*)))
-      (:delete (setf *event-nodes* (remove path *event-nodes*)))
+      (:create (add-device (libinput *wayland*) path))
+      (:delete (remove-device (libinput *wayland*) path))
       (t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change)))))
 
 (defun notify-callback (events)
@@ -244,6 +241,7 @@
   (unless (member :readable events) (error "Client callback called without readable event"))
   (let ((client (unix-sockets:accept-unix-socket *socket*)))
     (wl:create-client *wayland* (unix-sockets::fd client) :class 'client)))
+
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
@@ -258,6 +256,13 @@
       (log! "Creating new socket~%")
       (delete-file +socket-file+)
       (unix-sockets:make-unix-socket +socket-file+))))
+
+
+;; ┌┬┐┬┌─┐┌─┐┬  ┌─┐┬ ┬
+;;  │││└─┐├─┘│  ├─┤└┬┘
+;; ─┴┘┴└─┘┴  ┴─┘┴ ┴ ┴
+(defclass display (wl:display)
+  ((libinput :initarg :libinput :reader libinput)))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
