@@ -13,7 +13,8 @@
 ;; ─┴┘└─┘ └┘ ┴└─┘└─┘   ┴ ┴└─┴ ┴└─┘┴ ┴└─┘┴└─
 (defclass dev-track ()
   ((context :initarg nil :accessor context)
-   (devices :initform (make-hash-table :test 'equal) :accessor devices)))
+   (devices :initform (make-hash-table :test 'equal) :accessor devices)
+   (fd :initform nil :accessor fd)))
 
 (defmethod initialize-instance :after ((track dev-track) &key)
   (setf (context track) (libinput:create-context))
@@ -34,6 +35,10 @@
 	  (remhash path (devices track)))
 	(log! "Device does not exist: ~a... Ignoring." path))))
 
+(defmethod context-fd ((track dev-track))
+  (or (fd track) (setf (fd track) (libinput:get-fd (context track)))))
+
+(defmethod dispatch ((track dev-track)) (libinput:dispatch (context track)))
 
 ;; ┌┬┐┌─┐┬  ┬┬┌─┐┌─┐
 ;;  ││├┤ └┐┌┘││  ├┤

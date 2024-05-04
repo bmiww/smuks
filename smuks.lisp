@@ -35,6 +35,7 @@
 (defvar *wl-poller* nil)
 (defvar *drm-poller* nil)
 (defvar *device-poller* nil)
+(defvar *input-poller* nil)
 
 (defvar *test-app* nil)
 
@@ -118,6 +119,8 @@
      (setf *wl-poller* (wayland-listener))
      (log! "Starting event node watch poller. Waiting for device changes...~%")
      (setf *device-poller* (notify-listener))
+     (log! "Starting input event poller. Waiting for user inputs...~%")
+     (setf *input-poller* (input-listener))
 
      (setf *test-app* (test-app "weston-simple-shm"))
 
@@ -201,24 +204,36 @@
 (defmethod (setf wl::iface) :after ((iface seat) (client client) id)
   (declare (ignore id)) (setf (seat client) iface))
 
-;; ┬  ┬┌─┐┌┬┐┌─┐┌┐┌┌─┐┬─┐┌─┐
-;; │  │└─┐ │ ├┤ │││├┤ ├┬┘└─┐
-;; ┴─┘┴└─┘ ┴ └─┘┘└┘└─┘┴└─└─┘
+
+;; ┌─┐┌─┐┬  ┬  ┬┌┐┌┌─┐
+;; ├─┘│ ││  │  │││││ ┬
+;; ┴  └─┘┴─┘┴─┘┴┘└┘└─┘
+;; Listeners
 (defun wayland-listener () (cl-async:poll (wl:event-loop-fd *wayland*) 'wayland-callback :poll-for '(:readable)))
 (defun client-listener () (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t))
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
+(defun input-listener () (cl-async:poll (context-fd (libinput *wayland*)) 'input-callback :poll-for '(:readable)))
 (defun notify-listener ()
   (notify::init)
   (notify:watch "/dev/input/" :events '(:create :delete))
   (cl-async:poll notify::*fd* 'notify-callback :poll-for '(:readable)))
 
+;; Slightly annoying callbacks
+(defun ready (ev) (member :readable ev))
+(defun wayland-callback (ev) (when (ready ev) (handle-wayland-event)))
+(defun input-callback (ev) (when (ready ev) (dispatch (libinput *wayland*))))
+(defun notify-callback (ev) (when (ready ev) (notify::process 'device-change)))
+(defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm-dev*) :page-flip 'set-frame-ready)))
+(defun client-callback (ev)
+  (when (ready ev)
+    (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
+
+;; Unorganized handlers
 (defun handle-wayland-event ()
   (let ((result (wl:dispatch-event-loop *wayland*)))
     (when (< result 0)
       (error "Error in wayland event loop dispatch: ~A" result))))
 
-(defun wayland-callback (events)
-  (when (member :readable events) (handle-wayland-event)))
 
 (defun set-frame-ready (a b c d e)
   (declare (ignore a b c d e))
@@ -230,18 +245,6 @@
       (:create (add-device (libinput *wayland*) path))
       (:delete (remove-device (libinput *wayland*) path))
       (t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change)))))
-
-(defun notify-callback (events)
-  (when (member :readable events) (notify::process 'device-change)))
-
-(defun drm-callback (events)
-  (when (member :readable events) (drm:handle-event (fd *drm-dev*) :page-flip 'set-frame-ready)))
-
-(defun client-callback (events)
-  (unless (member :readable events) (error "Client callback called without readable event"))
-  (let ((client (unix-sockets:accept-unix-socket *socket*)))
-    (wl:create-client *wayland* (unix-sockets::fd client) :class 'client)))
-
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
@@ -279,13 +282,16 @@
     process))
 
 
-;; NOTE: This is a fix for cl-async not having a handler for gracious :poll closing
-;; Weirdly enough - i expected them to crash, but they don't. They just hang.
+;; TODO: This is a fix for cl-async not having a handler for gracious :poll closing
+;; Weirdly enough - i expected them to crash due to this missing method, but they don't.
+;; I should probably fix this in cl-async by introducing the handle-cleanup method.
+;; Could be done by keeping track of the pointers and the respective poller objects. Singletony, but eh.
 (defmethod cl-async::handle-cleanup ((handle-type (eql :poll)) handle)
   (cond
     ((cffi:pointer-eq (cl-async::poller-c *drm-poller*) handle) (cl-async:free-poller *drm-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *wl-poller*) handle) (cl-async:free-poller *wl-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *client-poller*) handle) (cl-async:free-poller *client-poller*))
+    ((cffi:pointer-eq (cl-async::poller-c *input-poller*) handle) (cl-async:free-poller *input-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *device-poller*) handle)
      (notify:shutdown)
      (cl-async:free-poller *device-poller*))
