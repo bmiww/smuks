@@ -46,6 +46,7 @@
 	       #:clem
 	       #:split-sequence
 	       #:file-notify
+	       #:cl-libinput
 	       #:cl-wl
 	       #:cl-wl.wayland-core
 	       #:cl-wl.xdg-shell)
@@ -58,6 +59,7 @@
 	       (:file "shader-texture")
 	       (:file "shader-init")
 	       (:file "package")
+	       (:file "dev-track")
 	       (:module "wl-classes"
 		:components ((:file "surface")
 			     (:file "compositor")
