@@ -50,4 +50,11 @@
   (error "Keyboard asked - none was there"))
 
 (defmethod wl-seat:get-touch ((seat seat) id)
-  (error "Touch asked - none was there"))
+  (wl:mk-if 'touch seat id :seat seat))
+
+
+;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
+;;  │ │ ││ ││  ├─┤
+;;  ┴ └─┘└─┘└─┘┴ ┴
+(defclass touch (wl-touch:dispatch)
+  ((seat :initarg :seat :initform nil)))

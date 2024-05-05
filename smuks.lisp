@@ -256,16 +256,22 @@
     (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
 
 (defun handle-touch-motion (event)
-  (let ((x (touch@-x event))
-	(y (touch@-y event)))
+  (let ((x (touch@-x event)) (y (touch@-y event)))
     (setf *green-x-pos* (coerce x 'single-float))
     (setf *green-y-pos* (coerce y 'single-float))
     (format t "Touch motion: ~a ~a~%" x y)))
 
+(defun handle-touch-down (event)
+  (let ((x (touch@-x event)) (y (touch@-y event)))
+    (setf *green-x-pos* (coerce x 'single-float))
+    (setf *green-y-pos* (coerce y 'single-float))
+    (format t "Touch down: ~a ~a~%" x y)))
+
 (defun handle-input (event)
   (log! "Handling an input event: ~a~%" event)
   (cond
-    ((touch-motion@-p event) (handle-touch-motion event))))
+    ((touch-motion@-p event) (handle-touch-motion event))
+    ((touch-down@-p event)   (handle-touch-down event))))
 
 
 ;; Unorganized handlers
