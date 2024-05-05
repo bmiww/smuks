@@ -296,11 +296,12 @@
   (setf *frame-ready* t))
 
 (defun device-change (path change)
-  (when (str:contains? "/event" path)
-    (case change
-      (:create (add-device (libinput *wayland*) path))
-      (:delete (rem-device (libinput *wayland*) path))
-      (t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change)))))
+  (let ((path (namestring path)))
+    (when (str:contains? "/event" path)
+      (case change
+	(:create (add-device (libinput *wayland*) path))
+	(:delete (rem-device (libinput *wayland*) path))
+	(t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change))))))
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
