@@ -278,10 +278,10 @@
       (1 (move-red x y)))))
 
 (defun handle-input (event)
-  ;; (log! "Handling an input event: ~a~%" event)
   (case (event-type event)
     (:touch-motion (handle-touch-motion event))
-    (:touch-down   (handle-touch-down event))))
+    (:touch-down   (handle-touch-down event))
+    (t (log! "No handler for input event: ~a~%" (event-type event)))))
 
 
 ;; Unorganized handlers
