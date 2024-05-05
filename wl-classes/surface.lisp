@@ -15,6 +15,8 @@
    (texture :initform nil :accessor texture)
    (width :initform -1 :accessor width)
    (height :initform -1 :accessor height)
+   (x :initform -1 :accessor x)
+   (y :initform -1 :accessor y)
    (pending-damage :initform nil :accessor pending-damage)
    (damage :initform nil :accessor damage)
    (pending-frame-callbacks :initform nil :accessor pending-frame-callbacks)
@@ -100,6 +102,9 @@
 (defmethod wl-surface:set-opaque-region ((surface surface) region)
   (log! "UNIMPLEMENTED: Set opaque region"))
 
+(defmethod in-bounds ((surface surface) x y)
+  (and (<= (x surface) x (+ (x surface) (width surface)))
+       (<= (y surface) y (+ (y surface) (height surface)))))
 
 ;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─
 ;; │  ├─┤│  │  ├┴┐├─┤│  ├┴┐

@@ -279,15 +279,26 @@
       (1 (move-red x y)))))
 
 (defun handle-touch-down (event)
-  (let ((x (coerce (touch@-x event) 'single-float)) (y (coerce (touch@-y event) 'single-float)) (slot (touch@-seat-slot event)))
-    (case slot
-      (0 (move-green x y))
-      (1 (move-red x y)))))
+  (let* ((x (flo (touch@-x event)))
+	 (y (flo (touch@-y event)))
+	 (slot (touch@-seat-slot event))
+	 (surface (surface-at-coords *wayland* x y)))
+    (if surface
+	(touch-down *wayland* surface slot x y)
+	;; NOTE: If not touching a window - still keeping around my debug rectangles
+	(case slot
+	  (0 (move-green x y))
+	  (1 (move-red x y))))))
+
+(defun handle-touch-up (event) (touch-up *wayland* (touch@-seat-slot event)))
+(defun handle-touch-frame (event) (declare (ignore event)) (touch-frame *wayland*))
 
 (defun handle-input (event)
   (case (event-type event)
     (:touch-motion (handle-touch-motion event))
     (:touch-down   (handle-touch-down event))
+    (:touch-up     (handle-touch-up event))
+    (:touch-frame  (handle-touch-frame event))
     (t (log! "No handler for input event: ~a~%" (event-type event)))))
 
 
@@ -365,7 +376,48 @@
 ;;  │││└─┐├─┘│  ├─┤└┬┘
 ;; ─┴┘┴└─┘┴  ┴─┘┴ ┴ ┴
 (defclass display (wl:display)
-  ((libinput :initarg :libinput :reader libinput)))
+  ((libinput :initarg :libinput :reader libinput)
+   ;; Not sure we need 32. That's a lot of fingers.
+   (touch-slot-interesses :initform (make-array 32 :initial-element nil) :reader touch-slot-interesses)))
+
+(defmethod surface-at-coords ((display display) x y)
+  (let ((clients (wl:all-clients display)))
+    (loop for client in clients
+	  for compositor = (compositor client)
+	  for surfaces = (all-surfaces compositor)
+	  for candidate = (loop for surface in surfaces
+				when (in-bounds surface x y)
+				return surface)
+	  when candidate
+	  return candidate)))
+
+(defmethod touch-down ((display display) surface slot x y)
+  "Notify a client that a touch event has occured.
+Save the client as interested in the slot for later reference."
+  (let* ((client (wl:client surface))
+	 (seat (seat client)))
+    (when (seat-touch seat)
+      (pushnew client (aref (touch-slot-interesses display) slot))
+      (touch-down seat surface slot x y))))
+
+(defmethod touch-up ((display display) slot)
+  "Notify all clients interested in the specific touch slot
+and then clean the list out"
+  (let ((clients (aref (touch-slot-interesses display) slot)))
+    (dolist (client clients)
+      (when (seat-touch (seat client))
+	(touch-up (seat client) slot)))
+    (setf (aref (touch-slot-interesses display) slot) nil)))
+
+;; TODO: Not sure if it would be possible or even make sense to keep a list
+;; of interested clients instead of broadcasting to all
+(defmethod touch-frame ((display display))
+  "Notify all clients that a touch frame has occured"
+  (dolist (client (wl:all-clients display))
+    (when (seat-touch (seat client))
+      (touch-frame (seat client)))))
+
+
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
@@ -380,6 +432,8 @@
 	     do (log! "🔴 ~a: ~a~%" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
        (log! "🟢 ~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))
     process))
+
+(defun flo (num) (coerce num 'single-float))
 
 
 ;; TODO: This is a fix for cl-async not having a handler for gracious :poll closing

@@ -39,9 +39,13 @@
 (defclass seat (wl-seat:dispatch)
   ((name :initarg :name :initform nil)
    (capabilities :initarg :capabilities :initform nil)
+   (event-serial :initarg :event-serial :initform 0)
    (pointer :initarg :pointer :initform nil)
    (keyboard :initarg :keyboard :initform nil)
-   (touch :initarg :touch :initform nil)))
+   (touch :initform nil :accessor seat-touch)))
+
+(defmethod next-serial ((seat seat))
+  (incf (slot-value seat 'event-serial)))
 
 (defmethod wl-seat:get-pointer ((seat seat) id)
   (error "Pointer asked - none was there"))
@@ -50,8 +54,16 @@
   (error "Keyboard asked - none was there"))
 
 (defmethod wl-seat:get-touch ((seat seat) id)
-  (wl:mk-if 'touch seat id :seat seat))
+  (setf (seat-touch seat) (wl:mk-if 'touch seat id :seat seat)))
 
+(defmethod touch-down ((seat seat) surface slot x y)
+  ;; TODO: Might use the time from libinput - not sure if it was ms though
+  (wl-touch:send-down (seat-touch seat) (next-serial seat) (get-ms) surface slot x y))
+
+(defmethod touch-up ((seat seat) slot)
+  (wl-touch:send-up (seat-touch seat) (next-serial seat) (get-ms) slot))
+
+(defmethod touch-frame ((seat seat)) (wl-touch:send-frame (seat-touch seat)))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤

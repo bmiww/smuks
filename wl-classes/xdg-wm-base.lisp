@@ -15,6 +15,10 @@
 
 (defmethod xdg-wm-base:get-xdg-surface ((xdg wm-base) id surface)
   (let ((xdg-surface (wl:mk-if 'xdg-surface xdg id :wl-surface surface)))
+    ;; TODO: Make an actual window manager instead of these random coordinates :)
+    (setf (x surface) (random 800))
+    (setf (y surface) (random 640))
+
     (setf (gethash id (xdg-surfaces xdg)) xdg-surface)
     (setf (role surface) xdg-surface)))
 
@@ -31,6 +35,7 @@
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((toplevel (wl:mk-if 'toplevel xdg id)))
     (setf (toplevel xdg) toplevel)
+    ;; TODO: Make an actual window manager instead of these random dimensions :)
     ;; TODO: One for maximized - get the enum stuff in order
     (xdg-toplevel:send-configure toplevel 200 200'(1))
     (xdg-surface:send-configure xdg (incf (configure-serial (wl-surface xdg))))))
