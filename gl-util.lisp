@@ -90,8 +90,10 @@
   (let* ((ident (clem:identity-matrix 3))
 	 (position (clem:identity-matrix 3)))
     ;; TODO: Check if column major
-    (setf (clem:mref position 0 2) x)
-    (setf (clem:mref position 1 2) y)
+    ;; (setf (clem:mref position 0 2) x)
+    ;; (setf (clem:mref position 1 2) y)
+    (setf (clem:mref position 2 0) x)
+    (setf (clem:mref position 2 1) y)
     (matrix->array (clem:m* ident position))))
 
 (defun copysign (val) (if (>= val 0) 1 -1))
