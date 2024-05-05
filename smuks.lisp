@@ -36,7 +36,11 @@
 (defvar *drm-poller* nil)
 (defvar *device-poller* nil)
 (defvar *input-poller* nil)
+(defvar *seat-poller* nil)
 
+(defvar *seat* nil)
+
+(defvar *frame-ready* t)
 (defvar *test-app* nil)
 
 (defun shutdown () (setf *smuks-exit* t))
@@ -50,12 +54,14 @@
 
   (when *wayland* (wl:destroy *wayland*))
 
+  (when *seat* (libseat:close-seat *seat*))
+
   (when *socket*
     (unix-sockets:close-unix-socket *socket*)
     (delete-file +socket-file+))
 
   (setfnil *egl* *egl-context* *egl-image* *drm-dev* *frame-buffer* *buffer-object* *smuks-exit* *active-crtc*
-	   *wayland* *socket*))
+	   *wayland* *socket* *seat*))
 
 (defun recursively-render-frame ()
   (if *smuks-exit*
@@ -71,9 +77,7 @@
   (setf *texture-shader* (shader-init:create-texture-shader *drm-dev*)))
 
 (defun init-globals ()
-  ;; TODO: Also iterate and generate globals for outputs here
-  ;; TODO: When you recompile the compiled classes - these globals aren't updated
-  ;; needing a rerun
+  ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
   (make-instance 'wl-compositor:global :display *wayland* :dispatch-impl 'compositor)
   (make-instance 'wl-subcompositor:global :display *wayland*)
   (make-instance 'shm-global :display *wayland* :dispatch-impl 'shm)
@@ -86,8 +90,24 @@
   (setf *frame-ready* t)
   (heading)
 
+  ;; NOTE: This is at minimum needed to have the smuks process in ssh connections to get access
+  ;; To input devices.
+  ;; It also requires a custom built libseat
+  ;; It should work by default if not ssh'ing
+  ;; But i should find a better way to do this
+  (setf (uiop/os:getenv "XDG_SESSION_ID_OVERRIDE") "1")
+
   (setf (uiop/os:getenv "WAYLAND_DEBUG") "")
   (setf *socket* (init-socket))
+
+  ;; (libseat:set-log-level :debug)
+  (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
+
+  (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
+  ;; Dispatching seat events immediately - the first event should always be an enable
+  ;; After this call - we should be able to have access to device files
+  ;; (libseat:dispatch *seat* 0)
+
 
   ;; TODO: Can sometimes fail on retrying
   (setf *drm-dev* (init-drm))
@@ -95,7 +115,7 @@
   (wl:init-interface-definitions)
   (setf *wayland* (make-instance 'display
 		     :fd (unix-sockets::fd *socket*)
-		     :libinput (make-instance 'dev-tracker)))
+		     :libinput (make-instance 'dev-track :open-device 'open-device :close-device 'close-device)))
 
   (init-globals)
 
@@ -121,6 +141,8 @@
      (setf *device-poller* (notify-listener))
      (log! "Starting input event poller. Waiting for user inputs...~%")
      (setf *input-poller* (input-listener))
+     (log! "Starting the umpeenth poller. Now for seat events...~%")
+     (setf *seat-poller* (seat-listener))
 
      (setf *test-app* (test-app "weston-simple-shm"))
 
@@ -157,7 +179,6 @@
     (setf y-up t))
   (incf *y-pos* (if y-up 1 -1)))
 
-(defvar *frame-ready* t)
 (defun render-frame ()
   (livesupport:update-repl-link)
   (when *frame-ready*
@@ -213,6 +234,7 @@
 (defun client-listener () (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t))
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
 (defun input-listener () (cl-async:poll (context-fd (libinput *wayland*)) 'input-callback :poll-for '(:readable)))
+(defun seat-listener () (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable)))
 (defun notify-listener ()
   (notify::init)
   (notify:watch "/dev/input/" :events '(:create :delete))
@@ -221,12 +243,16 @@
 ;; Slightly annoying callbacks
 (defun ready (ev) (member :readable ev))
 (defun wayland-callback (ev) (when (ready ev) (handle-wayland-event)))
-(defun input-callback (ev) (when (ready ev) (dispatch (libinput *wayland*))))
+(defun input-callback (ev) (when (ready ev) (dispatch (libinput *wayland*) 'handle-input)))
 (defun notify-callback (ev) (when (ready ev) (notify::process 'device-change)))
 (defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm-dev*) :page-flip 'set-frame-ready)))
+(defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
 (defun client-callback (ev)
   (when (ready ev)
     (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
+
+(defun handle-input (event)
+  (log! "Handling an input event: ~a~%" event))
 
 ;; Unorganized handlers
 (defun handle-wayland-event ()
@@ -243,7 +269,7 @@
   (when (str:contains? "/event" path)
     (case change
       (:create (add-device (libinput *wayland*) path))
-      (:delete (remove-device (libinput *wayland*) path))
+      (:delete (rem-device (libinput *wayland*) path))
       (t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change)))))
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
@@ -259,6 +285,42 @@
       (log! "Creating new socket~%")
       (delete-file +socket-file+)
       (unix-sockets:make-unix-socket +socket-file+))))
+
+
+;; ┌─┐┌─┐┌─┐┌┬┐  ┌┬┐┌─┐┌─┐┬┌─┐
+;; └─┐├┤ ├─┤ │   │││├─┤│ ┬││
+;; └─┘└─┘┴ ┴ ┴   ┴ ┴┴ ┴└─┘┴└─┘
+;; TODO: Since we immediately try dispatching and wait on libseat, this whole function is here only
+;; for completeness sake.
+(defun enable-seat (seat data)
+  (declare (ignore seat data))
+  (log! "SEAT ENABLED~%")
+  (cl-async:exit-event-loop))
+
+;; TODO: So you probably might want to kill off the whole compositor if we receive this?
+  ;; When exactly does this happen anyway?
+(defun disable-seat (seat data)
+  (declare (ignore seat data))
+  (log! "DISABLING SEAT - NOT IMPLEMENTED YET~%"))
+
+
+;; Opening and closing restricted devices
+(defvar *fd-id* (make-hash-table :test 'equal))
+(defun open-device (path flags user-data)
+  (declare (ignore flags user-data))
+  ;; TODO: Although apparently id and fd are the same
+  ;; At least as far as logind is concerned. Not sure about seatd.
+  ;; For now leaving as is - since it's not really a problem.
+  (let ((id nil) (fd nil))
+    (setf (values id fd) (libseat:open-device *seat* path))
+    (unless id (error "Failed to open device. No ID: ~A" path))
+    (unless fd (error "Failed to open device. No FD: ~A" path))
+    (setf (gethash fd *fd-id*) id)))
+
+(defun close-device (fd data)
+  (declare (ignore data))
+  (libseat:close-device *seat* (gethash fd *fd-id*))
+  (remhash fd *fd-id*))
 
 
 ;; ┌┬┐┬┌─┐┌─┐┬  ┌─┐┬ ┬
@@ -288,6 +350,7 @@
 ;; Could be done by keeping track of the pointers and the respective poller objects. Singletony, but eh.
 (defmethod cl-async::handle-cleanup ((handle-type (eql :poll)) handle)
   (cond
+    ((cffi:pointer-eq (cl-async::poller-c *seat-poller*) handle) (cl-async:free-poller *seat-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *drm-poller*) handle) (cl-async:free-poller *drm-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *wl-poller*) handle) (cl-async:free-poller *wl-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *client-poller*) handle) (cl-async:free-poller *client-poller*))

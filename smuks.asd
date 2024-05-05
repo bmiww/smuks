@@ -47,6 +47,7 @@
 	       #:split-sequence
 	       #:file-notify
 	       #:cl-libinput
+	       #:cl-libseat
 	       #:cl-wl
 	       #:cl-wl.wayland-core
 	       #:cl-wl.xdg-shell)

@@ -12,12 +12,18 @@
 ;;  ││├┤ └┐┌┘││  ├┤    │ ├┬┘├─┤│  ├┴┐├┤ ├┬┘
 ;; ─┴┘└─┘ └┘ ┴└─┘└─┘   ┴ ┴└─┴ ┴└─┘┴ ┴└─┘┴└─
 (defclass dev-track ()
-  ((context :initarg nil :accessor context)
+  ((open-device :initarg :open-device :reader open-device)
+   (close-device :initarg :close-device :reader close-device)
+   (context :initarg nil :accessor context)
    (devices :initform (make-hash-table :test 'equal) :accessor devices)
    (fd :initform nil :accessor fd)))
 
-(defmethod initialize-instance :after ((track dev-track) &key)
-  (setf (context track) (libinput:create-context))
+(defmethod initialize-instance :after ((track dev-track) &key open-device close-device)
+  (print open-device)
+  (print (type-of open-device))
+  (print close-device)
+  (print (type-of close-device))
+  (setf (context track) (libinput:create-context :open-restricted open-device :close-restricted close-device))
   (dolist (path (directory "/dev/input/event*"))
     (let ((dev (make-instance 'dev :path path :dev-track track)))
       (setf (gethash path (devices track)) dev))))
@@ -38,7 +44,11 @@
 (defmethod context-fd ((track dev-track))
   (or (fd track) (setf (fd track) (libinput:get-fd (context track)))))
 
-(defmethod dispatch ((track dev-track)) (libinput:dispatch (context track)))
+(defmethod dispatch ((track dev-track) handle-input-cb)
+  (libinput:dispatch (context track))
+  (loop for event = (libinput:get-event (context track))
+	while event
+	do (funcall handle-input-cb event)))
 
 ;; ┌┬┐┌─┐┬  ┬┬┌─┐┌─┐
 ;;  ││├┤ └┐┌┘││  ├┤
@@ -58,18 +68,23 @@
    `(:touch ,libinput:device-cap-touch)))
 
 (defmethod initialize-instance :after ((dev dev) &key path dev-track)
-  (setf (libinput-ptr dev) (libinput:path-add-device (context dev-track) path))
-  (libinput:device-ref (libinput-ptr dev))
-  (setf (name dev) (libinput:device-get-name (libinput-ptr dev)))
+  (setf (libinput-ptr dev) (libinput:path-add-device (context dev-track) (namestring path)))
+  (if (cffi:pointer-eq (libinput-ptr dev) (cffi:null-pointer))
+      (log! "Device with path ~a could not be added to libinput context." path)
+      (progn
+	(libinput:device-ref (libinput-ptr dev))
+	(setf (name dev) (libinput:device-get-name (libinput-ptr dev)))
 
-  (dolist (capability *caps-of-interest*)
-    (let ((has-cap (libinput:device-has-capability (libinput-ptr dev) (cadr capability))))
-      (when has-cap (push (car capability) (capabilities dev)))))
+	(dolist (capability *caps-of-interest*)
+	  (let ((has-cap (libinput:device-has-capability (libinput-ptr dev) (cadr capability))))
+	    (when has-cap (push (car capability) (capabilities dev)))))
 
-  (unless (capabilities dev)
-    (setf (pointless dev) t)
-    (libinput:device-unref (libinput-ptr dev))
-    (libinput:path-remove-device (libinput-ptr dev))))
+	(unless (capabilities dev) (make-pointless dev)))))
+
+(defmethod make-pointless ((dev dev))
+  (setf (pointless dev) t)
+  (libinput:device-unref (libinput-ptr dev))
+  (libinput:path-remove-device (libinput-ptr dev)))
 
 (defmethod destroy ((dev dev))
   (libinput:device-unref (libinput-ptr dev))
