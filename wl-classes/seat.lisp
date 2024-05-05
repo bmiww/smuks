@@ -26,9 +26,11 @@
 	 ;; TODO: For now making touch a capability statically.
 	 ;; In ideal - you would first check libinput for device capabilities
 	 (capabilities *touch*))
-    (wl-seat:send-name interface *static-one-seat-name*)
-    (wl-seat:send-capabilities interface capabilities)
-    (setf (gethash id (seats client)) global)))
+    ;; TODO: Somehow some of the weston examples don't like the seat name event
+    ;; Since it's not of high importance - for now disabling.
+    ;; Might be a version mismatch i guess
+    ;; (wl-seat:send-name interface *static-one-seat-name*)
+    (wl-seat:send-capabilities interface capabilities)))
 
 
 ;; ┌─┐┌─┐┌─┐┌┬┐

@@ -219,14 +219,15 @@
 ;; └─┘┴─┘┴└─┘┘└┘ ┴
 (defclass client (wl:client)
   ((compositor :initform nil :accessor compositor)
-   (seat :initform nil :accessor seats)))
+   (seat :initform nil :accessor seat)))
 
-(defmethod (setf wl::iface) :after (iface (client client) id)
+(defmethod (setf wl::iface) :after ((iface compositor) (client client) id)
   (declare (ignore id))
-  (when (typep iface 'compositor) (setf (compositor client) iface)))
+  (setf (compositor client) iface))
 
 (defmethod (setf wl::iface) :after ((iface seat) (client client) id)
-  (declare (ignore id)) (setf (seat client) iface))
+  (declare (ignore id))
+  (setf (seat client) iface))
 
 
 ;; ┌─┐┌─┐┬  ┬  ┬┌┐┌┌─┐
