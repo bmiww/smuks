@@ -157,10 +157,17 @@
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐
 ;; ├┤ ├┬┘├─┤│││├┤
 ;; └  ┴└─┴ ┴┴ ┴└─┘
+;; Rendering
+;; X IS UP
+;; Y IS RIGHT
 (defun render-surface (surface)
-  (let ((texture (texture surface)))
+  (let ((texture (texture surface))
+	(width (flo (width surface)))
+	(height (flo (height surface)))
+	(x (flo (x surface)))
+	(y (flo (y surface))))
     (shaders.texture:draw *texture-shader* texture
-			  '(0.0 0.0 200.0 200.0))
+			  `(,x ,y ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)))
 
