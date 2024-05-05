@@ -269,8 +269,7 @@
   (let ((x (coerce (touch@-x event) 'single-float)) (y (coerce (touch@-y event) 'single-float)) (slot (touch@-seat-slot event)))
     (case slot
       (0 (move-green x y))
-      (1 (move-red x y)))
-    (print *green-x-pos*)))
+      (1 (move-red x y)))))
 
 (defun handle-touch-down (event)
   (let ((x (coerce (touch@-x event) 'single-float)) (y (coerce (touch@-y event) 'single-float)) (slot (touch@-seat-slot event)))
@@ -279,10 +278,10 @@
       (1 (move-red x y)))))
 
 (defun handle-input (event)
-  (log! "Handling an input event: ~a~%" event)
-  (cond
-    ((touch-motion@-p event) (handle-touch-motion event))
-    ((touch-down@-p event)   (handle-touch-down event))))
+  ;; (log! "Handling an input event: ~a~%" event)
+  (case (event-type event)
+    (:touch-motion (handle-touch-motion event))
+    (:touch-down   (handle-touch-down event))))
 
 
 ;; Unorganized handlers
