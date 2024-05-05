@@ -45,7 +45,7 @@
   (or (fd track) (setf (fd track) (libinput:get-fd (context track)))))
 
 (defmethod dispatch ((track dev-track) handle-input-cb)
-  (libinput:dispatch (context track))
+  (libinput::dispatch (context track))
   (loop for event = (libinput:get-event (context track))
 	while event
 	do (funcall handle-input-cb event)))

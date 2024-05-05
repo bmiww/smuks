@@ -179,6 +179,9 @@
     (setf y-up t))
   (incf *y-pos* (if y-up 1 -1)))
 
+(defvar *green-x-pos* 30.0)
+(defvar *green-y-pos* 700.0)
+
 (defun render-frame ()
   (livesupport:update-repl-link)
   (when *frame-ready*
@@ -190,7 +193,7 @@
 					      :color '(0.2 0.2 0.2 1.0))))
 
     (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-					      :x 30.0 :y 700.0 :w 200.0 :h 50.0
+					      :x *green-x-pos* :y *green-y-pos* :w 200.0 :h 50.0
 					      :color '(0.2 0.9 0.2 1.0))))
 
     (render-clients)
@@ -243,7 +246,7 @@
 ;; Slightly annoying callbacks
 (defun ready (ev) (member :readable ev))
 (defun wayland-callback (ev) (when (ready ev) (handle-wayland-event)))
-(defun input-callback (ev) (when (ready ev) (dispatch (libinput *wayland*) 'handle-input)))
+(defun input-callback (ev) (when (ready ev) (smuks::dispatch (libinput *wayland*) 'handle-input)))
 (defun notify-callback (ev) (when (ready ev) (notify::process 'device-change)))
 (defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm-dev*) :page-flip 'set-frame-ready)))
 (defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
@@ -251,8 +254,18 @@
   (when (ready ev)
     (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
 
+(defun handle-touch-motion (event)
+  (let ((x (touch@-x event))
+	(y (touch@-y event)))
+    (setf *green-x-pos* (coerce x 'single-float))
+    (setf *green-y-pos* (coerce y 'single-float))
+    (format t "Touch motion: ~a ~a~%" x y)))
+
 (defun handle-input (event)
-  (log! "Handling an input event: ~a~%" event))
+  (log! "Handling an input event: ~a~%" event)
+  (cond
+    ((touch-motion@-p event) (handle-touch-motion event))))
+
 
 ;; Unorganized handlers
 (defun handle-wayland-event ()
