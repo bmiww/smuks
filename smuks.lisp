@@ -182,6 +182,9 @@
 (defvar *green-x-pos* 30.0)
 (defvar *green-y-pos* 700.0)
 
+(defvar *red-x* 50.0)
+(defvar *red-y* 50.0)
+
 (defun render-frame ()
   (livesupport:update-repl-link)
   (when *frame-ready*
@@ -195,6 +198,10 @@
     (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
 					      :x *green-x-pos* :y *green-y-pos* :w 200.0 :h 50.0
 					      :color '(0.2 0.9 0.2 1.0))))
+
+    (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
+					      :x *red-x* :y *red-y* :w 200.0 :h 50.0
+					      :color '(1.0 0.0 0.0 0.6))))
 
     (render-clients)
     (gl:flush)
@@ -255,17 +262,21 @@
   (when (ready ev)
     (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
 
+(defun move-green (x y) (setf *green-x-pos* x) (setf *green-y-pos* y))
+(defun move-red (x y) (setf *red-x* x) (setf *red-y* y))
+
 (defun handle-touch-motion (event)
-  (let ((x (touch@-x event)) (y (touch@-y event)))
-    (setf *green-x-pos* (coerce x 'single-float))
-    (setf *green-y-pos* (coerce y 'single-float))
-    (format t "Touch motion: ~a ~a~%" x y)))
+  (let ((x (coerce (touch@-x event) 'single-float)) (y (coerce (touch@-y event) 'single-float)) (slot (touch@-seat-slot event)))
+    (case slot
+      (0 (move-green x y))
+      (1 (move-red x y)))
+    (print *green-x-pos*)))
 
 (defun handle-touch-down (event)
-  (let ((x (touch@-x event)) (y (touch@-y event)))
-    (setf *green-x-pos* (coerce x 'single-float))
-    (setf *green-y-pos* (coerce y 'single-float))
-    (format t "Touch down: ~a ~a~%" x y)))
+  (let ((x (coerce (touch@-x event) 'single-float)) (y (coerce (touch@-y event) 'single-float)) (slot (touch@-seat-slot event)))
+    (case slot
+      (0 (move-green x y))
+      (1 (move-red x y)))))
 
 (defun handle-input (event)
   (log! "Handling an input event: ~a~%" event)
