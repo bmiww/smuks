@@ -20,10 +20,7 @@
   *rect-shader* *texture-shader*
   *client-poller* *wl-poller* *drm-poller* *input-poller* *seat-poller* *device-poller*
 
-  *test-app*
-
-  ;; Removable???
-  *texture*)
+  *test-app*)
 
 (defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
@@ -110,7 +107,7 @@
   (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm-dev*) (wl:display-ptr *wayland*)))
   (setf *egl-image* (create-egl-image *egl* *buffer-object*))
 
-  (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
+  (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
 
   (init-shaders)
 

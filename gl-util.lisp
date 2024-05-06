@@ -38,15 +38,16 @@
   (let* ((texture (gl:gen-texture))
 	 (framebuffer (gl:gen-framebuffer)))
     (check-gl-error "Gen texture/framebuffer")
+
     (gl:bind-texture :texture-2d texture)
     (%gl:egl-image-target-texture-2d-oes :texture-2d image)
     (check-gl-error "egl-image-target-texture-2d-oes")
-    (gl:bind-framebuffer :framebuffer framebuffer)
 
+    (gl:bind-framebuffer :framebuffer framebuffer)
     (gl:framebuffer-texture-2d :framebuffer :color-attachment0 :texture-2d texture 0)
     (check-gl-fb-status "After attaching texture")
 
-    (values framebuffer texture)))
+    framebuffer))
 
 (defun prep-gl-implementation (device framebuffer)
   (gl:bind-framebuffer :framebuffer framebuffer)
