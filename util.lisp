@@ -10,7 +10,7 @@
   (:nicknames :util)
   (:export dohash log! *log-output*
 	   match-kernel-errcode check-err
-	   heading setfnil
+	   heading setfnil defnil
 	   check-gl-fb-status check-gl-error
 	   flatten get-ms))
 (in-package :smuks-util)
@@ -65,6 +65,12 @@ declarations. Finally the result-form is returned after the iteration completes.
       (error "Needs at least one argument")
       `(progn
 	 ,@(mapcar (lambda (arg) `(setf ,arg nil)) args))))
+
+(defmacro defnil (&rest args)
+  (if (null args)
+      (error "Needs at least one argument")
+      `(progn
+	 ,@(mapcar (lambda (arg) `(defvar ,arg nil)) args))))
 
 
 ;; ┬  ┬┌┐┌┬ ┬─┐ ┬

@@ -11,37 +11,19 @@
 
 (defvar +socket-file+ "/tmp/smuks.socket")
 
-(defvar *socket* nil)
-(defvar *wayland* nil)
+(defnil
+    *wayland* *socket* *smuks-exit* *frame-ready*
+  *drm-dev* *buffer-object* *frame-buffer* *active-crtc*
+  *libinput* *seat*
+  *egl* *egl-context* *egl-image* *main-vbo*
+  *gl-frame-buffer*
+  *rect-shader* *texture-shader*
+  *client-poller* *wl-poller* *drm-poller* *input-poller* *seat-poller* *device-poller*
 
-(defvar *smuks-exit* nil)
-(defvar *drm-dev* nil)
-(defvar *main-vbo* nil)
+  *test-app*
 
-(defvar *egl* nil)
-(defvar *egl-context* nil)
-(defvar *egl-image* nil)
-
-(defvar *buffer-object* nil)
-(defvar *frame-buffer* nil)
-(defvar *gl-frame-buffer* nil)
-(defvar *texture* nil)
-(defvar *active-crtc* nil)
-
-(defvar *rect-shader* nil)
-(defvar *texture-shader* nil)
-
-(defvar *client-poller* nil)
-(defvar *wl-poller* nil)
-(defvar *drm-poller* nil)
-(defvar *device-poller* nil)
-(defvar *input-poller* nil)
-(defvar *seat-poller* nil)
-
-(defvar *seat* nil)
-
-(defvar *frame-ready* t)
-(defvar *test-app* nil)
+  ;; Removable???
+  *texture*)
 
 (defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
@@ -98,32 +80,27 @@
   (setf *frame-ready* t)
   (heading)
 
-  ;; NOTE: This is at minimum needed to have the smuks process in ssh connections to get access
-  ;; To input devices.
-  ;; It also requires a custom built libseat
-  ;; It should work by default if not ssh'ing
-  ;; But i should find a better way to do this
+  ;; NOTE: A private hack in the libseat to get the seat while in ssh
+  ;; If you run this process in a regular tty - this is not needed and might even be harmful
+  ;; TODO: Do not use 1 - just find the first session id for an open seat
+  ;; Or - if theres multiple - we're in CL - just create give some restart options
   (setf (uiop/os:getenv "XDG_SESSION_ID_OVERRIDE") "1")
-
   (setf (uiop/os:getenv "WAYLAND_DEBUG") "")
-  (setf *socket* (init-socket))
+
 
   (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
   (unless *seat* (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
-
+  ;; NOTE: We block until libseat tells us that we have a seat
+  ;; As soon as the poll is successful this loop will exit
   (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
-  ;; Dispatching seat events immediately - the first event should always be an enable
-  ;; After this call - we should be able to have access to device files
-  ;; (libseat:dispatch *seat* 0)
 
-
-  ;; TODO: Can sometimes fail on retrying
+  ;; TODO: Can sometimes fail when running main anew in the same lisp image
   (setf *drm-dev* (init-drm))
+  (setf *socket* (init-socket))
+  (setf *libinput* (make-instance 'dev-track :open-device 'open-device :close-device 'close-device))
 
   (wl:init-interface-definitions)
-  (setf *wayland* (make-instance 'display
-		     :fd (unix-sockets::fd *socket*)
-		     :libinput (make-instance 'dev-track :open-device 'open-device :close-device 'close-device)))
+  (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)))
 
   (init-globals)
 
@@ -137,6 +114,8 @@
 
   (init-shaders)
 
+  ;; TODO: You might be able to remove the *active-crtc* indirection.
+  ;; At least it's not really used elsewwhere
   (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
@@ -263,7 +242,7 @@
 (defun wayland-listener () (cl-async:poll (wl:event-loop-fd *wayland*) 'wayland-callback :poll-for '(:readable)))
 (defun client-listener () (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t))
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
-(defun input-listener () (cl-async:poll (context-fd (libinput *wayland*)) 'input-callback :poll-for '(:readable)))
+(defun input-listener () (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable)))
 (defun seat-listener () (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable)))
 (defun notify-listener ()
   (notify::init)
@@ -273,7 +252,7 @@
 ;; Slightly annoying callbacks
 (defun ready (ev) (member :readable ev))
 (defun wayland-callback (ev) (when (ready ev) (handle-wayland-event)))
-(defun input-callback (ev) (when (ready ev) (smuks::dispatch (libinput *wayland*) 'handle-input)))
+(defun input-callback (ev) (when (ready ev) (smuks::dispatch *libinput* 'handle-input)))
 (defun notify-callback (ev) (when (ready ev) (notify::process 'device-change)))
 (defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm-dev*) :page-flip 'set-frame-ready)))
 (defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
@@ -329,8 +308,8 @@
   (let ((path (namestring path)))
     (when (str:contains? "/event" path)
       (case change
-	(:create (add-device (libinput *wayland*) path))
-	(:delete (rem-device (libinput *wayland*) path))
+	(:create (add-device *libinput* path))
+	(:delete (rem-device *libinput* path))
 	(t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change))))))
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
@@ -388,8 +367,7 @@
 ;;  │││└─┐├─┘│  ├─┤└┬┘
 ;; ─┴┘┴└─┘┴  ┴─┘┴ ┴ ┴
 (defclass display (wl:display)
-  ((libinput :initarg :libinput :reader libinput)
-   ;; Not sure we need 32. That's a lot of fingers.
+  (;; Not sure we need 32. That's a lot of fingers.
    (touch-slot-interesses :initform (make-array 32 :initial-element nil) :reader touch-slot-interesses)))
 
 (defmethod surface-at-coords ((display display) x y)
