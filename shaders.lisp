@@ -49,6 +49,7 @@
 
     shader-program))
 
+;; TODO: Stupid name. This just fills a buffer with the fancy 4 corner coords
 (defun array-buffer-data (vbo verts)
   (gl:bind-buffer :array-buffer vbo)
   (let* ((length (length verts))

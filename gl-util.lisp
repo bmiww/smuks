@@ -21,19 +21,6 @@
 ;; ┌─┐┬    ┌─┐┬─┐┌─┐┌─┐
 ;; │ ┬│    ├─┘├┬┘├┤ ├─┘
 ;; └─┘┴─┘  ┴  ┴└─└─┘┴
-(defvar *instanced-verts* '(1.0 0.0   0.0 0.0   1.0 1.0   0.0 1.0))
-
-(defun init-instanced-verts ()
-  (let* ((vbo (gl:gen-buffer))
-	 (arr (gl:alloc-gl-array :float (length *instanced-verts*))))
-    (dotimes (i (length *instanced-verts*))
-      (setf (gl:glaref arr i) (nth i *instanced-verts*)))
-
-    (gl:bind-buffer :array-buffer vbo)
-    (gl:buffer-data :array-buffer :static-draw arr)
-    (check-gl-error "Init instanced verts")
-    (gl:bind-buffer :array-buffer 0)))
-
 (defun create-gl-framebuffer (image)
   (let* ((texture (gl:gen-texture))
 	 (framebuffer (gl:gen-framebuffer)))
@@ -49,14 +36,12 @@
 
     framebuffer))
 
-(defun prep-gl-implementation (device framebuffer)
+(defun prep-gl-implementation (framebuffer width height)
   (gl:bind-framebuffer :framebuffer framebuffer)
-  (let* ((main-vbo (init-instanced-verts)))
-    (gl:enable :blend)
-    (gl:blend-func :src-alpha :one-minus-src-alpha)
-    (gl:clear-color 0.0 0.0 1.0 1.0)
-    (gl:viewport 0 0 (width device) (height device))
-    main-vbo))
+  (gl:enable :blend)
+  (gl:blend-func :src-alpha :one-minus-src-alpha)
+  (gl:clear-color 0.0 0.0 1.0 1.0)
+  (gl:viewport 0 0 width height))
 
 
 ;; ┌┬┐┌─┐┌┬┐┬─┐┬┌─┐┌─┐┌─┐

@@ -10,19 +10,20 @@
 (in-package :smuks)
 
 (defvar +socket-file+ "/tmp/smuks.socket")
+;; Set to one to enable wayland debug messages. Dunno which output it goes to though.
+(defvar *enable-wayland-debug-logs* "")
 
 (defnil
     *wayland* *socket* *smuks-exit* *frame-ready*
   *drm-dev* *buffer-object* *frame-buffer* *active-crtc*
   *libinput* *seat*
-  *egl* *egl-context* *egl-image* *main-vbo*
+  *egl* *egl-context* *egl-image*
   *gl-frame-buffer*
   *rect-shader* *texture-shader*
   *client-poller* *wl-poller* *drm-poller* *input-poller* *seat-poller* *device-poller*
 
   *test-app*)
 
-(defun shutdown () (setf *smuks-exit* t))
 (defun cleanup ()
   (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
   (when *buffer-object* (sdrm:destroy-bo *buffer-object*))
@@ -50,11 +51,11 @@
 	(cl-async:delay 'recursively-render-frame :time 0.016))))
 
 (defun init-shaders ()
-  ;; TODO: Is this main-vbo still used?
-  (setf *main-vbo* (prep-gl-implementation *drm-dev* *frame-buffer*))
+  (prep-gl-implementation *frame-buffer* (width *drm-dev*) (height *drm-dev*))
   (setf *rect-shader* (shader-init:create-rect-shader *drm-dev*))
   (setf *texture-shader* (shader-init:create-texture-shader *drm-dev*)))
 
+;; TODO: Part of display init?
 (defun init-globals ()
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
   (make-instance 'wl-compositor:global :display *wayland* :dispatch-impl 'compositor)
@@ -64,6 +65,7 @@
   (make-instance 'wl-data-device-manager:global :display *wayland* :dispatch-impl 'dd-manager)
   (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'wm-base))
 
+;; TODO: MOVE
 (defun add-default-framebuffer (device buffer-object)
   (let* ((width (width device))
 	 (height (height device))
@@ -82,13 +84,14 @@
   ;; TODO: Do not use 1 - just find the first session id for an open seat
   ;; Or - if theres multiple - we're in CL - just create give some restart options
   (setf (uiop/os:getenv "XDG_SESSION_ID_OVERRIDE") "1")
-  (setf (uiop/os:getenv "WAYLAND_DEBUG") "")
+  (setf (uiop/os:getenv "WAYLAND_DEBUG") *enable-wayland-debug-logs*)
 
-
+  ;; NOTE: Open a seat.
+  ;; We block until libseat tells us that we have a seat
+  ;; The loop will exit as soon as we have a seat
+  ;; TODO: Give the loop like a 5 sec timeout? In case seatd/logind doesn't respond
   (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
   (unless *seat* (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
-  ;; NOTE: We block until libseat tells us that we have a seat
-  ;; As soon as the poll is successful this loop will exit
   (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
 
   ;; TODO: Can sometimes fail when running main anew in the same lisp image
@@ -96,9 +99,11 @@
   (setf *socket* (init-socket))
   (setf *libinput* (make-instance 'dev-track :open-device 'open-device :close-device 'close-device))
 
+  ;; TODO: This is a bit awkward as an expected package export
+  ;; Without this - nothing in wayland-land would work.
+  ;; Maybe have the default display constructor do this in the :before step?
   (wl:init-interface-definitions)
   (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)))
-
   (init-globals)
 
   (setf *buffer-object* (sdrm:create-bo *drm-dev*))
@@ -108,7 +113,6 @@
   (setf *egl-image* (create-egl-image *egl* *buffer-object*))
 
   (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
-
   (init-shaders)
 
   ;; TODO: You might be able to remove the *active-crtc* indirection.
@@ -116,7 +120,6 @@
   (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
-
   (cl-async:start-event-loop
    (lambda ()
      (log! "Starting DRM fd listener. Waiting for events...~%")
@@ -142,6 +145,7 @@
 	(cleanup))
     (📍start-over () (main))))
 
+
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐
 ;; ├┤ ├┬┘├─┤│││├┤
 ;; └  ┴└─┴ ┴┴ ┴└─┘
@@ -154,8 +158,7 @@
 	(height (flo (height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (shaders.texture:draw *texture-shader* texture
-			  `(,x ,y ,width ,height))
+    (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)))
 
@@ -409,8 +412,13 @@ and then clean the list out"
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
-(defun stop-app (process) (uiop:terminate-process process))
+(defun stop-app (process)
+  "Shorthand for stopping a process"
+  (uiop:terminate-process process))
+
+;; TODO: Attach error output too.
 (defun test-app (app-name)
+  "Launch a child process and listen to its output"
   (log! "🟢 ~a: Starting an app~%" app-name)
   (let ((process (uiop:launch-program `(,app-name) :output :stream :error-output *standard-output*)))
     (bt:make-thread
@@ -420,9 +428,17 @@ and then clean the list out"
        (log! "🟢 ~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))
     process))
 
-(defun flo (num) (coerce num 'single-float))
+(defun flo (num)
+  "Just a shorter form to coerce a number to float"
+  (coerce num 'single-float))
+
+;; Can be called from repl to stop the compositor
+(defun shutdown () (setf *smuks-exit* t))
 
 
+;; ┬ ┬┌─┐┌─┐┬┌─┌─┐
+;; ├─┤├─┤│  ├┴┐└─┐
+;; ┴ ┴┴ ┴└─┘┴ ┴└─┘
 ;; TODO: This is a fix for cl-async not having a handler for gracious :poll closing
 ;; Weirdly enough - i expected them to crash due to this missing method, but they don't.
 ;; I should probably fix this in cl-async by introducing the handle-cleanup method.
