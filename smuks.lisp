@@ -290,7 +290,7 @@
 	  (0 (move-green x y))
 	  (1 (move-red x y))))))
 
-(defun handle-touch-up (event) (touch-up *wayland* (touch@-seat-slot event)))
+(defun handle-touch-up (event) (touch-up *wayland* (touch-up@-seat-slot event)))
 (defun handle-touch-frame (event) (declare (ignore event)) (touch-frame *wayland*))
 
 (defun handle-input (event)
