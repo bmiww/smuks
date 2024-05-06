@@ -78,3 +78,31 @@
 
 (defun munmap (pool)
   (mmap:munmap (mmap-pool-ptr pool) (mmap-pool-fd pool) (mmap-pool-size pool)))
+
+
+;; ┌┐ ┬ ┬┌┬┐┌─┐  ┬─┐┌─┐┌─┐┌┬┐
+;; ├┴┐└┬┘ │ ├┤   ├┬┘├┤ ├─┤ ││
+;; └─┘ ┴  ┴ └─┘  ┴└─└─┘┴ ┴─┴┘
+;; TODO: Keeping this around in case if i ever want to reuse it for doing screenshots?
+;; In any case - remove if unnecessary
+(defun read-all-bytes (pointer size)
+  (let ((new-string (make-array 0
+				:element-type '(signed-byte 8)
+				:fill-pointer 0
+				:adjustable t)))
+    (loop for i below size
+	  do (vector-push-extend (cffi:mem-ref pointer :char i) new-string))
+    ;; (flexi-streams:octets-to-string new-string :external-format :ascii)
+    new-string
+    ))
+
+(defvar *previous* nil)
+(defun compare-buffer-contents (buffer)
+  (let* ((pool (mmap-pool buffer))
+	 (ptr (mmap-pool-ptr pool))
+	 (size (mmap-pool-size pool))
+	 (contents (read-all-bytes ptr size)))
+    (when *previous*
+      (print "Mismatch?")
+      (print (mismatch contents *previous*)))
+    (setf *previous* contents)))
