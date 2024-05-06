@@ -63,3 +63,9 @@
 
 (defmethod xdg-toplevel:set-app-id ((toplevel toplevel) app-id)
   (setf (app-id toplevel) app-id))
+
+;; TODO: For now keeping the move request empty
+;; Since you probably want tiling - this will mostly be ignored
+;; But - could introduce specific states/flags
+(defmethod xdg-toplevel:move ((toplevel toplevel) seat serial)
+  ())
