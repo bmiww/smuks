@@ -111,6 +111,12 @@ A coordinate falling outside of this region
 means the client doesn't have to receive that touch/pointer event."
   (log! "UNIMPLEMENTED: Set input region~%"))
 
+;; TODO: Implement to support clients setting higher/lower "dpi"
+(defmethod wl-surface:set-buffer-scale ((surface surface) scale)
+  "Sets the scale for the surface buffer.
+This is one of the double buffered actions - so applied only after next commit"
+  (log! "UNIMPLEMENTED: Set buffer scale~%"))
+
 (defmethod in-bounds ((surface surface) x y)
   (and (<= (x surface) x (+ (x surface) (width surface)))
        (<= (y surface) y (+ (y surface) (height surface)))))
