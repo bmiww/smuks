@@ -58,7 +58,8 @@
 
 (defmethod touch-down ((seat seat) surface slot x y)
   ;; TODO: Might use the time from libinput - not sure if it was ms though
-  (wl-touch:send-down (seat-touch seat) (next-serial seat) (get-ms) surface slot x y))
+  (wl-touch:send-down (seat-touch seat) (next-serial seat) (get-ms) surface
+		      slot (- x (x surface)) (- y (y surface))))
 
 (defmethod touch-up ((seat seat) slot)
   (wl-touch:send-up (seat-touch seat) (next-serial seat) (get-ms) slot))
