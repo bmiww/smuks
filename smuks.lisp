@@ -85,6 +85,14 @@
   (make-instance 'wl-data-device-manager:global :display *wayland* :dispatch-impl 'dd-manager)
   (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'wm-base))
 
+(defun add-default-framebuffer (device buffer-object)
+  (let* ((width (width device))
+	 (height (height device))
+	 (handle (gbm:bo-get-handle buffer-object))
+	 (stride (gbm:bo-get-stride buffer-object))
+	 (bpp 32) (depth 24))
+    (add-framebuffer (fd device) width height depth bpp stride handle)))
+
 (defun mainer ()
   (setf *log-output* *standard-output*)
   (setf *frame-ready* t)
@@ -119,8 +127,12 @@
 
   (init-globals)
 
-  (setf (values *egl* *egl-context*) (init-egl *drm-dev* (wl:display-ptr *wayland*)))
-  (setf (values *frame-buffer* *egl-image* *buffer-object*) (create-framebuffer *egl* *drm-dev*))
+  (setf *buffer-object* (sdrm:create-bo *drm-dev*))
+  (setf *frame-buffer* (add-default-framebuffer *drm-dev* *buffer-object*))
+
+  (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm-dev*) (wl:display-ptr *wayland*)))
+  (setf *egl-image* (create-egl-image *egl* *buffer-object*))
+
   (setf (values *gl-frame-buffer* *texture*) (create-gl-framebuffer *egl-image*))
 
   (init-shaders)
