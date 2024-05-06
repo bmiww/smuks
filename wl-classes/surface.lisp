@@ -102,14 +102,14 @@
 (defmethod wl-surface:set-opaque-region ((surface surface) region)
   "Sets the region which should be considered more carefully for repaints.
 Basically client notifying the compositor that there are alpha < 1 pixels in this region"
-  (log! "UNIMPLEMENTED: Set opaque region"))
+  (log! "UNIMPLEMENTED: Set opaque region~%"))
 
 ;; TODO: This one is meaningful for me - for now i'm sending all events to the client
 (defmethod wl-surface:set-input-region ((surface surface) region)
   "Sets the region which should be considered for input events.
 A coordinate falling outside of this region
 means the client doesn't have to receive that touch/pointer event."
-  (log! "UNIMPLEMENTED: Set input region"))
+  (log! "UNIMPLEMENTED: Set input region~%"))
 
 (defmethod in-bounds ((surface surface) x y)
   (and (<= (x surface) x (+ (x surface) (width surface)))
