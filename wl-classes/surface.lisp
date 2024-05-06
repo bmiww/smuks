@@ -8,7 +8,7 @@
 (in-package :smuks)
 
 (defclass surface (wl-surface:dispatch)
-  ((role :accessor role)
+  ((role :initform nil :accessor role)
    (configure-serial :initform 0 :accessor configure-serial)
    (pending-buffer :initform nil :accessor pending-buffer)
    (needs-redraw :initform nil :accessor needs-redraw)
@@ -27,8 +27,8 @@
 ;; └─┘└─┘┴ ┴┴ ┴┴ ┴
 ;; https://wayland.app/protocols/wayland#wl_surface:request:commit
 (defmethod wl-surface:commit ((surface surface))
-  (cond
-    ((typep (role surface) 'xdg-surface) (commit-toplevel surface))
+  (typecase (role surface)
+    (xdg-surface (commit-toplevel surface))
     (t (error (format nil "Unsupported surface role: ~a" (role surface))))))
 
 (defmethod commit-toplevel ((surface surface))
@@ -139,3 +139,22 @@ This is one of the double buffered actions - so applied only after next commit"
 
 (defun class-is? (object class)
   (typep object class))
+
+
+;; ███████╗██╗   ██╗██████╗ ███████╗██╗   ██╗██████╗ ███████╗ █████╗  ██████╗███████╗
+;; ██╔════╝██║   ██║██╔══██╗██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗██╔════╝██╔════╝
+;; ███████╗██║   ██║██████╔╝███████╗██║   ██║██████╔╝█████╗  ███████║██║     █████╗
+;; ╚════██║██║   ██║██╔══██╗╚════██║██║   ██║██╔══██╗██╔══╝  ██╔══██║██║     ██╔══╝
+;; ███████║╚██████╔╝██████╔╝███████║╚██████╔╝██║  ██║██║     ██║  ██║╚██████╗███████╗
+;; ╚══════╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝
+(defclass subsurface (wl-subsurface:dispatch)
+  ((surface :initarg :surface)
+   (parent :initarg :parent)))
+
+;; TODO:
+(defmethod wl-subsurface:set-position ((sub subsurface) x y)
+  "Position the subsurface relative to the parent surface top-left corner
+Could be a negative value.
+This is double buffered - applied when the parent surface commits
+Buuuut subsurfaces also have the option of setting sync/desync mode"
+  (log! "UNIMPLEMENTED: Set position~%"))

@@ -79,7 +79,7 @@
 (defun init-globals ()
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
   (make-instance 'wl-compositor:global :display *wayland* :dispatch-impl 'compositor)
-  (make-instance 'wl-subcompositor:global :display *wayland*)
+  (make-instance 'wl-subcompositor:global :display *wayland* :dispatch-impl 'subcompositor)
   (make-instance 'shm-global :display *wayland* :dispatch-impl 'shm)
   (make-instance 'seat-global :display *wayland* :dispatch-impl 'seat)
   (make-instance 'wl-data-device-manager:global :display *wayland* :dispatch-impl 'dd-manager)
