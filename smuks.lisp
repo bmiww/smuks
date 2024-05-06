@@ -100,8 +100,8 @@
   (setf (uiop/os:getenv "WAYLAND_DEBUG") "")
   (setf *socket* (init-socket))
 
-  ;; (libseat:set-log-level :debug)
   (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
+  (unless *seat* (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
 
   (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
   ;; Dispatching seat events immediately - the first event should always be an enable
