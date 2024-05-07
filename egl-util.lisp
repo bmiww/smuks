@@ -58,12 +58,10 @@
 ;; ││││├─┤│ ┬├┤
 ;; ┴┴ ┴┴ ┴└─┘└─┘
 ;; NOTE: Stride is pitch. Eh.
-(defun create-egl-image (egl buffer-object)
-  (let* ((stride (gbm:bo-get-stride buffer-object))
-	 (offset 0) (bpp 32) (depth 24))
-	 ;; TODO: Maybe the gl lib already has this extension defined. That lib seems a bit more polished
+(defun create-egl-image (egl buffer-object width height)
+  (let ((stride (gbm:bo-get-stride buffer-object)) (offset 0))
+    ;; TODO: Maybe the gl lib already has this extension defined. That lib seems a bit more polished
     (egl:create-image-khr egl (cffi:null-pointer) egl::LINUX_DMA_BUF_EXT (cffi:null-pointer)
-			  ;; TODO: In the rust thing this was an FD not a pointer
 			  :dma-buf-plane-fd-ext (gbm:bo-get-fd buffer-object)
 			  :width width :height height
 			  :linux-drm-fourcc-ext gbm::FORMAT_XRGB8888

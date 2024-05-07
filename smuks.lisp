@@ -110,7 +110,7 @@
   (setf *frame-buffer* (add-default-framebuffer *drm-dev* *buffer-object*))
 
   (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm-dev*) (wl:display-ptr *wayland*)))
-  (setf *egl-image* (create-egl-image *egl* *buffer-object*))
+  (setf *egl-image* (create-egl-image *egl* *buffer-object* (width *drm-dev*) (height *drm-dev*)))
 
   (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
   (init-shaders)
