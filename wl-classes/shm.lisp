@@ -21,6 +21,15 @@
     (wl-shm:send-format interface 1)))
 
 
+;; ┌┬┐┌┬┐┌─┐┌─┐  ┌─┐┌─┐┌─┐┬
+;; ││││││├─┤├─┘  ├─┘│ ││ ││
+;; ┴ ┴┴ ┴┴ ┴┴    ┴  └─┘└─┘┴─┘
+(defstruct mmap-pool ptr fd size)
+
+(defun munmap (pool)
+  (mmap:munmap (mmap-pool-ptr pool) (mmap-pool-fd pool) (mmap-pool-size pool)))
+
+
 ;; ┌─┐┬ ┬┌┬┐
 ;; └─┐├─┤│││
 ;; └─┘┴ ┴┴ ┴
@@ -70,14 +79,6 @@
    (mmap-pool :initarg :mmap-pool :accessor mmap-pool)))
 
 (defmethod pool-ptr ((buffer buffer)) (mmap-pool-ptr (mmap-pool buffer)))
-
-;; ┌┬┐┌┬┐┌─┐┌─┐  ┌─┐┌─┐┌─┐┬
-;; ││││││├─┤├─┘  ├─┘│ ││ ││
-;; ┴ ┴┴ ┴┴ ┴┴    ┴  └─┘└─┘┴─┘
-(defstruct mmap-pool ptr fd size)
-
-(defun munmap (pool)
-  (mmap:munmap (mmap-pool-ptr pool) (mmap-pool-fd pool) (mmap-pool-size pool)))
 
 
 ;; ┌┐ ┬ ┬┌┬┐┌─┐  ┬─┐┌─┐┌─┐┌┬┐
