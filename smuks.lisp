@@ -264,10 +264,13 @@
 (defun move-red (x y) (setf *red-x* x) (setf *red-y* y))
 
 (defun handle-touch-motion (event)
-  (let ((x (coerce (touch@-x event) 'single-float)) (y (coerce (touch@-y event) 'single-float)) (slot (touch@-seat-slot event)))
-    (case slot
-      (0 (move-green x y))
-      (1 (move-red x y)))))
+  (let ((x (flo (touch@-x event)))
+	(y (flo (touch@-y event)))
+	(slot (touch@-seat-slot event)))
+    (unless (touch-motion *wayland* slot x y)
+      (case slot
+	(0 (move-green x y))
+	(1 (move-red x y))))))
 
 (defun handle-touch-down (event)
   (let* ((x (flo (touch@-x event)))
@@ -398,6 +401,16 @@ and then clean the list out"
       (when (seat-touch (seat client))
 	(touch-up (seat client) slot)))
     (setf (aref (touch-slot-interesses display) slot) nil)))
+
+(defmethod touch-motion ((display display) slot x y)
+  "Notify all clients interested in the specific touch slot of the motion event"
+  (let ((clients (aref (touch-slot-interesses display) slot))
+	(motiond? nil))
+    (dolist (client clients)
+      (when (seat-touch (seat client))
+	(setf motiond? t)
+	(touch-motion (seat client) slot x y)))
+    motiond?))
 
 ;; TODO: Not sure if it would be possible or even make sense to keep a list
 ;; of interested clients instead of broadcasting to all
