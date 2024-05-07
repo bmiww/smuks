@@ -20,6 +20,45 @@
    (attr-color)
    (vao)))
 
+(defparameter vertex-shader-rectangle "
+#version 310 es
+
+uniform mat3 projection;
+
+in vec2 vert;
+in vec4 position;
+in vec4 color;
+out vec4 incolor;
+
+mat2 scale(vec2 scale_vec){
+    return mat2(
+        scale_vec.x, 0.0,
+        0.0, scale_vec.y
+    );
+}
+
+void main() {
+    vec2 transform_translation = position.xy;
+    vec2 transform_scale = position.zw;
+    vec3 position = vec3(vert * scale(transform_scale) + transform_translation, 1.0);
+
+    incolor = color;
+    gl_Position = vec4(projection * position, 1.0);
+}
+")
+
+(defparameter fragment-shader-rectangle "
+#version 310 es
+
+precision mediump float;
+in vec4 incolor;
+out vec4 color;
+
+void main() {
+    color = incolor;
+}
+")
+
 (defmethod update-projection ((program shader) new-projection)
   (with-slots (pointer projection uni-projection) program
     (setf projection new-projection)
@@ -73,45 +112,6 @@
 
     (gl:draw-arrays-instanced :triangle-strip 0 4 (length rects))))
 
-
-(defparameter vertex-shader-rectangle "
-#version 310 es
-
-uniform mat3 projection;
-
-in vec2 vert;
-in vec4 position;
-in vec4 color;
-out vec4 incolor;
-
-mat2 scale(vec2 scale_vec){
-    return mat2(
-        scale_vec.x, 0.0,
-        0.0, scale_vec.y
-    );
-}
-
-void main() {
-    vec2 transform_translation = position.xy;
-    vec2 transform_scale = position.zw;
-    vec3 position = vec3(vert * scale(transform_scale) + transform_translation, 1.0);
-
-    incolor = color;
-    gl_Position = vec4(projection * position, 1.0);
-}
-")
-
-(defparameter fragment-shader-rectangle "
-#version 310 es
-
-precision mediump float;
-in vec4 incolor;
-out vec4 color;
-
-void main() {
-    color = incolor;
-}
-")
 
 (defstruct rect
   x y

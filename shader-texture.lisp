@@ -26,6 +26,46 @@
    (attr-position)
    (vao)))
 
+(defparameter vertex-shader-texture "
+#version 310 es
+uniform mat3 matrix;
+uniform mat3 tex_matrix;
+uniform mat3 projection;
+
+in vec2 vert;
+in vec4 vert_position;
+
+out vec2 v_tex_coords;
+
+mat2 scale(vec2 scale_vec){
+    return mat2(
+        scale_vec.x, 0.0,
+        0.0, scale_vec.y
+    );
+}
+
+void main() {
+    vec2 vert_transform_translation = vert_position.xy;
+    vec2 vert_transform_scale = vert_position.zw;
+    vec3 position = vec3(vert * scale(vert_transform_scale) + vert_transform_translation, 1.0);
+    v_tex_coords = (tex_matrix * position).xy;
+    gl_Position = vec4(projection * matrix * position, 1.0);
+}")
+
+
+(defparameter fragment-shader-abgr "
+#version 310 es
+
+precision mediump float;
+uniform sampler2D sampler;
+in vec2 v_tex_coords;
+out vec4 color;
+
+void main() {
+    color = texture2D(sampler, v_tex_coords);
+}")
+
+
 (defmethod update-projection ((program shader) new-projection)
   (with-slots (pointer projection uni-projection) program
     (setf projection new-projection)
@@ -100,46 +140,6 @@
 	(%gl:vertex-attrib-divisor attr-position 1)
 
 	(gl:draw-arrays-instanced :triangle-strip 0 4 *draw-instances*)))))
-
-
-(defparameter vertex-shader-texture "
-#version 310 es
-uniform mat3 matrix;
-uniform mat3 tex_matrix;
-uniform mat3 projection;
-
-in vec2 vert;
-in vec4 vert_position;
-
-out vec2 v_tex_coords;
-
-mat2 scale(vec2 scale_vec){
-    return mat2(
-        scale_vec.x, 0.0,
-        0.0, scale_vec.y
-    );
-}
-
-void main() {
-    vec2 vert_transform_translation = vert_position.xy;
-    vec2 vert_transform_scale = vert_position.zw;
-    vec3 position = vec3(vert * scale(vert_transform_scale) + vert_transform_translation, 1.0);
-    v_tex_coords = (tex_matrix * position).xy;
-    gl_Position = vec4(projection * matrix * position, 1.0);
-}")
-
-
-(defparameter fragment-shader-abgr "
-#version 310 es
-
-precision mediump float;
-uniform sampler2D sampler;
-in vec2 v_tex_coords;
-out vec4 color;
-
-void main() {
-    color = texture2D(sampler, v_tex_coords);
-}")
 
 
 (defun from-nonuniform-scale (x y)
