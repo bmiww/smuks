@@ -12,18 +12,15 @@
 ;;  ││├┤ └┐┌┘││  ├┤    │ ├┬┘├─┤│  ├┴┐├┤ ├┬┘
 ;; ─┴┘└─┘ └┘ ┴└─┘└─┘   ┴ ┴└─┴ ┴└─┘┴ ┴└─┘┴└─
 (defclass dev-track ()
-  ((open-device :initarg :open-device :reader open-device)
-   (close-device :initarg :close-device :reader close-device)
+  ((open-restricted :initarg :open-restricted :reader open-restricted)
+   (close-restricted :initarg :close-restricted :reader close-restricted)
    (context :initarg nil :accessor context)
    (devices :initform (make-hash-table :test 'equal) :accessor devices)
    (fd :initform nil :accessor fd)))
 
-(defmethod initialize-instance :after ((track dev-track) &key open-device close-device)
-  (print open-device)
-  (print (type-of open-device))
-  (print close-device)
-  (print (type-of close-device))
-  (setf (context track) (libinput:create-context :open-restricted open-device :close-restricted close-device))
+(defmethod initialize-instance :after ((track dev-track) &key open-restricted close-restricted)
+  (setf (context track) (libinput:create-context :open-restricted open-restricted
+						 :close-restricted close-restricted))
   (dolist (path (directory "/dev/input/event*"))
     (let ((dev (make-instance 'dev :path path :dev-track track)))
       (setf (gethash path (devices track)) dev))))

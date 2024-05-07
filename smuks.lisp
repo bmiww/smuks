@@ -97,7 +97,7 @@
   ;; TODO: Can sometimes fail when running main anew in the same lisp image
   (setf *drm-dev* (init-drm))
   (setf *socket* (init-socket))
-  (setf *libinput* (make-instance 'dev-track :open-device 'open-device :close-device 'close-device))
+  (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
 
   ;; TODO: This is a bit awkward as an expected package export
   ;; Without this - nothing in wayland-land would work.
