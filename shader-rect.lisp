@@ -8,6 +8,12 @@
   (:export shader update-projection update-matrix draw))
 (in-package :shaders.rectangle)
 
+;; TODO Rect - move/remove/improve
+(defstruct rect x y w h color)
+(defmethod space-tuple ((rect rect))
+  (list (rect-x rect) (rect-y rect) (rect-w rect) (rect-h rect)))
+
+
 (defclass shader ()
   ((pointer :accessor pointer)
    (projection :accessor projection)
@@ -111,12 +117,3 @@ void main() {
     (%gl:vertex-attrib-divisor attr-color 1)
 
     (gl:draw-arrays-instanced :triangle-strip 0 4 (length rects))))
-
-
-(defstruct rect
-  x y
-  w h
-  color)
-
-(defmethod space-tuple ((rect rect))
-  (list (rect-x rect) (rect-y rect) (rect-w rect) (rect-h rect)))
