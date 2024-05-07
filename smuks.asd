@@ -46,10 +46,10 @@
 	       (:file "package")
 	       (:file "dev-track")
 	       (:module "wl-classes"
-		:components ((:file "surface")
+		:components ((:file "xdg-wm-base")
+			     (:file "surface")
 			     (:file "compositor")
 			     (:file "shm")
-			     (:file "xdg-wm-base")
 			     (:file "seat")
 			     (:file "dd-manager")))
 	       (:file "smuks")))
