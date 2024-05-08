@@ -79,11 +79,6 @@
   (setf *frame-ready* t)
   (heading)
 
-  ;; NOTE: A private hack in the libseat to get the seat while in ssh
-  ;; If you run this process in a regular tty - this is not needed and might even be harmful
-  ;; TODO: Do not use 1 - just find the first session id for an open seat
-  ;; Or - if theres multiple - we're in CL - just create give some restart options
-  (setf (uiop/os:getenv "XDG_SESSION_ID_OVERRIDE") "1")
   (setf (uiop/os:getenv "WAYLAND_DEBUG") *enable-wayland-debug-logs*)
 
   ;; NOTE: Open a seat.
