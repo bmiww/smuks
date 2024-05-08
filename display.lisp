@@ -8,7 +8,12 @@
 (in-package :smuks)
 (defclass display (wl:display)
   ;; Not sure we need 32. That's a lot of fingers.
-  ((touch-slot-interesses :initform (make-array 32 :initial-element nil) :reader touch-slot-interesses)))
+  ((touch-slot-interesses :initform (make-array 32 :initial-element nil) :reader touch-slot-interesses)
+   (cursor-x :initform 0 :accessor cursor-x)
+   (cursor-y :initform 0 :accessor cursor-y)
+   ;; TODO: Both of these are dumb - these should be per CRTC/monitor/whatever
+   (display-width :initarg :display-width :accessor display-width)
+   (display-height :initarg :display-height :accessor display-height)))
 
 (defmethod input ((display display) type event)
   (log! "No handler for input event: ~a~%" (event-type event)))
@@ -69,7 +74,10 @@ and then clean the list out"
 ;; ├─┘│ │││││ │ ├┤ ├┬┘  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
 (defmethod input ((display display) (type (eql :pointer-motion)) event)
-  (log! "POINTER MOTION: ~a" event))
+  (let ((new-x (+ (cursor-x display) (flo (pointer-motion@-dx event))))
+	(new-y (+ (cursor-y display) (flo (pointer-motion@-dy event)))))
+    (setf (cursor-x display) (max 0 (min (display-width display) new-x)))
+    (setf (cursor-y display) (max 0 (min (display-height display) new-y)))))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││

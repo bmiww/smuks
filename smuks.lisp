@@ -115,7 +115,7 @@
   ;; Without this - nothing in wayland-land would work.
   ;; Maybe have the default display constructor do this in the :before step?
   (wl:init-interface-definitions)
-  (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)))
+  (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*) :display-width (width *drm-dev*) :display-height (height *drm-dev*)))
   (init-globals)
 
   (setf *buffer-object* (sdrm:create-bo *drm-dev*))
@@ -215,7 +215,7 @@
 					      :color '(1.0 0.0 0.0 0.6))))
 
     (render-clients)
-    (shaders.texture:draw *texture-shader* *cursor* `(350.0 350.0 36.0 36.0))
+    (shaders.texture:draw *texture-shader* *cursor* `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0))
     (gl:flush)
     (gl:finish)
 
