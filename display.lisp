@@ -28,7 +28,7 @@ Save the client as interested in the slot for later reference."
   (let* ((x (flo (touch@-x event)))
 	 (y (flo (touch@-y event)))
 	 (slot (touch@-seat-slot event))
-	 (surface (surface-at-coords *wayland* x y)))
+	 (surface (surface-at-coords display x y)))
     (when surface
       (let* ((client (wl:client surface))
 	     (seat (seat client)))
@@ -77,7 +77,7 @@ and then clean the list out"
 	 (new-y (+ (cursor-y display) (flo (pointer-motion@-dy event))))
 	 (new-x (max 0 (min (display-width display) new-x)))
 	 (new-y (max 0 (min (display-height display) new-y)))
-	 (surface (surface-at-coords *wayland* new-x new-y)))
+	 (surface (surface-at-coords display new-x new-y)))
 
     (when surface
       (let* ((client (wl:client surface))
