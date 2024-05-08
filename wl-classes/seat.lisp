@@ -25,7 +25,7 @@
   (let* ((interface (wl:iface client id))
 	 ;; TODO: For now making touch a capability statically.
 	 ;; In ideal - you would first check libinput for device capabilities
-	 (capabilities *touch*))
+	 (capabilities (logior *touch* *pointer*)))
     ;; TODO: Somehow some of the weston examples don't like the seat name event
     ;; Since it's not of high importance - for now disabling.
     ;; Might be a version mismatch i guess
@@ -88,6 +88,7 @@
 
 (defmethod pointer-enter ((seat seat) surface x y)
   (let ((seat-pointer (seat-pointer seat)))
+    (log! "Pointer enter")
     (setf (active-surface seat-pointer) surface)
     (wl-pointer:send-enter seat-pointer (next-serial seat) surface
 			   (- x (x surface)) (- y (y surface)))))
@@ -95,7 +96,9 @@
 (defmethod pointer-motion ((seat seat) x y)
   (let* ((seat-pointer (seat-pointer seat))
 	 (surface (active-surface seat-pointer)))
+    (log! "Pointer move try")
     (unless surface (error "No active surface for pointer motion"))
+    (log! "Pointer move")
     (wl-pointer:send-motion seat-pointer (get-ms) (- x (x surface)) (- y (y surface)))))
 
 
@@ -113,3 +116,6 @@
 (defclass pointer (wl-pointer:dispatch)
   ((seat :initarg :seat :initform nil)
    (active-surface :initform nil :accessor active-surface)))
+
+(defmethod wl-pointer:set-cursor ((pointer pointer) serial surface hotspot-x hotspot-y)
+  (setf (role surface) pointer))

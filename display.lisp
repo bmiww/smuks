@@ -74,10 +74,24 @@ and then clean the list out"
 ;; ├─┘│ │││││ │ ├┤ ├┬┘  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
 (defmethod input ((display display) (type (eql :pointer-motion)) event)
-  (let ((new-x (+ (cursor-x display) (flo (pointer-motion@-dx event))))
-	(new-y (+ (cursor-y display) (flo (pointer-motion@-dy event)))))
-    (setf (cursor-x display) (max 0 (min (display-width display) new-x)))
-    (setf (cursor-y display) (max 0 (min (display-height display) new-y)))))
+  (let* ((new-x (+ (cursor-x display) (flo (pointer-motion@-dx event))))
+	 (new-y (+ (cursor-y display) (flo (pointer-motion@-dy event))))
+	 (new-x (max 0 (min (display-width display) new-x)))
+	 (new-y (max 0 (min (display-height display) new-y)))
+	 (surface (surface-at-coords *wayland* new-x new-y)))
+
+    (when surface
+      (let* ((client (wl:client surface))
+	     (seat (seat client))
+	     (seat-pointer (seat-pointer seat)))
+	(log! "Client: ~a~%" client)
+	(log! "Seat: ~a~%" seat)
+	(log! "Seat-pointer: ~a~%" seat-pointer)
+	(if (and seat-pointer (active-surface seat-pointer))
+	    (pointer-motion seat new-x new-y)
+	    (when seat-pointer (pointer-enter seat surface new-x new-y)))))
+    (setf (cursor-x display) new-x)
+    (setf (cursor-y display) new-y)))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││

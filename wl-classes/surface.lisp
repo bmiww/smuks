@@ -29,7 +29,8 @@
 (defmethod wl-surface:commit ((surface surface))
   (typecase (role surface)
     (xdg-surface (commit-toplevel surface))
-    (t (error (format nil "Unsupported surface role: ~a" (role surface))))))
+    (pointer (commit-toplevel surface))
+    (t (format nil "Unsupported surface role: ~a" (role surface)))))
 
 (defmethod commit-toplevel ((surface surface))
   (when (pending-buffer surface)
@@ -84,8 +85,8 @@
 (defmethod wl-surface:attach ((surface surface) buffer x y)
   ;; TODO: Protocol deprecation thing - you should instead notify the client
   ;; of errors instead of breaking the compositor.
-  (unless (= x 0) (error "x must be 0"))
-  (unless (= y 0) (error "y must be 0"))
+  ;; (unless (= x 0) (error "x must be 0"))
+  ;; (unless (= y 0) (error "y must be 0"))
   (setf (pending-buffer surface) buffer))
 
 (defmethod wl-surface:frame ((surface surface) callback)
