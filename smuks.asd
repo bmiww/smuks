@@ -52,4 +52,5 @@
 			     (:file "shm")
 			     (:file "seat")
 			     (:file "dd-manager")))
+	       (:file "display")
 	       (:file "smuks")))

@@ -40,19 +40,19 @@
   ((name :initarg :name :initform nil)
    (capabilities :initarg :capabilities :initform nil)
    (event-serial :initarg :event-serial :initform 0)
-   (pointer :initarg :pointer :initform nil)
-   (keyboard :initarg :keyboard :initform nil)
+   (pointer :initform nil :accessor seat-pointer)
+   (keyboard :initform nil :accessor seat-keyboard)
    (touch :initform nil :accessor seat-touch)))
 
 (defmethod next-serial ((seat seat))
   (incf (slot-value seat 'event-serial)))
 
-(defmethod wl-seat:get-pointer ((seat seat) id)
-  (error "Pointer asked - none was there"))
-
 (defmethod wl-seat:get-keyboard ((seat seat) id)
   (error "Keyboard asked - none was there"))
 
+;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
+;;  │ │ ││ ││  ├─┤
+;;  ┴ └─┘└─┘└─┘┴ ┴
 (defmethod wl-seat:get-touch ((seat seat) id)
   (setf (seat-touch seat) (wl:mk-if 'touch seat id :seat seat)))
 
@@ -80,9 +80,36 @@
 
 (defmethod touch-frame ((seat seat)) (wl-touch:send-frame (seat-touch seat)))
 
-;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
-;;  │ │ ││ ││  ├─┤
-;;  ┴ └─┘└─┘└─┘┴ ┴
+;; ┌─┐┌─┐┬┌┐┌┌┬┐┌─┐┬─┐
+;; ├─┘│ │││││ │ ├┤ ├┬┘
+;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─
+(defmethod wl-seat:get-pointer ((seat seat) id)
+  (setf (seat-pointer seat) (wl:mk-if 'pointer seat id :seat seat)))
+
+(defmethod pointer-enter ((seat seat) surface x y)
+  (let ((seat-pointer (seat-pointer seat)))
+    (setf (active-surface seat-pointer) surface)
+    (wl-pointer:send-enter seat-pointer (next-serial seat) surface
+			   (- x (x surface)) (- y (y surface)))))
+
+(defmethod pointer-motion ((seat seat) x y)
+  (let* ((seat-pointer (seat-pointer seat))
+	 (surface (active-surface seat-pointer)))
+    (unless surface (error "No active surface for pointer motion"))
+    (wl-pointer:send-motion seat-pointer (get-ms) (- x (x surface)) (- y (y surface)))))
+
+
+;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
+;;  │ │ ││ ││  ├─┤   │││└─┐├─┘├─┤ │ │  ├─┤
+;;  ┴ └─┘└─┘└─┘┴ ┴  ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
 (defclass touch (wl-touch:dispatch)
   ((seat :initarg :seat :initform nil)
    (slot-surfaces :initform (make-array 32 :initial-element nil) :accessor slot-surfaces)))
+
+
+;; ┌─┐┌─┐┬┌┐┌┌┬┐┌─┐┬─┐  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
+;; ├─┘│ │││││ │ ├┤ ├┬┘   │││└─┐├─┘├─┤ │ │  ├─┤
+;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
+(defclass pointer (wl-pointer:dispatch)
+  ((seat :initarg :seat :initform nil)
+   (active-surface :initform nil :accessor active-surface)))
