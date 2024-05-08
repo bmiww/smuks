@@ -255,7 +255,7 @@
   (when (ready ev)
     (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
 
-(defun handle-input (event) (handle-input-event *wayland* event))
+(defun handle-input (event) (input *wayland* (event-type event) event))
 
 ;; Unorganized handlers
 (defun handle-wayland-event ()
@@ -345,16 +345,7 @@
 	  when candidate
 	  return candidate)))
 
-(defmethod handle-input-event ((display display) event)
-  (let ((handler (case (event-type event)
-		   (:touch-motion 'display-touch-motion)
-		   (:touch-down   'display-touch-down)
-		   (:touch-up     'display-touch-up)
-		   (:touch-frame  'display-touch-frame)
-		   (t (log! "No handler for input event: ~a~%" (event-type event))))))
-    (when handler (funcall handler display event))))
-
-(defmethod display-touch-down ((display display) event)
+(defmethod input ((display display) (type (eql :touch-down)) event)
   "Notify a client that a touch event has occured.
 Save the client as interested in the slot for later reference."
   (let* ((x (flo (touch@-x event)))
@@ -368,7 +359,7 @@ Save the client as interested in the slot for later reference."
 	  (pushnew client (aref (touch-slot-interesses display) slot))
 	  (touch-down seat surface slot x y))))))
 
-(defmethod display-touch-up ((display display) event)
+(defmethod input ((display display) (type (eql :touch-up)) event)
   "Notify all clients interested in the specific touch slot
 and then clean the list out"
   (let* ((slot (touch-up@-seat-slot event))
@@ -378,7 +369,7 @@ and then clean the list out"
 	(touch-up (seat client) slot)))
     (setf (aref (touch-slot-interesses display) slot) nil)))
 
-(defmethod display-touch-motion ((display display) event)
+(defmethod input ((display display) (type (eql :touch-motion)) event)
   "Notify all clients interested in the specific touch slot of the motion event"
   (let* ((x (flo (touch@-x event)))
 	 (y (flo (touch@-y event)))
@@ -393,13 +384,15 @@ and then clean the list out"
 
 ;; TODO: Not sure if it would be possible or even make sense to keep a list
 ;; of interested clients instead of broadcasting to all
-(defmethod display-touch-frame ((display display) event)
+(defmethod input ((display display) (type (eql :touch-frame)) event)
   (declare (ignore event))
   "Notify all clients that a touch frame has occured"
   (dolist (client (wl:all-clients display))
     (when (seat-touch (seat client))
       (touch-frame (seat client)))))
 
+(defmethod input ((display display) type event)
+  (log! "No handler for input event: ~a~%" (event-type event)))
 
 
 ;; ┬ ┬┌┬┐┬┬
