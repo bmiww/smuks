@@ -64,7 +64,6 @@ and then clean the list out"
 (defmethod input ((display display) (type (eql :touch-frame)) event)
   "Notify all clients that a touch frame event has occured"
   (declare (ignore event))
-  "Notify all clients that a touch frame has occured"
   (dolist (client (wl:all-clients display))
     (when (seat-touch (seat client))
       (touch-frame (seat client)))))
