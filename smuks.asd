@@ -27,6 +27,7 @@
 	       #:alexandria
 	       #:bordeaux-threads
 	       #:str
+	       #:png-read
 	       #:clem
 	       #:split-sequence
 	       #:file-notify

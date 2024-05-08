@@ -19,7 +19,7 @@
   *libinput* *seat*
   *egl* *egl-context* *egl-image*
   *gl-frame-buffer*
-  *rect-shader* *texture-shader*
+  *rect-shader* *texture-shader* *cursor*
   *client-poller* *wl-poller* *drm-poller* *input-poller* *seat-poller* *device-poller*
 
   *test-app*)
@@ -41,7 +41,24 @@
     (delete-file +socket-file+))
 
   (setfnil *egl* *egl-context* *egl-image* *drm-dev* *frame-buffer* *buffer-object* *smuks-exit* *active-crtc*
-	   *wayland* *socket* *seat*))
+	   *wayland* *socket* *seat* *cursor*))
+
+(defun load-cursor-texture ()
+  (let* ((texture (gl:gen-texture))
+	 (image (png-read:read-png-file (merge-pathnames "assets/mouse.png" (asdf:system-source-directory :smuks))))
+	 (data (png-read:image-data image)))
+    (print image)
+    (gl:bind-texture :texture-2d texture)
+    (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
+    (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
+    (gl:tex-image-2d :texture-2d 0 :rgba
+		     (png-read:width image) (png-read:height image)
+		     0 :rgba :unsigned-byte (make-array
+					     (array-total-size data)
+					     :element-type '(unsigned-byte 8)
+					     :displaced-to data))
+    texture))
+
 
 (defun recursively-render-frame ()
   (if *smuks-exit*
@@ -108,6 +125,7 @@
   (setf *egl-image* (create-egl-image *egl* *buffer-object* (width *drm-dev*) (height *drm-dev*)))
 
   (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
+  (setf *cursor* (load-cursor-texture))
   (init-shaders)
 
   ;; TODO: You might be able to remove the *active-crtc* indirection.
@@ -197,6 +215,7 @@
 					      :color '(1.0 0.0 0.0 0.6))))
 
     (render-clients)
+    (shaders.texture:draw *texture-shader* *cursor* `(350.0 350.0 36.0 36.0))
     (gl:flush)
     (gl:finish)
 
