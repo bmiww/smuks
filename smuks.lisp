@@ -47,7 +47,6 @@
   (let* ((texture (gl:gen-texture))
 	 (image (png-read:read-png-file (merge-pathnames "assets/mouse.png" (asdf:system-source-directory :smuks))))
 	 (data (png-read:image-data image)))
-    (print image)
     (gl:bind-texture :texture-2d texture)
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
     (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
@@ -80,7 +79,8 @@
   (make-instance 'shm-global :display *wayland* :dispatch-impl 'shm)
   (make-instance 'seat-global :display *wayland* :dispatch-impl 'seat)
   (make-instance 'wl-data-device-manager:global :display *wayland* :dispatch-impl 'dd-manager)
-  (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'wm-base))
+  (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'wm-base)
+  (make-instance 'dmabuf-global :display *wayland* :dispatch-impl 'dmabuf))
 
 ;; TODO: MOVE
 (defun add-default-framebuffer (device buffer-object)
@@ -148,7 +148,7 @@
      (log! "Starting the umpeenth poller. Now for seat events...~%")
      (setf *seat-poller* (seat-listener))
 
-     (setf *test-app* (test-app "weston-simple-shm"))
+     ;; (setf *test-app* (test-app "weston-simple-shm"))
 
      (recursively-render-frame))))
 

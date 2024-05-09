@@ -35,7 +35,8 @@
 	       #:cl-libseat
 	       #:cl-wl
 	       #:cl-wl.wayland-core
-	       #:cl-wl.xdg-shell)
+	       #:cl-wl.xdg-shell
+	       #:cl-wl.zwp-linux)
   :components ((:file "util")
 	       (:file "drm")
 	       (:file "shaders")
@@ -52,6 +53,7 @@
 			     (:file "compositor")
 			     (:file "shm")
 			     (:file "seat")
-			     (:file "dd-manager")))
+			     (:file "dd-manager")
+			     (:file "dmabuf")))
 	       (:file "display")
 	       (:file "smuks")))
