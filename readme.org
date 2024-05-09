@@ -5,4 +5,26 @@ Can be added via quicklisp:
 (ql-dist:install-dist "http://dist.shirakumo.org/shirakumo.txt")
 
 ** Command to run the whole thing
-sbcl --eval '(require "asdf")' --eval '(asdf:load-asd (merge-pathnames "repos/cl/smuks/smuks.asd" (uiop/os:getcwd)))' --eval '(asdf:load-system :smuks)' --eval '(smuks::main)' --eval '(sb-ext:quit)'
+$ XDG_SESSION_ID=1 sbcl --eval "(ql:quickload :swank)" \
+                        --eval "(swank:create-server :port 25252 :dont-close t)" \
+			--eval "(ql:quickload :smuks)"
+
+Feel free to choose your own port.
+
+** What is XDG_SESSION_ID
+The xdg_session bit is primarily for systemd logind - in case if you're running this process from an ssh or other not-primary session.
+You can check for the "correct" session id by issuing the loginctl command:
+
+$ loginctl
+SESSION  UID USER  SEAT  TTY   STATE  IDLE SINCE
+      1 1001 bmiww seat0 tty1  active no   -
+      3 1001 bmiww -     pts/0 active no   -
+      4 1001 bmiww -     pts/1 active no   -
+
+What you'll want to use is the session with a seat (means you will still have to log in directly on the device).
+I don't entirely know if theres a way to affect this in other ways - but it's also extra work that i'm avoiding since
+Setting the id seems to work mostly.
+
+*** Problems with the approach
+The libseat library that is used - seems to not want to use the XDG_SESSION_ID for some reason, and i had to build it myself
+before things worked out on archlinux-arm. The version at the time of writing is 0.8.0
