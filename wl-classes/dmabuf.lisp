@@ -98,31 +98,44 @@ All parameters sent out of the feedback object are specific to the surface."
 (defun randomize-file-name (prefix)
   (concatenate 'string prefix (format nil "~A" (random 1000000))))
 
+;; TODO: This is a bit dumb maybe. I don't know enough about files/descriptors
+;; Basically - open and fill - then close and reopen to have an open fd
 (defun gen-format-table (formmods)
-  (let* ((size (* (length formmods) 8))
+  (let* ((size (* (length formmods) 16))
 	 (xdg-dir (uiop/os:getenv "XDG_RUNTIME_DIR"))
 	 ;; TODO: Temp file into mmap - could be a package like thingy
 	 ;; Could also figure out how to do the memfd stuff, but the runtime dir should still be mem based
-	 (filename (concatenate 'string xdg-dir "/" (randomize-file-name "format-table")))
-	 (stream (open filename :direction :io :element-type '(unsigned-byte 8) :if-does-not-exist :create)))
+	 (filename (concatenate 'string xdg-dir "/" (randomize-file-name "format-table"))))
 
-    ;; TODO: SBCL Specific
-    (multiple-value-bind (ptr fd size) (mmap:mmap (sb-sys:fd-stream-fd stream)
-						  :protection '(:read :write)
-						  :size size :mmap '(:private))
+    (with-open-file (stream filename :direction :io :element-type '(unsigned-byte 8))
       (dolist (formmod formmods)
 	(let ((format (car formmod)) (modifier (cadr formmod)))
 	  ;; This is a very lazy little endian implementation.
 	  ;; Sorry to anyone doing the big one
 	  ;; My head hurt while i was writing this, and I can never find the proper
 	  ;; Language tools to deal with this kind of thing.
+	  (write-byte (ldb (byte 8 24) format) stream)
+	  (write-byte (ldb (byte 8 16) format) stream)
 	  (write-byte (ldb (byte 8 8) format) stream)
 	  (write-byte (ldb (byte 8 0) format) stream)
 	  (write-byte 0 stream)
 	  (write-byte 0 stream)
+	  (write-byte 0 stream)
+	  (write-byte 0 stream)
 
+	  (write-byte (ldb (byte 8 56) modifier) stream)
+	  (write-byte (ldb (byte 8 48) modifier) stream)
+	  (write-byte (ldb (byte 8 40) modifier) stream)
+	  (write-byte (ldb (byte 8 32) modifier) stream)
 	  (write-byte (ldb (byte 8 24) modifier) stream)
 	  (write-byte (ldb (byte 8 16) modifier) stream)
 	  (write-byte (ldb (byte 8 8) modifier) stream)
-	  (write-byte (ldb (byte 8 0) modifier) stream)))
-      (make-mmap-pool :ptr ptr :fd fd :size size :file stream))))
+	  (write-byte (ldb (byte 8 0) modifier) stream))))
+
+    (let ((stream (open filename :direction :input :element-type '(unsigned-byte 8))))
+    ;; TODO: SBCL Specific
+      (multiple-value-bind (ptr fd size) (mmap:mmap (sb-sys:fd-stream-fd stream)
+						    :protection '(:read :write)
+						    :size size :mmap '(:private))
+
+	(make-mmap-pool :ptr ptr :fd fd :size size :file stream)))))
