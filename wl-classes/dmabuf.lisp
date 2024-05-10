@@ -58,12 +58,12 @@ All parameters sent out of the feedback object are specific to the surface."
 (defmethod initialize-instance :after ((feedback feedback) &key)
   (let ((display (wl:get-display feedback)))
     (zwp-linux-dmabuf-feedback-v1:send-format-table feedback (mmap-pool-fd *format-table*) (mmap-pool-size *format-table*))
-    (zwp-linux-dmabuf-feedback-v1:send-main-device feedback (dev-t display))
+    (zwp-linux-dmabuf-feedback-v1:send-main-device feedback `(,(dev-t display)))
 
     ;; START TRANCHE
     ;; TODO: The tranche could be extracted to its own method so as to make this a bit prettier
     ;; For now - since - i only have one device and one supported format/modifier - i'm being lazy
-    (zwp-linux-dmabuf-feedback-v1:send-tranche-target-device feedback (dev-t display))
+    (zwp-linux-dmabuf-feedback-v1:send-tranche-target-device feedback `(,(dev-t display)))
     ;; TODO: The 0 here identifies the first element of the *format-table*
     ;; Make it a bit smarter
     (zwp-linux-dmabuf-feedback-v1:send-tranche-formats feedback '(0))
@@ -80,24 +80,32 @@ All parameters sent out of the feedback object are specific to the surface."
 ;; ├┤ │ │├┬┘│││├─┤ │    │ ├─┤├┴┐│  ├┤
 ;; └  └─┘┴└─┴ ┴┴ ┴ ┴    ┴ ┴ ┴└─┘┴─┘└─┘
 (defun gen-format-table (formmods)
-  (let* ((size (* (length formmods) 8)))
-    (multiple-value-bind (ptr fd size) (mmap:mmap nil :size size)
-      (dolist (formmod formmods)
-	(let ((format (car formmod))
-	      (modifier (cdr formmod))
-	      ;; TODO: SBCL Specific
-	      (stream (sb-sys:make-fd-stream fd :input t)))
-	  ;; This is a very lazy little endian implementation.
-	  ;; Sorry to anyone doing the big one
-	  ;; My head hurt while i was writing this, and I can never find the proper
-	  ;; Language tools to deal with this kind of thing.
-	  (write-byte (ldb (byte 8 8) format) stream)
-	  (write-byte (ldb (byte 8 0) format) stream)
-	  (write-byte 0 stream)
-	  (write-byte 0 stream)
+  (let* ((size (* (length formmods) 8))
+	 (xdg-dir (uiop/os:getenv "XDG_RUNTIME_DIR")))
 
-	  (write-byte (ldb (byte 8 24) modifier) stream)
-	  (write-byte (ldb (byte 8 16) modifier) stream)
-	  (write-byte (ldb (byte 8 8) modifier) stream)
-	  (write-byte (ldb (byte 8 0) modifier) stream)))
-      (make-mmap-pool :ptr ptr :fd fd :size size))))
+    ;; TODO: Temp file into mmap - could be a package like thingy
+    ;; Could also figure out how to do the memfd stuff, but the runtime dir should still be mem based
+    (uiop:with-temporary-file
+	(:stream stream
+	 :directory xdg-dir
+	 :keep t :stream stream :element-type '(unsigned-byte 8)
+	 :direction :io)
+
+      ;; TODO: SBCL Specific
+      (multiple-value-bind (ptr fd size) (mmap:mmap (sb-sys:fd-stream-fd stream) :size size :mmap '(:anonymous :private))
+	(dolist (formmod formmods)
+	  (let ((format (car formmod)) (modifier (cadr formmod)))
+	    ;; This is a very lazy little endian implementation.
+	    ;; Sorry to anyone doing the big one
+	    ;; My head hurt while i was writing this, and I can never find the proper
+	    ;; Language tools to deal with this kind of thing.
+	    (write-byte (ldb (byte 8 8) format) stream)
+	    (write-byte (ldb (byte 8 0) format) stream)
+	    (write-byte 0 stream)
+	    (write-byte 0 stream)
+
+	    (write-byte (ldb (byte 8 24) modifier) stream)
+	    (write-byte (ldb (byte 8 16) modifier) stream)
+	    (write-byte (ldb (byte 8 8) modifier) stream)
+	    (write-byte (ldb (byte 8 0) modifier) stream)))
+	(make-mmap-pool :ptr ptr :fd fd :size size)))))
