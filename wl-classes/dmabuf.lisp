@@ -31,6 +31,8 @@
 ;; ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
 ;; TODO: This should be a part of display or something
 ;; For now lazily globalizing it
+;; TODO: Close and delete the file on destroy/cleanup
+;; TODO: Make this part of the global and then refer to it from the dispatch
 (defvar *format-table* nil)
 
 (defclass dmabuf (zwp-linux-dmabuf-v1:dispatch)
@@ -93,35 +95,34 @@ All parameters sent out of the feedback object are specific to the surface."
 ;; ┌─┐┌─┐┬─┐┌┬┐┌─┐┌┬┐  ┌┬┐┌─┐┌┐ ┬  ┌─┐
 ;; ├┤ │ │├┬┘│││├─┤ │    │ ├─┤├┴┐│  ├┤
 ;; └  └─┘┴└─┴ ┴┴ ┴ ┴    ┴ ┴ ┴└─┘┴─┘└─┘
+(defun randomize-file-name (prefix)
+  (concatenate 'string prefix (format nil "~A" (random 1000000))))
+
 (defun gen-format-table (formmods)
   (let* ((size (* (length formmods) 8))
-	 (xdg-dir (uiop/os:getenv "XDG_RUNTIME_DIR")))
+	 (xdg-dir (uiop/os:getenv "XDG_RUNTIME_DIR"))
+	 ;; TODO: Temp file into mmap - could be a package like thingy
+	 ;; Could also figure out how to do the memfd stuff, but the runtime dir should still be mem based
+	 (filename (concatenate 'string xdg-dir "/" (randomize-file-name "format-table")))
+	 (stream (open filename :direction :io :element-type '(unsigned-byte 8) :if-does-not-exist :create)))
 
-    ;; TODO: Temp file into mmap - could be a package like thingy
-    ;; Could also figure out how to do the memfd stuff, but the runtime dir should still be mem based
-    (uiop:with-temporary-file
-	(:stream stream
-	 :directory xdg-dir
-	 :keep t :stream stream :element-type '(unsigned-byte 8)
-	 :direction :io)
+    ;; TODO: SBCL Specific
+    (multiple-value-bind (ptr fd size) (mmap:mmap (sb-sys:fd-stream-fd stream)
+						  :protection '(:read :write)
+						  :size size :mmap '(:private))
+      (dolist (formmod formmods)
+	(let ((format (car formmod)) (modifier (cadr formmod)))
+	  ;; This is a very lazy little endian implementation.
+	  ;; Sorry to anyone doing the big one
+	  ;; My head hurt while i was writing this, and I can never find the proper
+	  ;; Language tools to deal with this kind of thing.
+	  (write-byte (ldb (byte 8 8) format) stream)
+	  (write-byte (ldb (byte 8 0) format) stream)
+	  (write-byte 0 stream)
+	  (write-byte 0 stream)
 
-      ;; TODO: SBCL Specific
-      (multiple-value-bind (ptr fd size) (mmap:mmap (sb-sys:fd-stream-fd stream)
-						    :protection '(:read :write)
-						    :size size :mmap '(:private))
-	(dolist (formmod formmods)
-	  (let ((format (car formmod)) (modifier (cadr formmod)))
-	    ;; This is a very lazy little endian implementation.
-	    ;; Sorry to anyone doing the big one
-	    ;; My head hurt while i was writing this, and I can never find the proper
-	    ;; Language tools to deal with this kind of thing.
-	    (write-byte (ldb (byte 8 8) format) stream)
-	    (write-byte (ldb (byte 8 0) format) stream)
-	    (write-byte 0 stream)
-	    (write-byte 0 stream)
-
-	    (write-byte (ldb (byte 8 24) modifier) stream)
-	    (write-byte (ldb (byte 8 16) modifier) stream)
-	    (write-byte (ldb (byte 8 8) modifier) stream)
-	    (write-byte (ldb (byte 8 0) modifier) stream)))
-	(make-mmap-pool :ptr ptr :fd fd :size size)))))
+	  (write-byte (ldb (byte 8 24) modifier) stream)
+	  (write-byte (ldb (byte 8 16) modifier) stream)
+	  (write-byte (ldb (byte 8 8) modifier) stream)
+	  (write-byte (ldb (byte 8 0) modifier) stream)))
+      (make-mmap-pool :ptr ptr :fd fd :size size :file stream))))

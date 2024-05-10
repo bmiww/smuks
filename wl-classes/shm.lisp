@@ -24,7 +24,7 @@
 ;; ┌┬┐┌┬┐┌─┐┌─┐  ┌─┐┌─┐┌─┐┬
 ;; ││││││├─┤├─┘  ├─┘│ ││ ││
 ;; ┴ ┴┴ ┴┴ ┴┴    ┴  └─┘└─┘┴─┘
-(defstruct mmap-pool ptr fd size)
+(defstruct mmap-pool ptr fd size file)
 
 (defun munmap (pool)
   (mmap:munmap (mmap-pool-ptr pool) (mmap-pool-fd pool) (mmap-pool-size pool)))
