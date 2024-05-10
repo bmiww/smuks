@@ -92,6 +92,18 @@ and then clean the list out"
     (setf (cursor-x display) new-x)
     (setf (cursor-y display) new-y)))
 
+
+;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐
+;; ├┴┐├┤ └┬┘├┴┐│ │├─┤├┬┘ ││
+;; ┴ ┴└─┘ ┴ └─┘└─┘┴ ┴┴└──┴┘
+(defmethod input ((display display) (type (eql :keyboard-key)) event)
+  (let* ((key (keyboard@-key event))
+	 (state (keyboard@-state event)))
+    ;; Probably F12
+    (when (and (eq state :pressed) (eq key 88))
+      (shutdown))))
+
+
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
