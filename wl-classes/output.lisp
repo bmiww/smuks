@@ -32,17 +32,17 @@
 ;; TODO: This is where you probably want to fake a virtual output for use cases such as:
 ;; Video call video sharing - virtual output with fake details
 (defclass output-global (wl-output:global)
-  ((x :accessor output-x)
-   (y :accessor output-y)
-   (real-height :accessor output-real-height)
-   (real-width :accessor output-real-width)
-   (width :accessor output-width)
-   (height :accessor output-height)
-   (refresh-rate :accessor output-refresh-rate)
-   (subpixel-orientation :initform *subpixel-unknown* :accessor output-subpixel-orientation)
-   (make :accessor output-make)
-   (model :accessor output-model)
-   (transform :initform *transform-normal* :accessor output-transform))
+  ((x :initarg :x :accessor output-x)
+   (y :initarg :y :accessor output-y)
+   (real-height :initarg :real-height :accessor output-real-height)
+   (real-width :initarg :real-width :accessor output-real-width)
+   (width :initarg :width :accessor output-width)
+   (height :initarg :height :accessor output-height)
+   (refresh-rate :initarg :refresh-rate :accessor output-refresh-rate)
+   (subpixel-orientation :initarg :subpixel-orientation :initform *subpixel-unknown* :accessor output-subpixel-orientation)
+   (make :initarg :make :accessor output-make)
+   (model :initarg :model :accessor output-model)
+   (transform :initarg :transform :initform *transform-normal* :accessor output-transform))
   (:documentation "Defines a lot of details regarding a physical output.
 A physical output will mostly be a monitor/screen.
 Most slots should be self-explanatory, so i'll keep it short:
@@ -91,6 +91,10 @@ transform - is the screen rotated? is the screen flipped?
 
     ;; Scale can also be changed and sent later. Clients assume 1, but we're being explicit.
     (wl-output:send-scale output 1)
-    (wl-output:send-name output "Smuks output")
-    (wl-output:send-description output "Smuks output - the best output in the world. But currently just the one. No support for more.")
+
+    ;; NOTE: For example Weston actually doesn't understand these - since these are for a later version of the protocol
+    ;; TODO: Maybe add a version check.
+    ;; (wl-output:send-name output "Smuks output")
+    ;; (wl-output:send-description output "Smuks output - the best output in the world. But currently just the one. No support for more.")
+
     (wl-output:send-done output)))

@@ -13,9 +13,10 @@
 ;; Set to one to enable wayland debug messages. Dunno which output it goes to though.
 (defvar *enable-wayland-debug-logs* "")
 
+(defvar *drm-dev* nil)
 (defnil
     *wayland* *socket* *smuks-exit* *frame-ready*
-  *drm-dev* *buffer-object* *frame-buffer* *active-crtc*
+  *buffer-object* *frame-buffer* *active-crtc*
   *libinput* *seat*
   *egl* *egl-context* *egl-image*
   *gl-frame-buffer*
@@ -72,6 +73,20 @@
   (setf *texture-shader* (shader-init:create-texture-shader *drm-dev*)))
 
 
+;; TODO: This is very incomplete.
+;; Lots of fake stuff here
+;; Everything is based on the SINGLE crtc that i enable
+;; Real width/height are just width/height - should be mm of real screen size
+;; X/Y are just 0,0 - since i'm only handling one screen
+(defun init-output ()
+  (let ((crtc (sdrm::crtc *drm-dev*)))
+    (make-instance 'output-global :display *wayland* :dispatch-impl 'output
+		      :x 0 :y 0
+		      :width (drm::crtc!-width crtc) :height (drm::crtc!-height crtc)
+		      :real-width (drm::crtc!-width crtc) :real-height (drm::crtc!-height crtc)
+		      :refresh-rate (getf (drm::crtc!-mode crtc) 'drm::vrefresh)
+		      :make "TODO: Fill out make" :model "TODO: Fill out model")))
+
 ;; TODO: Part of display init?
 (defun init-globals ()
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
@@ -82,7 +97,7 @@
   (make-instance 'wl-data-device-manager:global :display *wayland* :dispatch-impl 'dd-manager)
   (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'wm-base)
   (make-instance 'dmabuf-global :display *wayland* :dispatch-impl 'dmabuf)
-  (make-instance 'output-global :display *wayland* :dispatch-impl 'output :drm *drm-dev*))
+  (init-output))
 
 ;; TODO: MOVE
 (defun add-default-framebuffer (device buffer-object)
