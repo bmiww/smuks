@@ -13,11 +13,11 @@
    (cursor-y :initform 0 :accessor cursor-y)
    ;; TODO: Both of these are dumb - these should be per CRTC/monitor/whatever
    (display-width :initarg :display-width :accessor display-width)
-   (display-height :initarg :display-height :accessor display-height)))
+   (display-height :initarg :display-height :accessor display-height)
+   (dev-t :initarg :dev-t :accessor dev-t)))
 
 (defmethod input ((display display) type event)
   (log! "No handler for input event: ~a~%" (event-type event)))
-
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;;  │ │ ││ ││  ├─┤  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐

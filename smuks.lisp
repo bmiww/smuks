@@ -115,7 +115,10 @@
   ;; Without this - nothing in wayland-land would work.
   ;; Maybe have the default display constructor do this in the :before step?
   (wl:init-interface-definitions)
-  (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*) :display-width (width *drm-dev*) :display-height (height *drm-dev*)))
+  (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
+			      :dev-t (drm:resources-dev-t (sdrm:resources *drm-dev*))
+			      :display-width (width *drm-dev*)
+			      :display-height (height *drm-dev*)))
   (init-globals)
 
   (setf *buffer-object* (sdrm:create-bo *drm-dev*))

@@ -56,10 +56,24 @@ All parameters sent out of the feedback object are specific to the surface."
    (dmabuf :initarg :dmabuf :accessor dmabuf)))
 
 (defmethod initialize-instance :after ((feedback feedback) &key)
-  (zwp-linux-dmabuf-feedback-v1:send-format-table feedback (mmap-pool-fd *format-table*) (mmap-pool-size *format-table*))
-  ;; TODO: The 0 here identifies the first element of the *format-table*
-  ;; Make it a bit smarter
-  (zwp-linux-dmabuf-feedback-v1:send-tranche-formats feedback '(0)))
+  (let ((display (wl:get-display feedback)))
+    (zwp-linux-dmabuf-feedback-v1:send-format-table feedback (mmap-pool-fd *format-table*) (mmap-pool-size *format-table*))
+    (zwp-linux-dmabuf-feedback-v1:send-main-device feedback (dev-t display))
+
+    ;; START TRANCHE
+    ;; TODO: The tranche could be extracted to its own method so as to make this a bit prettier
+    ;; For now - since - i only have one device and one supported format/modifier - i'm being lazy
+    (zwp-linux-dmabuf-feedback-v1:send-tranche-target-device feedback (dev-t display))
+    ;; TODO: The 0 here identifies the first element of the *format-table*
+    ;; Make it a bit smarter
+    (zwp-linux-dmabuf-feedback-v1:send-tranche-formats feedback '(0))
+    ;; TODO: This might be unnecessary, and just removable.
+    ;; Wanted to notify it in case if i do decide to read the pixels being sent in some form of panic mode
+    (zwp-linux-dmabuf-feedback-v1:send-tranche-flags 1)
+    (zwp-linux-dmabuf-feedback-v1:send-tranche-done feedback)
+    ;; END TRANCHE
+
+    (zwp-linux-dmabuf-feedback-v1:send-done feedback)))
 
 
 ;; ┌─┐┌─┐┬─┐┌┬┐┌─┐┌┬┐  ┌┬┐┌─┐┌┐ ┬  ┌─┐
