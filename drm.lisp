@@ -33,7 +33,7 @@
     (setf (fd-stream device) file)
     (setf (fd device) fd)
     (setf (gbm-pointer device) (gbm:create-device fd))
-    (let* ((resources (setf (resources device) (drm:get-resources fd)))
+    (let* ((resources  (setf (resources device) (drm:get-resources fd)))
 	   (crtcs      (setf (crtcs device) (drm:resources-crtcs resources)))
 	   (connectors (setf (connectors device) (drm:resources-connectors resources)))
 	   (valid      (find-if (lambda (crtc) (> (drm::crtc!-mode-valid crtc) 0)) crtcs)))
