@@ -48,7 +48,8 @@
 	       (:file "package")
 	       (:file "dev-track")
 	       (:module "wl-classes"
-		:components ((:file "xdg-wm-base")
+		:components ((:file "output")
+			     (:file "xdg-wm-base")
 			     (:file "surface")
 			     (:file "compositor")
 			     (:file "shm")

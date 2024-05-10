@@ -71,6 +71,7 @@
   (setf *rect-shader* (shader-init:create-rect-shader *drm-dev*))
   (setf *texture-shader* (shader-init:create-texture-shader *drm-dev*)))
 
+
 ;; TODO: Part of display init?
 (defun init-globals ()
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
@@ -80,7 +81,8 @@
   (make-instance 'seat-global :display *wayland* :dispatch-impl 'seat)
   (make-instance 'wl-data-device-manager:global :display *wayland* :dispatch-impl 'dd-manager)
   (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'wm-base)
-  (make-instance 'dmabuf-global :display *wayland* :dispatch-impl 'dmabuf))
+  (make-instance 'dmabuf-global :display *wayland* :dispatch-impl 'dmabuf)
+  (make-instance 'output-global :display *wayland* :dispatch-impl 'output :drm *drm-dev*))
 
 ;; TODO: MOVE
 (defun add-default-framebuffer (device buffer-object)
@@ -116,6 +118,8 @@
   ;; Maybe have the default display constructor do this in the :before step?
   (wl:init-interface-definitions)
   (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
+		     ;; This dev-t is probably rather wrong - since client apps probably can't use card0/card1
+		     ;; But instead should be notified of the render nodes renderD128 and so on
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm-dev*))
 			      :display-width (width *drm-dev*)
 			      :display-height (height *drm-dev*)))

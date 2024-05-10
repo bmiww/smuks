@@ -1,0 +1,96 @@
+
+;;  ██████╗ ██╗   ██╗████████╗██████╗ ██╗   ██╗████████╗
+;; ██╔═══██╗██║   ██║╚══██╔══╝██╔══██╗██║   ██║╚══██╔══╝
+;; ██║   ██║██║   ██║   ██║   ██████╔╝██║   ██║   ██║
+;; ██║   ██║██║   ██║   ██║   ██╔═══╝ ██║   ██║   ██║
+;; ╚██████╔╝╚██████╔╝   ██║   ██║     ╚██████╔╝   ██║
+;;  ╚═════╝  ╚═════╝    ╚═╝   ╚═╝      ╚═════╝    ╚═╝
+;; Announces clients of the outputs (monitors/modes)
+;; TODO: Add method to change the transform of an output
+;; TODO: Add method to change the mode (width/height/framerate) of an output
+(in-package :smuks)
+
+(defvar *subpixel-unknown* 0)
+(defvar *subpixel-none* 1)
+(defvar *subpixel-horizontal-rgb* 2)
+(defvar *subpixel-horizontal-bgr* 3)
+(defvar *subpixel-vertical-rgb* 4)
+(defvar *subpixel-vertical-bgr* 5)
+
+(defvar *transform-normal* 0)
+(defvar *transform-90* 1)
+(defvar *transform-180* 2)
+(defvar *transform-270* 3)
+(defvar *transform-flipped* 4)
+(defvar *transform-flipped-90* 5)
+(defvar *transform-flipped-180* 6)
+(defvar *transform-flipped-270* 7)
+
+;; ┌─┐┬  ┌─┐┌┐ ┌─┐┬
+;; │ ┬│  │ │├┴┐├─┤│
+;; └─┘┴─┘└─┘└─┘┴ ┴┴─┘
+;; TODO: This is where you probably want to fake a virtual output for use cases such as:
+;; Video call video sharing - virtual output with fake details
+(defclass output-global (wl-output:global)
+  ((x :accessor output-x)
+   (y :accessor output-y)
+   (real-height :accessor output-real-height)
+   (real-width :accessor output-real-width)
+   (width :accessor output-width)
+   (height :accessor output-height)
+   (refresh-rate :accessor output-refresh-rate)
+   (subpixel-orientation :initform *subpixel-unknown* :accessor output-subpixel-orientation)
+   (make :accessor output-make)
+   (model :accessor output-model)
+   (transform :initform *transform-normal* :accessor output-transform))
+  (:documentation "Defines a lot of details regarding a physical output.
+A physical output will mostly be a monitor/screen.
+Most slots should be self-explanatory, so i'll keep it short:
+
+real-height, real-width - actual physical dimensions of the output
+
+subpixel-orientation - red green blue - or - blue green red - maybe vertical.
+Unknown is also a possibility.
+
+make - the manufacturer of the output
+model - the model name/number
+
+transform - is the screen rotated? is the screen flipped?
+"))
+
+
+;; ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
+;;  │││└─┐├─┘├─┤ │ │  ├─┤
+;; ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
+;; TODO: Implement the release request handler
+(defclass output (wl-output:dispatch)
+  ())
+
+;; TODO: Add posibility to name an output - send via name event
+;; TODO: Add posibility to give outputs a description - send via description event
+(defmethod initialize-instance :after ((output output) &key)
+  (let ((global (wl:global output)))
+    (wl-output:send-geometry output
+			     (output-x global)
+			     (output-y global)
+			     (output-real-width global)
+			     (output-real-height global)
+			     (output-subpixel-orientation global)
+			     (output-make global)
+			     (output-model global)
+			     (output-transform global))
+
+    ;; The "1" should identify that this mode is the current output mode
+    ;; Sending non-current modes (separate event) is possible but deprecated.
+    (wl-output:send-mode output
+			 1
+			 (output-width global)
+			 (output-height global)
+			 (output-refresh-rate global))
+
+
+    ;; Scale can also be changed and sent later. Clients assume 1, but we're being explicit.
+    (wl-output:send-scale output 1)
+    (wl-output:send-name output "Smuks output")
+    (wl-output:send-description output "Smuks output - the best output in the world. But currently just the one. No support for more.")
+    (wl-output:send-done output)))
