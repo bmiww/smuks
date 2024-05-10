@@ -69,7 +69,7 @@ All parameters sent out of the feedback object are specific to the surface."
     (zwp-linux-dmabuf-feedback-v1:send-tranche-formats feedback '(0))
     ;; TODO: This might be unnecessary, and just removable.
     ;; Wanted to notify it in case if i do decide to read the pixels being sent in some form of panic mode
-    (zwp-linux-dmabuf-feedback-v1:send-tranche-flags 1)
+    (zwp-linux-dmabuf-feedback-v1:send-tranche-flags feedback 1)
     (zwp-linux-dmabuf-feedback-v1:send-tranche-done feedback)
     ;; END TRANCHE
 
