@@ -10,7 +10,7 @@
   ())
 
 (defmethod zwp-linux-dmabuf-v1:dispatch-bind :after ((global dmabuf-global) client data version id)
-  (log! "dmabuf global bound~%"))
+  )
 
 
 ;; ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
@@ -92,7 +92,9 @@ All parameters sent out of the feedback object are specific to the surface."
 	 :direction :io)
 
       ;; TODO: SBCL Specific
-      (multiple-value-bind (ptr fd size) (mmap:mmap (sb-sys:fd-stream-fd stream) :size size :mmap '(:anonymous :private))
+      (multiple-value-bind (ptr fd size) (mmap:mmap (sb-sys:fd-stream-fd stream)
+						    :protection '(:read :write)
+						    :size size :mmap '(:private))
 	(dolist (formmod formmods)
 	  (let ((format (car formmod)) (modifier (cadr formmod)))
 	    ;; This is a very lazy little endian implementation.
