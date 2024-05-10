@@ -12,6 +12,19 @@
 (defmethod zwp-linux-dmabuf-v1:dispatch-bind :after ((global dmabuf-global) client data version id)
   )
 
+;; TODO: Maybe move to its own file since it could possibly grow
+;; Maybe part of drm package?
+;; DRM Fourcc codes
+(defun fourcc-code (code)
+  (let ((a (char code 0)) (b (char code 1))
+	(c (char code 2)) (d (char code 3)))
+    (logior
+     (ash (char-code a) 0) (ash (char-code b) 8)
+     (ash (char-code c) 16) (ash (char-code d) 24))))
+(setf (fdefinition 'cc4) #'fourcc-code)
+
+(defvar *argb-8888* (cc4 "AR24"))
+(defvar *xrgb-8888* (cc4 "XR24"))
 
 ;; ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
 ;;  │││└─┐├─┘├─┤ │ │  ├─┤
@@ -25,9 +38,10 @@
    (surface-feedbacks :initform (make-hash-table ) :accessor surface-feedbacks)))
 
 (defmethod initialize-instance :after ((dmabuf dmabuf) &key)
+  "NOTE: the format table formats - are DRM formats. The wayland protocol enum values for xrgb and argb do not match this!!!"
   ;; TODO: Replace the 0s and 1s with the actual format and modifier values from DRM fourcc
   (unless *format-table*
-    (setf *format-table* (gen-format-table '((0 0) (1 0))))))
+    (setf *format-table* (gen-format-table `((,*argb-8888* 0) (,*xrgb-8888* 0))))))
 
 
 (defmethod zwp-linux-dmabuf-v1:get-default-feedback ((dmabuf dmabuf) id)
@@ -67,7 +81,7 @@ All parameters sent out of the feedback object are specific to the surface."
     ;; TODO: The 0 here identifies the first element of the *format-table*
     ;; Make it a bit smarter
     (zwp-linux-dmabuf-feedback-v1:send-tranche-formats feedback '(0))
-    ;; TODO: This might be unnecessary, and just removable.
+    ;; TODO: This might be unnecessary, and just removable. scanout flag.
     ;; Wanted to notify it in case if i do decide to read the pixels being sent in some form of panic mode
     (zwp-linux-dmabuf-feedback-v1:send-tranche-flags feedback 1)
     (zwp-linux-dmabuf-feedback-v1:send-tranche-done feedback)
