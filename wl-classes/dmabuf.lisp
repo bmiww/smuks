@@ -114,23 +114,24 @@ All parameters sent out of the feedback object are specific to the surface."
 	  ;; Sorry to anyone doing the big one
 	  ;; My head hurt while i was writing this, and I can never find the proper
 	  ;; Language tools to deal with this kind of thing.
-	  (write-byte (ldb (byte 8 24) format) stream)
-	  (write-byte (ldb (byte 8 16) format) stream)
-	  (write-byte (ldb (byte 8 8) format) stream)
 	  (write-byte (ldb (byte 8 0) format) stream)
+	  (write-byte (ldb (byte 8 8) format) stream)
+	  (write-byte (ldb (byte 8 16) format) stream)
+	  (write-byte (ldb (byte 8 24) format) stream)
 	  (write-byte 0 stream)
 	  (write-byte 0 stream)
 	  (write-byte 0 stream)
 	  (write-byte 0 stream)
 
-	  (write-byte (ldb (byte 8 56) modifier) stream)
-	  (write-byte (ldb (byte 8 48) modifier) stream)
-	  (write-byte (ldb (byte 8 40) modifier) stream)
-	  (write-byte (ldb (byte 8 32) modifier) stream)
-	  (write-byte (ldb (byte 8 24) modifier) stream)
-	  (write-byte (ldb (byte 8 16) modifier) stream)
+	  (write-byte (ldb (byte 8 0) modifier) stream)
 	  (write-byte (ldb (byte 8 8) modifier) stream)
-	  (write-byte (ldb (byte 8 0) modifier) stream))))
+	  (write-byte (ldb (byte 8 16) modifier) stream)
+	  (write-byte (ldb (byte 8 24) modifier) stream)
+	  (write-byte (ldb (byte 8 32) modifier) stream)
+	  (write-byte (ldb (byte 8 40) modifier) stream)
+	  (write-byte (ldb (byte 8 48) modifier) stream)
+	  (write-byte (ldb (byte 8 56) modifier) stream)
+	  )))
 
     (let ((stream (open filename :direction :input :element-type '(unsigned-byte 8))))
     ;; TODO: SBCL Specific
