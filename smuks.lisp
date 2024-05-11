@@ -14,8 +14,9 @@
 (defvar *enable-wayland-debug-logs* "")
 
 (defvar *drm-dev* nil)
+(defvar *wayland* nil)
 (defnil
-    *wayland* *socket* *smuks-exit* *frame-ready*
+    *socket* *smuks-exit* *frame-ready*
   *buffer-object* *frame-buffer* *active-crtc*
   *libinput* *seat*
   *egl* *egl-context* *egl-image*
