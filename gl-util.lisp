@@ -13,6 +13,7 @@
    check-gl-fb-status
    prep-gl-implementation
    create-gl-framebuffer
+   create-image-texture
    make-projection-matrix
    make-position-matrix
    matrix->array))
@@ -24,7 +25,6 @@
 (defun create-gl-framebuffer (image)
   (let* ((texture (gl:gen-texture))
 	 (framebuffer (gl:gen-framebuffer)))
-    (check-gl-error "Gen texture/framebuffer")
 
     (gl:bind-texture :texture-2d texture)
     (%gl:egl-image-target-texture-2d-oes :texture-2d image)
@@ -35,6 +35,14 @@
     (check-gl-fb-status "After attaching texture")
 
     framebuffer))
+
+(defun create-image-texture (image)
+  (let* ((texture (gl:gen-texture)))
+    (gl:bind-texture :texture-2d texture)
+    (%gl:egl-image-target-texture-2d-oes :texture-2d image)
+    (check-gl-error "egl-image-target-texture-2d-oes")
+
+    texture))
 
 (defun prep-gl-implementation (framebuffer width height)
   (gl:bind-framebuffer :framebuffer framebuffer)

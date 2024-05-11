@@ -128,6 +128,11 @@
   (setf *socket* (init-socket))
   (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
 
+
+  (setf *buffer-object* (sdrm:create-bo *drm-dev*))
+  (setf *frame-buffer* (add-default-framebuffer *drm-dev* *buffer-object*))
+
+
   ;; TODO: This is a bit awkward as an expected package export
   ;; Without this - nothing in wayland-land would work.
   ;; Maybe have the default display constructor do this in the :before step?
@@ -135,20 +140,22 @@
   (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
 		     ;; This dev-t is probably rather wrong - since client apps probably can't use card0/card1
 		     ;; But instead should be notified of the render nodes renderD128 and so on
+		     ;; But it might also match main-device proper
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm-dev*))
 			      :display-width (width *drm-dev*)
 			      :display-height (height *drm-dev*)))
-  (init-globals)
 
-  (setf *buffer-object* (sdrm:create-bo *drm-dev*))
-  (setf *frame-buffer* (add-default-framebuffer *drm-dev* *buffer-object*))
 
   (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm-dev*) (wl:display-ptr *wayland*)))
+  (setf (egl *wayland*) *egl*)
   (setf *egl-image* (create-egl-image *egl* *buffer-object* (width *drm-dev*) (height *drm-dev*)))
 
   (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
   (setf *cursor* (load-cursor-texture))
   (init-shaders)
+
+
+  (init-globals)
 
   ;; TODO: You might be able to remove the *active-crtc* indirection.
   ;; At least it's not really used elsewwhere

@@ -13,6 +13,7 @@
    (pending-buffer :initform nil :accessor pending-buffer)
    (needs-redraw :initform nil :accessor needs-redraw)
    (texture :initform nil :accessor texture)
+   (texture-type :initform nil :accessor texture-type)
    (width :initform -1 :accessor width)
    (height :initform -1 :accessor height)
    (x :initform -1 :accessor x)
@@ -43,8 +44,21 @@
     (setf (needs-redraw surface) t)))
 
 
+;; TODO: For now only supporting a single plane
 (defmethod commit-dma-buffer ((surface surface))
-  (log! "Committing DMA buffer. TODO: Implement.~%"))
+  (let* ((buffer (pending-buffer surface))
+	 (plane (gethash 0 (planes buffer)))
+	 (image (seglutil:create-egl-image-from-buffer
+		 (egl (wl:get-display surface))
+		 (width buffer) (height buffer)
+		 (pixel-format buffer)
+		 (fd plane) (offset plane) (stride plane))))
+
+    (setf (texture surface) (sglutil:create-image-texture image))
+    (setf (texture-type surface) :dma)
+
+    (setf (pending-buffer surface) nil)
+    (setf (needs-redraw surface) t)))
 
 (defmethod commit-shm-buffer ((surface surface))
   (let ((new-dimensions? nil))
@@ -60,6 +74,7 @@
     ;; aka new-dimensions is true - delete the old texture before reassigning
     (setf (texture surface)
 	  (gen-texture (pending-buffer surface) (unless new-dimensions? (texture surface))))
+    (setf (texture-type surface) :shm)
 
     (wl-buffer:send-release (pending-buffer surface))
     (setf (pending-buffer surface) nil)

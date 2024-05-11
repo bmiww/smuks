@@ -15,6 +15,7 @@
   (:nicknames :seglutil)
   (:export
    create-egl-image destroy-image
+   create-egl-image-from-buffer
    init-egl cleanup-egl
    check-egl-error))
 (in-package :smuks-egl-util)
@@ -62,12 +63,27 @@
   (let ((stride (gbm:bo-get-stride buffer-object)) (offset 0))
     ;; TODO: Maybe the gl lib already has this extension defined. That lib seems a bit more polished
     (egl:create-image-khr egl (cffi:null-pointer) egl::LINUX_DMA_BUF_EXT (cffi:null-pointer)
-			  :dma-buf-plane-fd-ext (gbm:bo-get-fd buffer-object)
 			  :width width :height height
 			  :linux-drm-fourcc-ext gbm::FORMAT_XRGB8888
+			  :dma-buf-plane0-fd-ext (gbm:bo-get-fd buffer-object)
 			  :dma-buf-plane0-pitch-ext stride
 			  :dma-buf-plane0-offset-ext offset
 			  :none)))
+
+;; TODO: Make this multi-planar if you decide to support other pixel formats
+;; TODO: This is also practically identical to the above function. Might want to merge them.
+;; TODO: EGL lib - automatically append :none
+(defun create-egl-image-from-buffer (egl width height format fd offset stride)
+  (prog1
+      (egl:create-image-khr egl (cffi:null-pointer) egl::LINUX_DMA_BUF_EXT (cffi:null-pointer)
+			    :width width :height height
+			    :linux-drm-fourcc-ext format
+			    :dma-buf-plane0-fd-ext fd
+			    :dma-buf-plane0-pitch-ext stride
+			    :dma-buf-plane0-offset-ext offset
+			    :none)
+    (check-egl-error "Creating egl image")))
+
 
 (defun destroy-image (egl image) (egl:destroy-image egl image))
 
