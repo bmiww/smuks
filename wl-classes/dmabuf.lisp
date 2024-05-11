@@ -71,23 +71,28 @@ All parameters sent out of the feedback object are specific to the surface."
   ((surface :initarg :surface :initform nil :accessor surface)
    (dmabuf :initarg :dmabuf :accessor dmabuf)))
 
+(defmethod send-tranche ((feedback feedback) device formats &key scanout)
+  ;; TODO: The tranche could be extracted to its own method so as to make this a bit prettier
+  ;; For now - since - i only have one device and one supported format/modifier - i'm being lazy
+  (zwp-linux-dmabuf-feedback-v1:send-tranche-target-device feedback (list device))
+  ;; TODO: The 0 here identifies the first element of the *format-table*
+  ;; Make it a bit smarter
+  (zwp-linux-dmabuf-feedback-v1:send-tranche-formats feedback formats)
+  ;; TODO: I still don't know which nodes are scanouts and which are renders
+  ;; There should be some way to identify in DRM level
+  (when scanout (zwp-linux-dmabuf-feedback-v1:send-tranche-flags feedback 1))
+  (zwp-linux-dmabuf-feedback-v1:send-tranche-done feedback))
+
+
 (defmethod initialize-instance :after ((feedback feedback) &key)
   (let ((display (wl:get-display feedback)))
     (zwp-linux-dmabuf-feedback-v1:send-format-table feedback (mmap-pool-fd *format-table*) (mmap-pool-size *format-table*))
     (zwp-linux-dmabuf-feedback-v1:send-main-device feedback `(,(dev-t display)))
 
-    ;; START TRANCHE
-    ;; TODO: The tranche could be extracted to its own method so as to make this a bit prettier
-    ;; For now - since - i only have one device and one supported format/modifier - i'm being lazy
-    (zwp-linux-dmabuf-feedback-v1:send-tranche-target-device feedback `(,(dev-t display)))
-    ;; TODO: The 0 here identifies the first element of the *format-table*
-    ;; Make it a bit smarter
-    (zwp-linux-dmabuf-feedback-v1:send-tranche-formats feedback '(0))
-    ;; TODO: This might be unnecessary, and just removable. scanout flag.
-    ;; Wanted to notify it in case if i do decide to read the pixels being sent in some form of panic mode
-    (zwp-linux-dmabuf-feedback-v1:send-tranche-flags feedback 1)
-    (zwp-linux-dmabuf-feedback-v1:send-tranche-done feedback)
-    ;; END TRANCHE
+    ;; TODO: For now - the scanout thing here is pretty fake.
+    ;; Primarily used to see how the simple-dmabuf-feedback example from weston works
+    ;; (send-tranche feedback (dev-t display) '(0 1) :scanout t)
+    (send-tranche feedback (dev-t display) '(0 1))
 
     (zwp-linux-dmabuf-feedback-v1:send-done feedback)))
 
