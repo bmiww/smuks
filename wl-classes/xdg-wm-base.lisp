@@ -33,11 +33,12 @@
    (popup :initarg :popup :accessor popup)))
 
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
-  (let ((toplevel (wl:mk-if 'toplevel xdg id)))
+  (log! "xdg-surface:get-toplevel")
+  (let ((toplevel (wl:mk-if 'toplevel xdg id :xdg-surface xdg)))
     (setf (toplevel xdg) toplevel)
     ;; TODO: Make an actual window manager instead of these random dimensions :)
     ;; TODO: One for maximized - get the enum stuff in order
-    (xdg-toplevel:send-configure toplevel 200 200'(1))
+    (xdg-toplevel:send-configure toplevel 200 200 '(1))
     (xdg-surface:send-configure xdg (incf (configure-serial (wl-surface xdg))))))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
@@ -55,8 +56,14 @@
 ;;  │ │ │├─┘│  ├┤ └┐┌┘├┤ │
 ;;  ┴ └─┘┴  ┴─┘└─┘ └┘ └─┘┴─┘
 (defclass toplevel (xdg-toplevel:dispatch)
-  ((title :initform nil :accessor title)
-   (app-id :initform nil :accessor app-id)))
+  ((xdg-surface :initarg :xdg-surface :accessor xdg-surface)
+   (title :initform nil :accessor title)
+   (app-id :initform nil :accessor app-id)
+   (parent :initform nil :accessor parent)
+   (min-width :initform 0 :accessor min-width)
+   (min-height :initform 0 :accessor min-height)
+   (max-width :initform 0 :accessor max-width)
+   (max-height :initform 0 :accessor max-height)))
 
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
   (setf (title toplevel) title))
@@ -68,4 +75,28 @@
 ;; Since you probably want tiling - this will mostly be ignored
 ;; But - could introduce specific states/flags
 (defmethod xdg-toplevel:move ((toplevel toplevel) seat serial)
-  ())
+  (log! "xdg-toplevel:move: Not implemented"))
+
+(defmethod xdg-toplevel:set-parent ((toplevel toplevel) parent)
+  (log! "xdg-toplevel:set-parent: Not implemented fully")
+  (when parent (setf (parent toplevel) parent)))
+
+(defmethod xdg-toplevel:set-min-size ((toplevel toplevel) width height)
+  (log! "xdg-toplevel:set-min-size: size limitations still ignored")
+  (setf (min-width toplevel) width)
+  (setf (min-height toplevel) height))
+
+(defmethod xdg-toplevel:set-max-size ((toplevel toplevel) width height)
+  (log! "xdg-toplevel:set-max-size: size limitations still ignored")
+  (setf (max-width toplevel) width)
+  (setf (max-height toplevel) height))
+
+;; TODO: Integrate better with the sizing/positioning once you figure that out
+(defmethod xdg-toplevel:set-maximized ((toplevel toplevel))
+  "A client wants to maximize their window to maximum size.
+For tiling managers - i think i'll just resend the original configure event.
+Supposed to answer with a configure event showing the new size."
+  (log! "xdg-toplevel:set-maximized: Not considered in great detail")
+  (let ((xdg (xdg-surface toplevel)))
+    (xdg-toplevel:send-configure toplevel 400 400 '(1))
+    (xdg-surface:send-configure xdg (incf (configure-serial (wl-surface xdg))))))

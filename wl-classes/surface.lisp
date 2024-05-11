@@ -177,7 +177,8 @@ This is one of the double buffered actions - so applied only after next commit"
 ;; ╚══════╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝
 (defclass subsurface (wl-subsurface:dispatch)
   ((surface :initarg :surface)
-   (parent :initarg :parent)))
+   (parent :initarg :parent)
+   (sync-mode :initarg :sync-mode :accessor sync-mode)))
 
 ;; TODO:
 (defmethod wl-subsurface:set-position ((sub subsurface) x y)
@@ -186,3 +187,8 @@ Could be a negative value.
 This is double buffered - applied when the parent surface commits
 Buuuut subsurfaces also have the option of setting sync/desync mode"
   (log! "UNIMPLEMENTED: Set position~%"))
+
+(defmethod wl-subsurface:set-desync ((sub subsurface))
+  "Desync the subsurface from the parent surface"
+  (log! "wl-subsurface:set-desync: Sync strategies not implemented...")
+  (setf (sync-mode sub) :desync))
