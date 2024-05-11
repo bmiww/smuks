@@ -129,20 +129,20 @@
 (defmethod wl-surface:set-opaque-region ((surface surface) region)
   "Sets the region which should be considered more carefully for repaints.
 Basically client notifying the compositor that there are alpha < 1 pixels in this region"
-  (log! "UNIMPLEMENTED: Set opaque region~%"))
+  (log! "UNIMPLEMENTED: Set opaque region"))
 
 ;; TODO: This one is meaningful for me - for now i'm sending all events to the client
 (defmethod wl-surface:set-input-region ((surface surface) region)
   "Sets the region which should be considered for input events.
 A coordinate falling outside of this region
 means the client doesn't have to receive that touch/pointer event."
-  (log! "UNIMPLEMENTED: Set input region~%"))
+  (log! "UNIMPLEMENTED: Set input region"))
 
 ;; TODO: Implement to support clients setting higher/lower "dpi"
 (defmethod wl-surface:set-buffer-scale ((surface surface) scale)
   "Sets the scale for the surface buffer.
 This is one of the double buffered actions - so applied only after next commit"
-  (log! "UNIMPLEMENTED: Set buffer scale~%"))
+  (log! "UNIMPLEMENTED: Set buffer scale"))
 
 (defmethod in-bounds ((surface surface) x y)
   (and (<= (x surface) x (+ (x surface) (width surface)))
@@ -186,7 +186,7 @@ This is one of the double buffered actions - so applied only after next commit"
 Could be a negative value.
 This is double buffered - applied when the parent surface commits
 Buuuut subsurfaces also have the option of setting sync/desync mode"
-  (log! "UNIMPLEMENTED: Set position~%"))
+  (log! "UNIMPLEMENTED: Set position"))
 
 (defmethod wl-subsurface:set-desync ((sub subsurface))
   "Desync the subsurface from the parent surface"

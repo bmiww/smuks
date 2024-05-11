@@ -164,17 +164,17 @@
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
   (cl-async:start-event-loop
    (lambda ()
-     (log! "Starting DRM fd listener. Waiting for events...~%")
+     (log! "Starting DRM fd listener. Waiting for events...")
      (setf *drm-poller* (drm-listener))
-     (log! "Starting wayland client socket listener. Waiting for clients...~%")
+     (log! "Starting wayland client socket listener. Waiting for clients...")
      (setf *client-poller* (client-listener))
-     (log! "Starting wayland event loop listener. Waiting for events...~%")
+     (log! "Starting wayland event loop listener. Waiting for events...")
      (setf *wl-poller* (wayland-listener))
-     (log! "Starting event node watch poller. Waiting for device changes...~%")
+     (log! "Starting event node watch poller. Waiting for device changes...")
      (setf *device-poller* (notify-listener))
-     (log! "Starting input event poller. Waiting for user inputs...~%")
+     (log! "Starting input event poller. Waiting for user inputs...")
      (setf *input-poller* (input-listener))
-     (log! "Starting the umpeenth poller. Now for seat events...~%")
+     (log! "Starting the umpeenth poller. Now for seat events...")
      (setf *seat-poller* (seat-listener))
 
      ;; (setf *test-app* (test-app "weston-simple-shm"))
@@ -334,7 +334,7 @@
 	  (unix-sockets:make-unix-socket +socket-file+))
     (create-new-socket ()
       :report "Create new socket"
-      (log! "Creating new socket~%")
+      (log! "Creating new socket")
       (delete-file +socket-file+)
       (unix-sockets:make-unix-socket +socket-file+))))
 
@@ -346,14 +346,14 @@
 ;; for completeness sake.
 (defun enable-seat (seat data)
   (declare (ignore seat data))
-  (log! "SEAT ENABLED~%")
+  (log! "SEAT ENABLED")
   (cl-async:exit-event-loop))
 
 ;; TODO: So you probably might want to kill off the whole compositor if we receive this?
   ;; When exactly does this happen anyway?
 (defun disable-seat (seat data)
   (declare (ignore seat data))
-  (log! "DISABLING SEAT - NOT IMPLEMENTED YET~%"))
+  (log! "DISABLING SEAT - NOT IMPLEMENTED YET"))
 
 
 ;; Opening and closing restricted devices
@@ -385,13 +385,13 @@
 ;; TODO: Attach error output too.
 (defun test-app (app-name)
   "Launch a child process and listen to its output"
-  (log! "🟢 ~a: Starting an app~%" app-name)
+  (log! "🟢 ~a: Starting an app" app-name)
   (let ((process (uiop:launch-program `(,app-name) :output :stream :error-output *standard-output*)))
     (bt:make-thread
      (lambda ()
        (loop while (uiop/launch-program:process-alive-p process)
-	     do (log! "🔴 ~a: ~a~%" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
-       (log! "🟢 ~a: Client exit. Code: ~a~%" app-name (uiop:wait-process process))))
+	     do (log! "🔴 ~a: ~a" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
+       (log! "🟢 ~a: Client exit. Code: ~a" app-name (uiop:wait-process process))))
     process))
 
 (defun flo (num)

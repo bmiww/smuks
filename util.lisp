@@ -29,7 +29,7 @@
 ;; │  │ ││ ┬│
 ;; ┴─┘└─┘└─┘o
 (defvar *log-output* *standard-output*)
-(defun log! (&rest args) (format *log-output* "🎀: ~a" (apply #'format nil args)))
+(defun log! (&rest args) (format *log-output* "🎀: ~a~%" (apply #'format nil args)))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┌─┐┬ ┬
 ;;  │││ │├─┤├─┤└─┐├─┤

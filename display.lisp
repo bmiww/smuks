@@ -18,7 +18,7 @@
    (dev-t :initarg :dev-t :accessor dev-t)))
 
 (defmethod input ((display display) type event)
-  (log! "No handler for input event: ~a~%" (event-type event)))
+  (log! "No handler for input event: ~a" (event-type event)))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;;  │ │ ││ ││  ├─┤  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
@@ -84,9 +84,9 @@ and then clean the list out"
       (let* ((client (wl:client surface))
 	     (seat (seat client))
 	     (seat-pointer (seat-pointer seat)))
-	(log! "Client: ~a~%" client)
-	(log! "Seat: ~a~%" seat)
-	(log! "Seat-pointer: ~a~%" seat-pointer)
+	(log! "Client: ~a" client)
+	(log! "Seat: ~a" seat)
+	(log! "Seat-pointer: ~a" seat-pointer)
 	(if (and seat-pointer (active-surface seat-pointer))
 	    (pointer-motion seat new-x new-y)
 	    (when seat-pointer (pointer-enter seat surface new-x new-y)))))
