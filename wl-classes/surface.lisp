@@ -33,30 +33,37 @@
     (t (format nil "Unsupported surface role: ~a" (role surface)))))
 
 (defmethod commit-toplevel ((surface surface))
-  (when (pending-buffer surface)
-    (let ((new-dimensions? nil))
-      (unless (eq (width (pending-buffer surface)) (width surface))
-	(setf (width surface) (width (pending-buffer surface)))
-	(setf new-dimensions? t))
-
-      (unless (eq (height (pending-buffer surface)) (height surface))
-	(setf (height surface) (height (pending-buffer surface)))
-	(setf new-dimensions? t))
-
-      ;; TODO: If a new texture is being generated - delete the old texture!!!
-      ;; aka new-dimensions is true - delete the old texture before reassigning
-      (setf (texture surface)
-	    (gen-texture (pending-buffer surface) (unless new-dimensions? (texture surface))))
-
-      (wl-buffer:send-release (pending-buffer surface))
-      (setf (pending-buffer surface) nil)
-      (setf (needs-redraw surface) t)))
+  (typecase (pending-buffer surface)
+    (buffer (commit-shm-buffer surface))
+    (dma-buffer (commit-dma-buffer surface)))
 
   (when (pending-frame-callbacks surface)
     (setf (frame-callbacks surface) (pending-frame-callbacks surface))
     (setf (pending-frame-callbacks surface) nil)
     (setf (needs-redraw surface) t)))
 
+
+(defmethod commit-dma-buffer ((surface surface))
+  (log! "Committing DMA buffer. TODO: Implement.~%"))
+
+(defmethod commit-shm-buffer ((surface surface))
+  (let ((new-dimensions? nil))
+    (unless (eq (width (pending-buffer surface)) (width surface))
+      (setf (width surface) (width (pending-buffer surface)))
+      (setf new-dimensions? t))
+
+    (unless (eq (height (pending-buffer surface)) (height surface))
+      (setf (height surface) (height (pending-buffer surface)))
+      (setf new-dimensions? t))
+
+    ;; TODO: If a new texture is being generated - delete the old texture!!!
+    ;; aka new-dimensions is true - delete the old texture before reassigning
+    (setf (texture surface)
+	  (gen-texture (pending-buffer surface) (unless new-dimensions? (texture surface))))
+
+    (wl-buffer:send-release (pending-buffer surface))
+    (setf (pending-buffer surface) nil)
+    (setf (needs-redraw surface) t)))
 
 
 ;; TODO: Make this be based off of the used format

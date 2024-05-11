@@ -81,6 +81,15 @@
 (defmethod pool-ptr ((buffer buffer)) (mmap-pool-ptr (mmap-pool buffer)))
 
 
+(defclass dma-buffer (wl-buffer:dispatch)
+  ((planes :initarg :planes :accessor planes)
+   (width :initarg :width :accessor width)
+   (height :initarg :height :accessor height)
+   (pixel-format :initarg :format :accessor pixel-format)
+   (flags :initarg :flags :accessor flags)))
+
+
+
 ;; ┌┐ ┬ ┬┌┬┐┌─┐  ┬─┐┌─┐┌─┐┌┬┐
 ;; ├┴┐└┬┘ │ ├┤   ├┬┘├┤ ├─┤ ││
 ;; └─┘ ┴  ┴ └─┘  ┴└─└─┘┴ ┴─┴┘

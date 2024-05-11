@@ -5,6 +5,8 @@
 ;; ██║  ██║██║╚██╔╝██║██╔══██║██╔══██╗██║   ██║██╔══╝
 ;; ██████╔╝██║ ╚═╝ ██║██║  ██║██████╔╝╚██████╔╝██║
 ;; ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚═════╝  ╚═════╝ ╚═╝
+;; NOTE: Implements the LINUX DMA-BUF protocol as described here
+;; https://wayland.app/protocols/linux-dmabuf-v1#zwp_linux_buffer_params_v1:request:add
 (in-package :smuks)
 (defclass dmabuf-global (zwp-linux-dmabuf-v1:global)
   ())
@@ -57,6 +59,46 @@ see the implementation of the zwp-linux-dmabuf-feedback-v1:dispatch class."
   "Creates a feedback object for a specific surface.
 All parameters sent out of the feedback object are specific to the surface."
   (setf (gethash (wl:id surface) (surface-feedbacks dmabuf)) (wl:mk-if 'feedback dmabuf id :surface surface :dmabuf dmabuf)))
+
+
+(defmethod zwp-linux-dmabuf-v1:create-params ((dmabuf dmabuf) id)
+  (wl:mk-if 'buffer-params dmabuf id :dmabuf dmabuf))
+
+
+;; ┌┐ ┬ ┬┌─┐┌─┐┌─┐┬─┐  ┌─┐┌─┐┬─┐┌─┐┌┬┐┌─┐
+;; ├┴┐│ │├┤ ├┤ ├┤ ├┬┘  ├─┘├─┤├┬┘├─┤│││└─┐
+;; └─┘└─┘└  └  └─┘┴└─  ┴  ┴ ┴┴└─┴ ┴┴ ┴└─┘
+(defclass plane ()
+  ((id :initarg :id :accessor id)
+   (fd :initarg :fd :accessor fd)
+   (offset :initarg :offset :accessor offset)
+   (stride :initarg :stride :accessor stride)
+   (modifier :initarg :modifier :accessor modifier)))
+
+(defclass buffer-params (zwp-linux-buffer-params-v1:dispatch)
+  ((dmabuf :initarg :dmabuf :reader dmabuf)
+   (planes :initform (make-hash-table :test 'eql) :accessor planes)
+   (width :accessor width)
+   (height :accessor height)
+   (format :accessor buffer-format)
+   (flags :accessor flags)))
+
+;; TODO: modifier-hi and lo need to be checked in format-table.
+;; For now - since we only support modifier 0 - i'm just erroring out when those vals are not 0
+(defmethod zwp-linux-buffer-params-v1:add ((params buffer-params) fd plane-idx offset stride modifier-hi modifier-lo)
+  (when (or (not (zerop modifier-hi)) (not (zerop modifier-lo))) (error "Only modifier 0 (LINEAR) is supported"))
+  (setf (gethash plane-idx (planes params)) (make-instance 'plane :id plane-idx :fd fd :offset offset :stride stride :modifier 0)))
+
+
+(defmethod zwp-linux-buffer-params-v1:create-immed ((params buffer-params) id width height format flags)
+  "create_immed is expected to create an instance of wl_buffer.
+It is mentally a bit simpler than the regular create as seen in this protocol"
+  (wl:mk-if 'dma-buffer params id
+	    :planes (planes params)
+	    :width width
+	    :height height
+	    :format format
+	    :flags flags))
 
 
 ;; ┌─┐┌─┐┌─┐┌┬┐┌┐ ┌─┐┌─┐┬┌─
