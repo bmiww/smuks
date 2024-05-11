@@ -20,16 +20,6 @@
     (wl-shm:send-format interface 0)
     (wl-shm:send-format interface 1)))
 
-
-;; ┌┬┐┌┬┐┌─┐┌─┐  ┌─┐┌─┐┌─┐┬
-;; ││││││├─┤├─┘  ├─┘│ ││ ││
-;; ┴ ┴┴ ┴┴ ┴┴    ┴  └─┘└─┘┴─┘
-(defstruct mmap-pool ptr fd size file)
-
-(defun munmap (pool)
-  (mmap:munmap (mmap-pool-ptr pool) (mmap-pool-fd pool) (mmap-pool-size pool)))
-
-
 ;; ┌─┐┬ ┬┌┬┐
 ;; └─┐├─┤│││
 ;; └─┘┴ ┴┴ ┴

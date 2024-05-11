@@ -15,7 +15,8 @@
    ;; TODO: Both of these are dumb - these should be per CRTC/monitor/whatever
    (display-width :initarg :display-width :accessor display-width)
    (display-height :initarg :display-height :accessor display-height)
-   (dev-t :initarg :dev-t :accessor dev-t)))
+   (dev-t :initarg :dev-t :accessor dev-t)
+   (keyboard-focus :initform nil :accessor keyboard-focus)))
 
 (defmethod input ((display display) type event)
   (log! "No handler for input event: ~a" (event-type event)))

@@ -10,7 +10,7 @@
 ;; └─┘┴─┘└─┘└─┘┴ ┴┴─┘
 (in-package :smuks)
 (defclass seat-global (wl-seat:global)
-  ())
+  ((keymap-mmap :initform nil :accessor keymap-mmap)))
 
 ;; TODO: For now leaving as one static. But since you'd like to create manipulateable multiseats
 ;; Then make that possible by getting rid of this static thing
@@ -19,6 +19,13 @@
 (defvar *pointer* 1)
 (defvar *keyboard* 2)
 (defvar *touch* 4)
+
+(defmethod initialize-instance :after ((seat seat-global) &key)
+  (let* ((xkb-context (xkb:xkb-context-new :no-flags))
+	 (xkb-keymap (xkb:new-keymap-from-names xkb-context "" "" "" "" ""))
+	 (keymap-file (with-xdg-mem-file (stream "keymap" :element-type 'character)
+			(format stream (xkb:keymap-get-as-string xkb-keymap :text-v1)))))
+    (setf (keymap-mmap seat) keymap-file)))
 
 (defmethod wl-seat:dispatch-bind :after ((global seat-global) client data version id)
   (declare (ignore data version))
@@ -44,11 +51,13 @@
    (keyboard :initform nil :accessor seat-keyboard)
    (touch :initform nil :accessor seat-touch)))
 
+(defmethod keymap-mmap ((seat seat)) (keymap-mmap (wl:global seat)))
+
 (defmethod next-serial ((seat seat))
   (incf (slot-value seat 'event-serial)))
 
 (defmethod wl-seat:get-keyboard ((seat seat) id)
-  (error "Keyboard asked - none was there"))
+  (setf (seat-keyboard seat) (wl:mk-if 'keyboard seat id)))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤
@@ -119,3 +128,24 @@
 
 (defmethod wl-pointer:set-cursor ((pointer pointer) serial surface hotspot-x hotspot-y)
   (setf (role surface) pointer))
+
+
+;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
+;; ├┴┐├┤ └┬┘├┴┐│ │├─┤├┬┘ ││   │││└─┐├─┘├─┤ │ │  ├─┤
+;; ┴ ┴└─┘ ┴ └─┘└─┘┴ ┴┴└──┴┘  ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
+(defclass keyboard (wl-keyboard:dispatch)
+  ((seat :initarg :seat :initform nil)))
+
+(defvar *key-repeat-rate* 4)
+(defvar *key-repeat-delay* 500)
+
+(defmethod initialize-instance :after ((keyboard keyboard) &key)
+  (let* ((seat (seat keyboard))
+	 (keymap-mmap (keymap-mmap seat)))
+    ;; TODO: 1 stands for xkb-keymap. Enumerate this properly
+    ;; TODO: Explore how many clients actually WANT xkb - i would prefer to roll with no_keymap
+    (wl-keyboard:send-keymap 1 (mmap-pool-fd keymap-mmap) (mmap-pool-size keymap-mmap))
+    ;; TODO: Not a big fan of key repeats in general - but not going to block clients on this
+    ;; Adjust on feel when trying out clients
+    ;; Values of 0 could be used to disable repeat behaviour also
+    (wl-keyboard:send-repeat-info *key-repeat-rate* *key-repeat-delay*)))

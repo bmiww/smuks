@@ -33,6 +33,7 @@
 	       #:file-notify
 	       #:cl-libinput
 	       #:cl-libseat
+	       #:cl-xkb
 	       #:cl-wl
 	       #:cl-wl.wayland-core
 	       #:cl-wl.xdg-shell

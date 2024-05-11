@@ -12,7 +12,10 @@
 	   match-kernel-errcode check-err
 	   heading setfnil defnil
 	   check-gl-fb-status check-gl-error
-	   flatten get-ms))
+	   flatten get-ms
+	   with-xdg-mem-file
+
+	   make-mmap-pool mmap-pool-fd mmap-pool-size munmap))
 (in-package :smuks-util)
 
 (defun heading ()
@@ -148,3 +151,39 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 	       (:framebuffer-undefined "Framebuffer undefined")
 	       (t (error "Uncovered GL framebuffer error code")))))
     (when msg (error (format nil "~a: ~a~%" prefix msg)))))
+
+
+;; ┌┬┐┌┬┐┌─┐┌─┐
+;; ││││││├─┤├─┘
+;; ┴ ┴┴ ┴┴ ┴┴
+;; A lazy struct to keep track of the mmap triplet
+(defstruct mmap-pool ptr fd size file)
+
+(defun munmap (pool)
+  (mmap:munmap (mmap-pool-ptr pool) (mmap-pool-fd pool) (mmap-pool-size pool)))
+
+
+;; ┌┬┐┌─┐┌┬┐┌─┐┌┬┐
+;; │││├┤ │││├┤  ││
+;; ┴ ┴└─┘┴ ┴└  ─┴┘
+(defun randomize-file-name (prefix) (concatenate 'string prefix (format nil "~A" (random 1000000))))
+
+;; TODO: This is a bit dumb maybe. I don't know enough about files/descriptors
+;; Basically - open and fill - then close and reopen to have an open fd
+(defmacro with-xdg-mem-file ((stream prefix &key (element-type '(unsigned-byte 8))) &body body)
+  `(let* ((xdg-dir (uiop/os:getenv "XDG_RUNTIME_DIR"))
+	  ;; TODO: Temp file into mmap - could be a package like thingy
+	  ;; Could also figure out how to do the memfd stuff, but the runtime dir should still be mem based
+	  (filename (concatenate 'string xdg-dir "/" (randomize-file-name ,prefix))))
+
+     (with-open-file (stream filename :direction :io :element-type ,element-type)
+       (let ((,stream stream))
+	 ,@body))
+
+     (let ((stream (open filename :direction :input :element-type '(unsigned-byte 8))))
+      ;; TODO: SBCL Specific
+      (multiple-value-bind (ptr fd size) (mmap:mmap (sb-sys:fd-stream-fd stream)
+						    :protection '(:read :write)
+						    :size (file-length stream) :mmap '(:private))
+
+	(make-mmap-pool :ptr ptr :fd fd :size size :file stream)))))
