@@ -45,6 +45,7 @@
 
 
 ;; TODO: For now only supporting a single plane
+;; TODO: The width height of surface is getting a bit annoying
 (defmethod commit-dma-buffer ((surface surface))
   (let* ((buffer (pending-buffer surface))
 	 (plane (gethash 0 (planes buffer)))
@@ -53,6 +54,9 @@
 		 (width buffer) (height buffer)
 		 (pixel-format buffer)
 		 (fd plane) (offset plane) (stride plane))))
+
+    (setf (width surface) (width (pending-buffer surface)))
+    (setf (height surface) (height (pending-buffer surface)))
 
     (setf (texture surface) (sglutil:create-image-texture image))
     (setf (texture-type surface) :dma)
