@@ -17,13 +17,12 @@
 ;; TODO: Maybe move to its own file since it could possibly grow
 ;; Maybe part of drm package?
 ;; DRM Fourcc codes
-(defun fourcc-code (code)
+(defun cc4 (code)
   (let ((a (char code 0)) (b (char code 1))
 	(c (char code 2)) (d (char code 3)))
     (logior
      (ash (char-code a) 0) (ash (char-code b) 8)
      (ash (char-code c) 16) (ash (char-code d) 24))))
-(setf (fdefinition 'cc4) #'fourcc-code)
 
 (defvar *argb-8888* (cc4 "AR24"))
 (defvar *xrgb-8888* (cc4 "XR24"))
