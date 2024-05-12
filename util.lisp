@@ -15,7 +15,7 @@
 	   flatten get-ms
 	   with-xdg-mem-file
 
-	   make-mmap-pool mmap-pool-fd mmap-pool-size munmap))
+	   make-mmap-pool mmap-pool-fd mmap-pool-size mmap-pool-ptr munmap))
 (in-package :smuks-util)
 
 (defun heading ()
