@@ -122,9 +122,9 @@ and then clean the list out"
   (let* ((key (keyboard@-key event))
 	 (state (keyboard@-state event))
 	 (surface (keyboard-focus display))
-	 (client (or surface (wl:client surface)))
-	 (seat (or client (seat client)))
-	 (seat-keyboard (or seat (seat-keyboard seat))))
+	 (client (and surface (wl:client surface)))
+	 (seat (and client (seat client)))
+	 (seat-keyboard (and seat (seat-keyboard seat))))
     (when seat-keyboard
       ;; tODO: Key needs to be translated to the XKB keycode
       (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key
