@@ -30,9 +30,8 @@
 (defmethod wl-seat:dispatch-bind :after ((global seat-global) client data version id)
   (declare (ignore data version))
   (let* ((interface (wl:iface client id))
-	 ;; TODO: For now making touch a capability statically.
-	 ;; In ideal - you would first check libinput for device capabilities
-	 (capabilities (logior *touch* *pointer*)))
+	 ;; TODO: you would first check libinput for device capabilities
+	 (capabilities (logior *touch* *pointer* *keyboard*)))
     ;; TODO: Somehow some of the weston examples don't like the seat name event
     ;; Since it's not of high importance - for now disabling.
     ;; Might be a version mismatch i guess
@@ -57,7 +56,7 @@
   (incf (slot-value seat 'event-serial)))
 
 (defmethod wl-seat:get-keyboard ((seat seat) id)
-  (setf (seat-keyboard seat) (wl:mk-if 'keyboard seat id)))
+  (setf (seat-keyboard seat) (wl:mk-if 'keyboard seat id :seat seat)))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤
@@ -134,7 +133,7 @@
 ;; ├┴┐├┤ └┬┘├┴┐│ │├─┤├┬┘ ││   │││└─┐├─┘├─┤ │ │  ├─┤
 ;; ┴ ┴└─┘ ┴ └─┘└─┘┴ ┴┴└──┴┘  ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
 (defclass keyboard (wl-keyboard:dispatch)
-  ((seat :initarg :seat :initform nil)))
+  ((seat :initarg :seat :initform nil :accessor seat)))
 
 (defvar *key-repeat-rate* 4)
 (defvar *key-repeat-delay* 500)
@@ -144,8 +143,8 @@
 	 (keymap-mmap (keymap-mmap seat)))
     ;; TODO: 1 stands for xkb-keymap. Enumerate this properly
     ;; TODO: Explore how many clients actually WANT xkb - i would prefer to roll with no_keymap
-    (wl-keyboard:send-keymap 1 (mmap-pool-fd keymap-mmap) (mmap-pool-size keymap-mmap))
+    (wl-keyboard:send-keymap keyboard 1 (mmap-pool-fd keymap-mmap) (mmap-pool-size keymap-mmap))
     ;; TODO: Not a big fan of key repeats in general - but not going to block clients on this
     ;; Adjust on feel when trying out clients
     ;; Values of 0 could be used to disable repeat behaviour also
-    (wl-keyboard:send-repeat-info *key-repeat-rate* *key-repeat-delay*)))
+    (wl-keyboard:send-repeat-info keyboard *key-repeat-rate* *key-repeat-delay*)))

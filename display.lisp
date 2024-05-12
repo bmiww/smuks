@@ -16,7 +16,26 @@
    (display-width :initarg :display-width :accessor display-width)
    (display-height :initarg :display-height :accessor display-height)
    (dev-t :initarg :dev-t :accessor dev-t)
-   (keyboard-focus :initform nil :accessor keyboard-focus)))
+   (display-serial :initform 0 :accessor display-serial)
+   (keyboard-focus :initform nil)))
+
+(defmethod next-serial ((display display)) (incf (display-serial display)))
+
+(defmethod (setf keyboard-focus) (focus-surface (display display))
+  (let* ((client (wl:client focus-surface))
+	 (seat (seat client))
+	 (seat-keyboard (seat-keyboard seat)))
+    (setf (slot-value display 'keyboard-focus) focus-surface)
+
+    ;; TODO: You're supposed to send the actual pressed keys as last arg
+    ;; But currently don't have a keypress manager/tracker
+    (wl-keyboard:send-enter seat-keyboard (next-serial display)
+			    focus-surface '())
+    ;; TODO: We are supposed to send the active modifiers after an enter event.
+    ;; For now lazy
+    (wl-keyboard:send-modifiers seat-keyboard (next-serial display) 0 0 0 0)))
+
+(defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))
 
 (defmethod input ((display display) type event)
   (log! "No handler for input event: ~a" (event-type event)))
@@ -98,9 +117,18 @@ and then clean the list out"
 ;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐
 ;; ├┴┐├┤ └┬┘├┴┐│ │├─┤├┬┘ ││
 ;; ┴ ┴└─┘ ┴ └─┘└─┘┴ ┴┴└──┴┘
+;; TODO: Very annoyed by the nil checks here
 (defmethod input ((display display) (type (eql :keyboard-key)) event)
   (let* ((key (keyboard@-key event))
-	 (state (keyboard@-state event)))
+	 (state (keyboard@-state event))
+	 (surface (keyboard-focus display))
+	 (client (or surface (wl:client surface)))
+	 (seat (or client (seat client)))
+	 (seat-keyboard (or seat (seat-keyboard seat))))
+    (when seat-keyboard
+      ;; tODO: Key needs to be translated to the XKB keycode
+      (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key
+			    (case state (:pressed 1) (:released 0))))
     ;; Probably F12
     (when (and (eq state :pressed) (eq key 88))
       (shutdown))))
