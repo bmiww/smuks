@@ -62,7 +62,10 @@
     ;; TODO: Might not be the best idea. Basically - a new client - regardless of what they have - will get a
     ;; Keyboard focus event. And are assumed to be the main keyboard focus.
     ;; But all new clients would get in this method if they request keyboard capabilities - so meh?
-    (setf (keyboard-focus (wl:get-display surface)) surface)))
+    ;; AAAAAAAAH - THIS THING IS HORRIBLE - different clients might initiate resources differently.
+    ;; This wont work for all clients.
+    ;; I should perform keyboard focus when BOTH TOPLEVEL and KEYBOARD are created.
+    (when surface (setf (keyboard-focus (wl:get-display surface)) surface))))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤
