@@ -131,8 +131,9 @@
   ((seat :initarg :seat :initform nil)
    (active-surface :initform nil :accessor active-surface)))
 
+;; TODO: PROTOCOL: If surface is nil - the pointer image should be hidden
 (defmethod wl-pointer:set-cursor ((pointer pointer) serial surface hotspot-x hotspot-y)
-  (setf (role surface) pointer))
+  (when surface (setf (role surface) pointer)))
 
 
 ;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
