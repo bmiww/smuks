@@ -121,7 +121,8 @@
   (let* ((seat-pointer (seat-pointer seat))
 	 (surface (active-surface seat-pointer)))
     (unless surface (error "No active surface for pointer button"))
-    (wl-pointer:send-button seat-pointer (next-serial seat) (get-ms) button state)))
+    (wl-pointer:send-button seat-pointer (next-serial seat) (get-ms) button
+			    (case state (:pressed 1) (:released 0)))))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤   │││└─┐├─┘├─┤ │ │  ├─┤
