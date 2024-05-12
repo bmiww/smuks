@@ -29,6 +29,7 @@
 ;; https://wayland.app/protocols/wayland#wl_surface:request:commit
 (defmethod wl-surface:commit ((surface surface))
   (typecase (role surface)
+    (toplevel (commit-toplevel surface))
     (xdg-surface (commit-toplevel surface))
     (pointer (commit-toplevel surface))
     (t (format nil "Unsupported surface role: ~a" (role surface)))))

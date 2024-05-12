@@ -29,8 +29,7 @@
 
     ;; TODO: You're supposed to send the actual pressed keys as last arg
     ;; But currently don't have a keypress manager/tracker
-    (wl-keyboard:send-enter seat-keyboard (next-serial display)
-			    focus-surface '())
+    (wl-keyboard:send-enter seat-keyboard (next-serial display) focus-surface '())
     ;; TODO: We are supposed to send the active modifiers after an enter event.
     ;; For now lazy
     (wl-keyboard:send-modifiers seat-keyboard (next-serial display) 0 0 0 0)))

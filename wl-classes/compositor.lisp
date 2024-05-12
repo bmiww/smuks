@@ -27,6 +27,10 @@
 (defmethod wl-compositor:create-region ((compositor compositor) id)
   (wl:mk-if 'region compositor id))
 
+(defmethod toplevel-surface ((compositor compositor))
+  (loop for value being the hash-values of (surfaces compositor)
+	when (typep (role value) 'toplevel)
+	return value))
 
 ;; ┬─┐┌─┐┌─┐┬┌─┐┌┐┌
 ;; ├┬┘├┤ │ ┬││ ││││

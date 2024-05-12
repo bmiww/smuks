@@ -36,11 +36,11 @@
   (log! "xdg-surface:get-toplevel")
   (let ((toplevel (wl:mk-if 'toplevel xdg id :xdg-surface xdg)))
     (setf (toplevel xdg) toplevel)
+    (setf (role (wl-surface xdg)) toplevel)
     ;; TODO: Make an actual window manager instead of these random dimensions :)
     ;; TODO: One for maximized - get the enum stuff in order
     (xdg-toplevel:send-configure toplevel 200 200 '(1))
-    (xdg-surface:send-configure xdg (incf (configure-serial (wl-surface xdg))))
-    (setf (keyboard-focus (wl:get-display xdg)) (wl-surface xdg))))
+    (xdg-surface:send-configure xdg (incf (configure-serial (wl-surface xdg))))))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (setf (width xdg) width)

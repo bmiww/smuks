@@ -56,7 +56,13 @@
   (incf (slot-value seat 'event-serial)))
 
 (defmethod wl-seat:get-keyboard ((seat seat) id)
-  (setf (seat-keyboard seat) (wl:mk-if 'keyboard seat id :seat seat)))
+  (let* ((client (wl:client seat))
+	 (surface (toplevel-surface (compositor client))))
+    (setf (seat-keyboard seat) (wl:mk-if 'keyboard seat id :seat seat))
+    ;; TODO: Might not be the best idea. Basically - a new client - regardless of what they have - will get a
+    ;; Keyboard focus event. And are assumed to be the main keyboard focus.
+    ;; But all new clients would get in this method if they request keyboard capabilities - so meh?
+    (setf (keyboard-focus (wl:get-display surface)) surface)))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤
@@ -140,7 +146,9 @@
 
 (defmethod initialize-instance :after ((keyboard keyboard) &key)
   (let* ((seat (seat keyboard))
-	 (keymap-mmap (keymap-mmap seat)))
+	 (keymap-mmap (keymap-mmap seat))
+	 (client (wl:client keyboard))
+	 (surface (toplevel-surface (compositor client))))
     ;; TODO: 1 stands for xkb-keymap. Enumerate this properly
     ;; TODO: Explore how many clients actually WANT xkb - i would prefer to roll with no_keymap
     (wl-keyboard:send-keymap keyboard 1 (mmap-pool-fd keymap-mmap) (mmap-pool-size keymap-mmap))
