@@ -105,7 +105,6 @@
 
 (defmethod pointer-enter ((seat seat) surface x y)
   (let ((seat-pointer (seat-pointer seat)))
-    (log! "Pointer enter")
     (setf (active-surface seat-pointer) surface)
     (wl-pointer:send-enter seat-pointer (next-serial seat) surface
 			   (- x (x surface)) (- y (y surface)))))
@@ -118,6 +117,11 @@
     (log! "Pointer move")
     (wl-pointer:send-motion seat-pointer (get-ms) (- x (x surface)) (- y (y surface)))))
 
+(defmethod pointer-button ((seat seat) button state)
+  (let* ((seat-pointer (seat-pointer seat))
+	 (surface (active-surface seat-pointer)))
+    (unless surface (error "No active surface for pointer button"))
+    (wl-pointer:send-button seat-pointer (next-serial seat) (get-ms) button state)))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤   │││└─┐├─┘├─┤ │ │  ├─┤

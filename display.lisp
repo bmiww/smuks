@@ -100,17 +100,22 @@ and then clean the list out"
 	 (surface (surface-at-coords display new-x new-y)))
 
     (when surface
-      (let* ((client (wl:client surface))
-	     (seat (seat client))
-	     (seat-pointer (seat-pointer seat)))
-	(log! "Client: ~a" client)
-	(log! "Seat: ~a" seat)
-	(log! "Seat-pointer: ~a" seat-pointer)
+      (let* ((client (wl:client surface)) (seat (seat client)) (seat-pointer (seat-pointer seat)))
 	(if (and seat-pointer (active-surface seat-pointer))
 	    (pointer-motion seat new-x new-y)
 	    (when seat-pointer (pointer-enter seat surface new-x new-y)))))
     (setf (cursor-x display) new-x)
     (setf (cursor-y display) new-y)))
+
+;; NOTE: Additionally - sets display keyboard focus to the surface
+(defmethod input ((display display) (type (eql :pointer-button)) event)
+  (let* ((button (pointer-button@-button event))
+	 (state (pointer-button@-state event))
+	 (surface (surface-at-coords display (cursor-x display) (cursor-y display))))
+    (when surface
+      (let* ((client (wl:client surface)) (seat (seat client)))
+	(setf (keyboard-focus display) surface)
+	(pointer-button seat button state)))))
 
 
 ;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐
