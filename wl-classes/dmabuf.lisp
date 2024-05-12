@@ -142,7 +142,7 @@ It is mentally a bit simpler than the regular create as seen in this protocol"
 ;; ├┤ │ │├┬┘│││├─┤ │    │ ├─┤├┴┐│  ├┤
 ;; └  └─┘┴└─┴ ┴┴ ┴ ┴    ┴ ┴ ┴└─┘┴─┘└─┘
 (defun gen-format-table (formmods)
-  (with-xdg-mem-file (stream "format-table")
+  (with-xdg-mem-file (stream "format-table" :element-type '(unsigned-byte 8))
     (dolist (formmod formmods)
       (let ((format (car formmod)) (modifier (cadr formmod)))
 	;; This is a very lazy little endian implementation.
