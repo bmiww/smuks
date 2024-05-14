@@ -1,5 +1,14 @@
 
 * Dependencies
+** libiio
+https://man.archlinux.org/man/libiio.3.en
+https://github.com/mihaiolteanu/cl-libiio
+On archlinux this is just `pacman -S libiio`
+This one was missing on my laptop and the pinetab that i'm using.
+At the time of writing - i'm only starting to use the upstream package.
+In case if it doesn't work - it's entirely possible that i made adjustments and didn't upstream
+or properly redistribute my changes.
+
 ** Shirakumo distribution
 Can be added via quicklisp:
 (ql-dist:install-dist "http://dist.shirakumo.org/shirakumo.txt")

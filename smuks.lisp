@@ -109,6 +109,19 @@
 	 (bpp 32) (depth 24))
     (add-framebuffer (fd device) width height depth bpp stride handle)))
 
+(defun what-is-scan ()
+  (iio:scan-block-scan-local))
+
+(defun what-is-scan-context ()
+  (let* ((sumthin (iio:scan-contexts "local")))
+    sumthin))
+
+(defun init-libiio ()
+  (let* ((iio (iio:iio-create-local-context))
+	 ;; NOTE: the context-info thing takes a while. Threaded init before everything else?
+	 (info (iio:context-info iio)))
+    info))
+
 (defun mainer ()
   (setf *log-output* *standard-output*)
   (setf *frame-ready* t)

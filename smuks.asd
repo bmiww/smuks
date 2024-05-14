@@ -35,6 +35,12 @@
 	       #:cl-libseat
 	       #:cl-xkb
 	       #:cl-wl
+	       ;; TODO: Make libiio optional via compile flag.
+	       ;; It is only really used for mobile devices.
+	       ;; In case if anyone needs it for desktop, hit me up.
+	       ;; The flag could be resolved truthy by checking for the libiio.so file presence.
+	       ;; Or just deliver with it. Or compile it in somehow.
+	       #:cl-libiio
 	       #:cl-wl.wayland-core
 	       #:cl-wl.xdg-shell
 	       #:cl-wl.zwp-linux)
