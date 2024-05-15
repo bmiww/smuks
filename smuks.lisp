@@ -15,6 +15,7 @@
 
 (defvar *drm-dev* nil)
 (defvar *wayland* nil)
+(defvar *iio* nil)
 (defnil
     *socket* *smuks-exit* *frame-ready*
   *buffer-object* *frame-buffer* *active-crtc*
@@ -22,7 +23,7 @@
   *egl* *egl-context* *egl-image*
   *gl-frame-buffer*
   *rect-shader* *texture-shader* *cursor*
-  *client-poller* *wl-poller* *drm-poller* *input-poller* *seat-poller* *device-poller*
+  *client-poller* *wl-poller* *drm-poller* *input-poller* *seat-poller* *device-poller* *accelerometer-poller*
 
   *test-app*)
 
@@ -109,18 +110,6 @@
 	 (bpp 32) (depth 24))
     (add-framebuffer (fd device) width height depth bpp stride handle)))
 
-(defun what-is-scan ()
-  (iio:scan-block-scan-local))
-
-(defun what-is-scan-context ()
-  (let* ((sumthin (iio:scan-contexts "local")))
-    sumthin))
-
-(defun init-libiio ()
-  (let* ((iio (iio:iio-create-local-context))
-	 ;; NOTE: the context-info thing takes a while. Threaded init before everything else?
-	 (info (iio:context-info iio)))
-    info))
 
 (defun mainer ()
   (setf *log-output* *standard-output*)
@@ -136,6 +125,10 @@
   (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
   (unless *seat* (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
   (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
+
+  (setf *iio* (init-libiio))
+  (enable-accelerometer-scan *iio*)
+
 
   ;; TODO: Can sometimes fail when running main anew in the same lisp image
   (setf *drm-dev* (init-drm))
@@ -190,6 +183,8 @@
      (setf *input-poller* (input-listener))
      (log! "Starting the umpeenth poller. Now for seat events...")
      (setf *seat-poller* (seat-listener))
+     (log! "Starting the accelerometer poller. Waiting for accelerometer events...")
+     (setf *accelerometer-poller* (accelerometer-listener))
 
      ;; (setf *test-app* (test-app "weston-simple-shm"))
 
@@ -301,6 +296,7 @@
 (defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
 (defun input-listener () (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable)))
 (defun seat-listener () (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable)))
+(defun accelerometer-listener () (cl-async:poll (accelerometer-fd *iio*) 'accelerometer-callback :poll-for '(:readable)))
 (defun notify-listener ()
   (notify::init)
   (notify:watch "/dev/input/" :events '(:create :delete))
@@ -313,6 +309,7 @@
 (defun notify-callback (ev) (when (ready ev) (notify::process 'device-change)))
 (defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm-dev*) :page-flip 'set-frame-ready)))
 (defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
+(defun accelerometer-callback (ev) (when (ready ev) (read-accelerometer *iio*)))
 (defun client-callback (ev)
   (when (ready ev)
     (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
@@ -388,6 +385,61 @@
   (libseat:close-device *seat* (gethash fd *fd-id*))
   (remhash fd *fd-id*))
 
+
+;; ┬┬┌─┐
+;; │││ │
+;; ┴┴└─┘
+(defclass iio ()
+  ((context :initarg :context :accessor iio-context)
+   (accelerometer :initarg :accelerometer :accessor accelerometer)
+   (version :initarg :version :reader iio-version)))
+
+(defstruct accel x y z)
+
+(defvar *landscape-upwardish* (make-accel :x -816 :y 512 :z -16))
+(defvar *landscape-downwardish* (make-accel :x 1072 :y 0 :z 32))
+(defvar *vertical-upwardish* (make-accel :x 80 :y -96 :z -1008))
+(defvar *vertical-downwardish* (make-accel :x 96 :y 16 :z 1024))
+
+(defun has-accelerometer-channels (channels)
+  (loop for channel in channels
+	for id = (iio:channel-id channel)
+	when (or (string= id "accel_x") (string= id "accel_y") (string= id "accel_z"))
+	  return t
+	finally (return nil)))
+
+(defun get-accelerometer (devices)
+  (loop for device in devices
+	for channels = (iio:device-channels device)
+	when (has-accelerometer-channels channels)
+	  return device
+	finally (return nil)))
+
+(defun init-libiio ()
+  (let* ((version (iio:iio-library-get-version))
+	 (iio (iio:iio-create-local-context))
+	 ;; NOTE: the context-info thing takes a while. Threaded init before everything else?
+	 (info (iio:context-info iio))
+	 (devices (iio:context-devices info))
+	 (accelerometer (get-accelerometer devices)))
+    (make-instance 'iio :context info :accelerometer accelerometer :version version)))
+
+(defmethod enable-accelerometer-scan ((iio iio))
+  (let* ((accelerometer (accelerometer iio))
+	 (channels (iio:device-channels accelerometer)))
+    (iio:device-create-buffer accelerometer)
+    (loop for channel in channels
+	  for id = (iio:channel-id channel)
+	  when (string= id "accel_x") do (iio:enable-channel accelerometer channel)
+	  when (string= id "accel_y") do (iio:enable-channel accelerometer channel)
+	  when (string= id "accel_z") do (iio:enable-channel accelerometer channel))
+    ;; TODO: Maybe do get-samples instead??
+    (iio:buffer-refill accelerometer)
+    (iio:get-poll-fd accelerometer)))
+
+(defmethod accelerometer-fd ((iio iio)) (iio:get-poll-fd (accelerometer iio)))
+(defmethod read-accelerometer ((iio iio))
+  (print (iio:get-samples (accelerometer iio))))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
