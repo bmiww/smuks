@@ -18,7 +18,7 @@
 (defvar *iio* nil)
 (defnil
     *socket* *smuks-exit* *frame-ready*
-  *buffer-object* *frame-buffer* *active-crtc*
+  *framebuffer* *active-crtc*
   *libinput* *seat*
   *egl* *egl-context* *egl-image*
   *gl-frame-buffer*
@@ -29,8 +29,7 @@
 
 (defun cleanup ()
   (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
-  (when *buffer-object* (sdrm:destroy-bo *buffer-object*))
-  (when (and *drm-dev* *frame-buffer*) (sdrm:rm-framebuffer *drm-dev* *frame-buffer*))
+  (when (and *drm-dev* *framebuffer*) (sdrm:rm-framebuffer *drm-dev* *framebuffer*))
 
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
   (when *drm-dev* (sdrm:close-drm *drm-dev*))
@@ -43,7 +42,7 @@
     (unix-sockets:close-unix-socket *socket*)
     (delete-file +socket-file+))
 
-  (setfnil *egl* *egl-context* *egl-image* *drm-dev* *frame-buffer* *buffer-object* *smuks-exit* *active-crtc*
+  (setfnil *egl* *egl-context* *egl-image* *drm-dev* *framebuffer* *smuks-exit* *active-crtc*
 	   *wayland* *socket* *seat* *cursor*))
 
 (defun load-cursor-texture ()
@@ -70,7 +69,7 @@
 	(cl-async:delay 'recursively-render-frame :time 0.016))))
 
 (defun init-shaders ()
-  (prep-gl-implementation *frame-buffer* (width *drm-dev*) (height *drm-dev*))
+  (prep-gl-implementation (framebuffer-id *framebuffer*) (width *drm-dev*) (height *drm-dev*))
   (setf *rect-shader* (shader-init:create-rect-shader *drm-dev*))
   (setf *texture-shader* (shader-init:create-texture-shader *drm-dev*)))
 
@@ -101,14 +100,6 @@
   (make-instance 'dmabuf-global :display *wayland* :dispatch-impl 'dmabuf)
   (init-output))
 
-;; TODO: MOVE
-(defun add-default-framebuffer (device buffer-object)
-  (let* ((width (width device))
-	 (height (height device))
-	 (handle (gbm:bo-get-handle buffer-object))
-	 (stride (gbm:bo-get-stride buffer-object))
-	 (bpp 32) (depth 24))
-    (add-framebuffer (fd device) width height depth bpp stride handle)))
 
 
 (defun mainer ()
@@ -135,10 +126,7 @@
   (setf *socket* (init-socket))
   (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
 
-
-  (setf *buffer-object* (sdrm:create-bo *drm-dev*))
-  (setf *frame-buffer* (add-default-framebuffer *drm-dev* *buffer-object*))
-
+  (setf *framebuffer* (default-framebuffer *drm-dev*))
 
   ;; TODO: This is a bit awkward as an expected package export
   ;; Without this - nothing in wayland-land would work.
@@ -155,7 +143,7 @@
 
   (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm-dev*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
-  (setf *egl-image* (create-egl-image *egl* *buffer-object* (width *drm-dev*) (height *drm-dev*)))
+  (setf *egl-image* (create-egl-image *egl* (framebuffer-buffer *framebuffer*) (width *drm-dev*) (height *drm-dev*)))
 
   (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
   (setf *cursor* (load-cursor-texture))
@@ -166,7 +154,7 @@
 
   ;; TODO: You might be able to remove the *active-crtc* indirection.
   ;; At least it's not really used elsewwhere
-  (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* *frame-buffer*)))
+  (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* (framebuffer-id *frame-buffer*))))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
   (cl-async:start-event-loop
@@ -262,7 +250,7 @@
   ;; TODO: Wasteful - also - didn't really help much at the moment.
   ;; Try to bring it back inside the *frame-ready* check
   (handler-case
-      (drm-page-flip *drm-dev* *frame-buffer*)
+      (drm-page-flip *drm-dev* (framebuffer-id *framebuffer*))
     (error (err) (declare (ignore err)) ()))
 
   ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do

@@ -56,13 +56,6 @@
   (check-err (drm::drop-master (fd device)))
   (close (fd-stream device)))
 
-(defvar *bo-flags* (logior gbm::BO_USE_SCANOUT gbm::BO_USE_RENDERING))
-(defun create-bo (device)
-  (gbm:bo-create (gbm-pointer device) (width device) (height device) gbm::FORMAT_XRGB8888 *bo-flags*))
-
-(defun destroy-bo (buffer-object) (check-err (gbm:bo-destroy buffer-object)))
-(defun rm-framebuffer (device framebuffer) (check-err (drm::mode-remove-framebuffer (fd device) framebuffer)))
-
 (defun add-framebuffer (fd width height depth bpp pitch handle)
   (cffi:with-foreign-objects ((buf-id :uint32 1))
     (drm::mode-add-framebuffer fd width height depth bpp pitch handle buf-id)
@@ -106,3 +99,31 @@
 					 (cffi:null-pointer))))
 	 (error-msg (match-kernel-errcode result)))
     (when error-msg (error (format nil "Page flip:: ~a:~a~%" result error-msg)))))
+
+
+;; ┌─┐┬─┐┌─┐┌┬┐┌─┐┌┐ ┬ ┬┌─┐┌─┐┌─┐┬─┐
+;; ├┤ ├┬┘├─┤│││├┤ ├┴┐│ │├┤ ├┤ ├┤ ├┬┘
+;; └  ┴└─┴ ┴┴ ┴└─┘└─┘└─┘└  └  └─┘┴└─
+;; NOTE: For now - since we have a 1:1 mapping between how i use the buffer and the framebuffer
+;; I'll store them together
+(defstruct framebuffer id buffer)
+
+(defvar *bo-flags* (logior gbm::BO_USE_SCANOUT gbm::BO_USE_RENDERING))
+(defun create-bo (device)
+  (gbm:bo-create (gbm-pointer device) (width device) (height device) gbm::FORMAT_XRGB8888 *bo-flags*))
+
+(defun destroy-bo (buffer-object) (check-err (gbm:bo-destroy buffer-object)))
+
+(defun default-framebuffer (device)
+  (let* ((buffer-object (create-bo device))
+	 (width (width device))
+	 (height (height device))
+	 (handle (gbm:bo-get-handle buffer-object))
+	 (stride (gbm:bo-get-stride buffer-object))
+	 (bpp 32) (depth 24))
+    (make-framebuffer :id (add-framebuffer (fd device) width height depth bpp stride handle)
+		      :buffer buffer-object)))
+
+(defun rm-framebuffer (device framebuffer)
+  (destroy-bo (buffer framebuffer))
+  (check-err (drm::mode-remove-framebuffer (fd device) (id framebuffer))))
