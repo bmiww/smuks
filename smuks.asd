@@ -54,6 +54,7 @@
 	       (:file "shader-init")
 	       (:file "package")
 	       (:file "dev-track")
+	       (:file "iio")
 	       (:module "wl-classes"
 		:components ((:file "output")
 			     (:file "xdg-wm-base")
