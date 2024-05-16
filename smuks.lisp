@@ -13,7 +13,7 @@
 ;; Set to one to enable wayland debug messages. Dunno which output it goes to though.
 (defvar *enable-wayland-debug-logs* "")
 
-(defvar *drm-dev* nil)
+(defvar *drm* nil)
 (defvar *wayland* nil)
 (defvar *iio* nil)
 (defnil
@@ -29,10 +29,10 @@
 
 (defun cleanup ()
   (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
-  (when (and *drm-dev* *framebuffer*) (sdrm:rm-framebuffer *drm-dev* *framebuffer*))
+  (when (and *drm* *framebuffer*) (sdrm:rm-framebuffer *drm* *framebuffer*))
 
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
-  (when *drm-dev* (sdrm:close-drm *drm-dev*))
+  (when *drm* (sdrm:close-drm *drm*))
 
   (when *wayland* (wl:destroy *wayland*))
 
@@ -42,7 +42,7 @@
     (unix-sockets:close-unix-socket *socket*)
     (delete-file +socket-file+))
 
-  (setfnil *egl* *egl-context* *egl-image* *drm-dev* *framebuffer* *smuks-exit* *active-crtc*
+  (setfnil *egl* *egl-context* *egl-image* *drm* *framebuffer* *smuks-exit* *active-crtc*
 	   *wayland* *socket* *seat* *cursor*))
 
 (defun load-cursor-texture ()
@@ -69,9 +69,9 @@
 	(cl-async:delay 'recursively-render-frame :time 0.016))))
 
 (defun init-shaders ()
-  (prep-gl-implementation (framebuffer-id *framebuffer*) (width *drm-dev*) (height *drm-dev*))
-  (setf *rect-shader* (shader-init:create-rect-shader *drm-dev*))
-  (setf *texture-shader* (shader-init:create-texture-shader *drm-dev*)))
+  (prep-gl-implementation (framebuffer-id *framebuffer*) (width *drm*) (height *drm*))
+  (setf *rect-shader* (shader-init:create-rect-shader *drm*))
+  (setf *texture-shader* (shader-init:create-texture-shader *drm*)))
 
 
 ;; TODO: This is very incomplete.
@@ -80,7 +80,7 @@
 ;; Real width/height are just width/height - should be mm of real screen size
 ;; X/Y are just 0,0 - since i'm only handling one screen
 (defun init-output ()
-  (let ((crtc (sdrm::crtc *drm-dev*)))
+  (let ((crtc (sdrm::crtc *drm*)))
     (make-instance 'output-global :display *wayland* :dispatch-impl 'output
 		      :x 0 :y 0
 		      :width (drm::crtc!-width crtc) :height (drm::crtc!-height crtc)
@@ -122,11 +122,11 @@
 
 
   ;; TODO: Can sometimes fail when running main anew in the same lisp image
-  (setf *drm-dev* (init-drm))
+  (setf *drm* (init-drm))
   (setf *socket* (init-socket))
   (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
 
-  (setf *framebuffer* (default-framebuffer *drm-dev*))
+  (setf *framebuffer* (default-framebuffer *drm*))
 
   ;; TODO: This is a bit awkward as an expected package export
   ;; Without this - nothing in wayland-land would work.
@@ -136,14 +136,14 @@
 		     ;; This dev-t is probably rather wrong - since client apps probably can't use card0/card1
 		     ;; But instead should be notified of the render nodes renderD128 and so on
 		     ;; But it might also match main-device proper
-			      :dev-t (drm::resources-dev-t (sdrm::resources *drm-dev*))
-			      :display-width (width *drm-dev*)
-			      :display-height (height *drm-dev*)))
+			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
+			      :display-width (width *drm*)
+			      :display-height (height *drm*)))
 
 
-  (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm-dev*) (wl:display-ptr *wayland*)))
+  (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
-  (setf *egl-image* (create-egl-image *egl* (framebuffer-buffer *framebuffer*) (width *drm-dev*) (height *drm-dev*)))
+  (setf *egl-image* (create-egl-image *egl* (framebuffer-buffer *framebuffer*) (width *drm*) (height *drm*)))
 
   (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
   (setf *cursor* (load-cursor-texture))
@@ -154,7 +154,7 @@
 
   ;; TODO: You might be able to remove the *active-crtc* indirection.
   ;; At least it's not really used elsewwhere
-  (unless *active-crtc* (setf *active-crtc* (set-crtc *drm-dev* (framebuffer-id *frame-buffer*))))
+  (unless *active-crtc* (setf *active-crtc* (set-crtc *drm* (framebuffer-id *frame-buffer*))))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
   (cl-async:start-event-loop
@@ -250,7 +250,7 @@
   ;; TODO: Wasteful - also - didn't really help much at the moment.
   ;; Try to bring it back inside the *frame-ready* check
   (handler-case
-      (drm-page-flip *drm-dev* (framebuffer-id *framebuffer*))
+      (drm-page-flip *drm* (framebuffer-id *framebuffer*))
     (error (err) (declare (ignore err)) ()))
 
   ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
@@ -281,7 +281,7 @@
 ;; Listeners
 (defun wayland-listener () (cl-async:poll (wl:event-loop-fd *wayland*) 'wayland-callback :poll-for '(:readable)))
 (defun client-listener () (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t))
-(defun drm-listener () (cl-async:poll (fd *drm-dev*) 'drm-callback :poll-for '(:readable)))
+(defun drm-listener () (cl-async:poll (fd *drm*) 'drm-callback :poll-for '(:readable)))
 (defun input-listener () (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable)))
 (defun seat-listener () (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable)))
 (defun accelerometer-listener () (cl-async:poll (accelerometer-fd *iio*) 'accelerometer-callback :poll-for '(:readable)))
@@ -295,7 +295,7 @@
 (defun wayland-callback (ev) (when (ready ev) (handle-wayland-event)))
 (defun input-callback (ev) (when (ready ev) (smuks::dispatch *libinput* 'handle-input)))
 (defun notify-callback (ev) (when (ready ev) (notify::process 'device-change)))
-(defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm-dev*) :page-flip 'set-frame-ready)))
+(defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm*) :page-flip 'set-frame-ready)))
 (defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
 (defun accelerometer-callback (ev) (when (ready ev) (read-accelerometer *iio*)))
 (defun client-callback (ev)
