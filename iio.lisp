@@ -34,8 +34,10 @@
 	finally (return nil)))
 
 (defun init-libiio ()
-  (let* ((version (iio:iio-library-get-version))
-	 (iio (iio:iio-create-local-context))
+  (let* (
+	 ;; (version (iio:iio-library-get-version))
+	 (version 1)
+	 (iio (iio:create-local-context))
 	 ;; NOTE: the context-info thing takes a while. Threaded init before everything else?
 	 (info (iio:context-info iio))
 	 (devices (iio:context-devices info))
@@ -45,12 +47,12 @@
 (defmethod enable-accelerometer-scan ((iio iio))
   (let* ((accelerometer (accelerometer iio))
 	 (channels (iio:device-channels accelerometer)))
-    (iio:device-create-buffer accelerometer)
     (loop for channel in channels
 	  for id = (iio:channel-id channel)
 	  when (string= id "accel_x") do (iio:enable-channel accelerometer channel)
 	  when (string= id "accel_y") do (iio:enable-channel accelerometer channel)
 	  when (string= id "accel_z") do (iio:enable-channel accelerometer channel))
+    (iio:device-create-buffer accelerometer)
     ;; TODO: Maybe do get-samples instead??
     (iio:buffer-refill accelerometer)
     (iio:get-poll-fd accelerometer)))

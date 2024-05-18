@@ -38,9 +38,9 @@
 	   (connectors (setf (connectors device) (drm:resources-connectors resources)))
 	   (valid      (find-if (lambda (crtc) (> (drm::crtc!-mode-valid crtc) 0)) crtcs)))
 
-      (unless crtcs (error "No CRTCs found"))
+      (unless crtcs      (error "No CRTCs found"))
       (unless connectors (error "No connectors found"))
-      (unless valid (error "No valid CRTCs found"))
+      (unless valid      (error "No valid CRTCs found"))
 
       (setf (crtc device) valid)
       (setf (width device) (drm::crtc!-width valid))
