@@ -87,6 +87,7 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
   (case code
     (nil (format t "No error code provided"))
     (0 nil)
+    (1  "EPERM - Operation not permitted")
     (2  "ENOENT - No such file or directory")
     (9  "EBADF - Bad file descriptor number")
     (12 "ENOMEM - Out of memory")

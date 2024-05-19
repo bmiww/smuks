@@ -1,7 +1,5 @@
-TODO: RUN is completely wrong
-TODO: No clue how to properly find the right device and then get its path for permission changes
-
-SUBSYSTEM=="iio",
-IMPORT{parent}="OF_NAME",
-ENV{OF_NAME}=="accelerometer"
-RUN+="/usr/bin/find /sys/class/backlight/intel_backlight/ -type f -name brightness -exec chown accelerometer:accelerometer {} \; -exec chmod 666 {} \;"
+SUBSYSTEM=="iio", \
+IMPORT{db}="OF_NAME", \
+ENV{OF_NAME}=="accelerometer", \
+RUN+="/usr/bin/chgrp -R accelerometer /sys$devpath", \
+RUN+="/usr/bin/chmod -R o=rwx,g=rwx  /sys$devpath"
