@@ -58,7 +58,6 @@
 
 (defmethod accelerometer-fd ((iio iio)) (iio:get-poll-fd (accelerometer iio)))
 (defmethod read-accelerometer ((iio iio))
-  (iio:buffer-refill (accelerometer iio))
   (print (iio:get-samples (accelerometer iio))))
 
 (defmethod cleanup-iio ((iio iio))
