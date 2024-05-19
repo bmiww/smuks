@@ -1,5 +1,0 @@
-SUBSYSTEM=="iio", \
-IMPORT{db}="OF_NAME", \
-ENV{OF_NAME}=="accelerometer", \
-RUN+="/usr/bin/chgrp -R accelerometer /sys$devpath", \
-RUN+="/usr/bin/chmod -R o=rwx,g=rwx  /sys$devpath"

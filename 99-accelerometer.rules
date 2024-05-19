@@ -1,0 +1,7 @@
+SUBSYSTEM=="iio", \
+IMPORT{db}="OF_NAME", \
+ENV{OF_NAME}=="accelerometer", \
+GROUP="accelerometer", \
+RUN+="/usr/bin/chgrp -R accelerometer /sys$devpath"
+# TODO: The x component might not be necessary. Untested
+RUN+="/usr/bin/chmod -R g+rwx /sys$devpath"

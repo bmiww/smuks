@@ -34,8 +34,7 @@
 	finally (return nil)))
 
 (defun init-libiio ()
-  (let* (
-	 ;; (version (iio:iio-library-get-version))
+  (let* (;; (version (iio:iio-library-get-version))
 	 (version 1)
 	 (iio (iio:create-local-context))
 	 ;; NOTE: the context-info thing takes a while. Threaded init before everything else?
