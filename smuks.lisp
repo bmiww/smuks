@@ -279,10 +279,12 @@
     (unless (eq current-orient *orientation*)
       (setf (orientation *wayland*) *orientation*)
       (let ((projection (sglutil:make-projection-matrix
-			 (width *drm*) (height *drm*)
+			 (screen-width) (screen-height)
 			 (case *orientation* (:landscape -90) (:portrait 0)))))
 	(mapcar (lambda (shader) (shaders:update-projection shader projection)) *shaders*)))))
 
+(defun screen-width () (case *orientation* (:landscape (height *drm*)) (:portrait (width *drm*))))
+(defun screen-height () (case *orientation* (:landscape (width *drm*)) (:portrait (height *drm*))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │
