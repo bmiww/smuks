@@ -6,7 +6,10 @@
    width height connectors  fd gbm-pointer
    crtc crtcs
    close-drm
-   add-framebuffer rm-framebuffer
+
+   add-framebuffer rm-framebuffer default-framebuffer
+   framebuffer-id framebuffer-buffer
+
    free-crtc set-crtc
    create-bo destroy-bo
    init-drm drm-page-flip))

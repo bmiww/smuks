@@ -52,11 +52,15 @@
 	  when (string= id "accel_x") do (iio:enable-channel accelerometer channel)
 	  when (string= id "accel_y") do (iio:enable-channel accelerometer channel)
 	  when (string= id "accel_z") do (iio:enable-channel accelerometer channel))
-    (iio:device-create-buffer accelerometer)
+    (iio:device-create-buffer accelerometer 1)
     ;; TODO: Maybe do get-samples instead??
     (iio:buffer-refill accelerometer)
     (iio:get-poll-fd accelerometer)))
 
 (defmethod accelerometer-fd ((iio iio)) (iio:get-poll-fd (accelerometer iio)))
 (defmethod read-accelerometer ((iio iio))
+  (iio:buffer-refill (accelerometer iio))
   (print (iio:get-samples (accelerometer iio))))
+
+(defmethod cleanup-iio ((iio iio))
+  (iio:destroy-context (iio-context iio)))

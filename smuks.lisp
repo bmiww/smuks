@@ -28,6 +28,7 @@
   *test-app*)
 
 (defun cleanup ()
+  (when *iio* (cleanup-iio *iio*))
   (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
   (when (and *drm* *framebuffer*) (sdrm:rm-framebuffer *drm* *framebuffer*))
 
@@ -43,7 +44,7 @@
     (delete-file +socket-file+))
 
   (setfnil *egl* *egl-context* *egl-image* *drm* *framebuffer* *smuks-exit* *active-crtc*
-	   *wayland* *socket* *seat* *cursor*))
+	   *wayland* *socket* *seat* *cursor* *iio*))
 
 (defun load-cursor-texture ()
   (let* ((texture (gl:gen-texture))
@@ -126,7 +127,7 @@
   (setf *socket* (init-socket))
   (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
 
-  (setf *framebuffer* (default-framebuffer *drm*))
+  (setf *framebuffer* (sdrm:default-framebuffer *drm*))
 
   ;; TODO: This is a bit awkward as an expected package export
   ;; Without this - nothing in wayland-land would work.
@@ -154,7 +155,7 @@
 
   ;; TODO: You might be able to remove the *active-crtc* indirection.
   ;; At least it's not really used elsewwhere
-  (unless *active-crtc* (setf *active-crtc* (set-crtc *drm* (framebuffer-id *frame-buffer*))))
+  (unless *active-crtc* (setf *active-crtc* (set-crtc *drm* (framebuffer-id *framebuffer*))))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
   (cl-async:start-event-loop
@@ -416,6 +417,7 @@
     ((cffi:pointer-eq (cl-async::poller-c *wl-poller*) handle) (cl-async:free-poller *wl-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *client-poller*) handle) (cl-async:free-poller *client-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *input-poller*) handle) (cl-async:free-poller *input-poller*))
+    ((cffi:pointer-eq (cl-async::poller-c *accelerometer-poller*) handle) (cl-async:free-poller *accelerometer-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *device-poller*) handle)
      (notify:shutdown)
      (cl-async:free-poller *device-poller*))
