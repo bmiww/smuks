@@ -215,22 +215,17 @@
 	 (surfaces (util:flatten (mapcar 'all-ready-surfaces compositors))))
     (mapcar (lambda (surface) (render-surface surface)) surfaces)))
 
-(defvar *y-pos* 800.0)
+(defvar *y-pos* 220.0)
 (defvar y-up t)
 (defun next-y-pos ()
-  (when (> *y-pos* 1000.0)
+  (when (> *y-pos* 300.0)
     (setf y-up nil))
-  (when (< *y-pos* 800.0)
+  (when (< *y-pos* 150.0)
     (setf y-up t))
   (incf *y-pos* (if y-up 1 -1)))
 
-(defvar *green-x-pos* 30.0)
-(defvar *green-y-pos* 700.0)
-
-;; (defvar *red-x* 50.0)
-;; (defvar *red-y* 50.0)
 (defvar *red-x* 50.0)
-(defvar *red-y* 0.0)
+(defvar *red-y* 100.0)
 
 (defun render-frame ()
   (livesupport:update-repl-link)
@@ -239,12 +234,8 @@
     (gl:clear :color-buffer-bit)
 
     (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-					      :x 10.0 :y (next-y-pos) :w 100.0 :h 40.0
+					      :x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
 					      :color '(0.2 0.2 0.2 1.0))))
-
-    (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-					      :x *green-x-pos* :y *green-y-pos* :w 200.0 :h 50.0
-					      :color '(0.2 0.9 0.2 1.0))))
 
     (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
 					      :x *red-x* :y *red-y* :w 200.0 :h 50.0
