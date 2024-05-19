@@ -16,6 +16,8 @@
 (defvar *drm* nil)
 (defvar *wayland* nil)
 (defvar *iio* nil)
+(defvar *orientation* nil)
+(defvar *shaders* nil)
 (defnil
     *socket* *smuks-exit* *frame-ready*
   *framebuffer* *active-crtc*
@@ -72,7 +74,8 @@
 (defun init-shaders ()
   (prep-gl-implementation (framebuffer-id *framebuffer*) (width *drm*) (height *drm*))
   (setf *rect-shader* (shader-init:create-rect-shader *drm*))
-  (setf *texture-shader* (shader-init:create-texture-shader *drm*)))
+  (setf *texture-shader* (shader-init:create-texture-shader *drm*))
+  `(,*rect-shader* ,*texture-shader*))
 
 
 ;; TODO: This is very incomplete.
@@ -148,7 +151,7 @@
 
   (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
   (setf *cursor* (load-cursor-texture))
-  (init-shaders)
+  (setf *shaders* (init-shaders))
 
 
   (init-globals)
@@ -259,6 +262,20 @@
   ;; Maybe instead use per client flushes - for example when receiving commit from them
   (wl:flush-clients *wayland*))
 
+(defun determine-orientation (orient)
+  (let ((current-orient *orientation*))
+    (destructuring-bind (x y z) orient
+      (declare (ignore y))
+      (let ((x (abs (car x))) (z (abs (car z))))
+	(cond
+	  ((> z x) (setf *orientation* :landscape))
+	  ((> x z) (setf *orientation* :portrait)))))
+    (unless (eq current-orient *orientation*)
+      (let ((projection (sglutil:make-projection-matrix
+			 (case *orientation* (:landscape (width *drm*)) (:portrait (height *drm*)))
+			 (case *orientation* (:landscape (height *drm*)) (:portrait (width *drm*))))))
+	(mapcar (lambda (shader) (shaders:update-projection shader projection)) *shaders*)))))
+
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │
@@ -298,7 +315,7 @@
 (defun notify-callback (ev) (when (ready ev) (notify::process 'device-change)))
 (defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm*) :page-flip 'set-frame-ready)))
 (defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
-(defun accelerometer-callback (ev) (when (ready ev) (read-accelerometer *iio*)))
+(defun accelerometer-callback (ev) (when (ready ev) (determine-orientation (read-accelerometer *iio*))))
 (defun client-callback (ev)
   (when (ready ev)
     (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))

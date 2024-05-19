@@ -12,7 +12,7 @@
   (:export shader update-projection update-matrix draw))
 (in-package :shaders.texture)
 
-(defclass shader ()
+(defclass shader (shaders:shader-base)
   ((pointer :accessor pointer)
    (projection :accessor projection)
    (uni-projection :accessor uni-projection)

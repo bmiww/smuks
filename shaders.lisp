@@ -11,9 +11,16 @@
    ;; Funcs
    create-shader array-buffer-data
    ;; Params
-   *instanced-vert* *instanced-texture-vert*))
+   *instanced-vert* *instanced-texture-vert*
+   ;; Shader base
+   shader-base update-projection))
 
 (in-package :shaders)
+
+(defclass shader-base ()
+  ())
+
+(defgeneric update-projection (shader projection))
 
 ;; ┌─┐┬ ┬┌┐┌┌─┐┌─┐
 ;; ├┤ │ │││││  └─┐

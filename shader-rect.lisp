@@ -14,7 +14,7 @@
   (list (rect-x rect) (rect-y rect) (rect-w rect) (rect-h rect)))
 
 
-(defclass shader ()
+(defclass shader (shaders:shader-base)
   ((pointer :accessor pointer)
    (projection :accessor projection)
    (matrix :accessor matrix)
