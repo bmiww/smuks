@@ -3,7 +3,8 @@
   (:use :cl :smuks-util)
   (:nicknames :sdrm)
   (:export
-   width height connectors  fd gbm-pointer
+   screen-width screen-height
+   width height connectors fd gbm-pointer
    crtc crtcs
    close-drm
 
@@ -28,6 +29,11 @@
    (width :initarg :width :accessor width)
    (height :initarg :height :accessor height)
    (original-crtc :initarg :original-crtc :accessor original-crtc)))
+
+(defmethod screen-width ((device gbm-device) orientation)
+  (case orientation (:landscape (height device)) (:portrait (width device))))
+(defmethod screen-height ((device gbm-device) orientation)
+  (case orientation (:landscape (width device)) (:portrait (height device))))
 
 (defmethod initialize-instance :after ((device gbm-device) &key file)
   ;; TODO: SBCL EXCLUSIVE
