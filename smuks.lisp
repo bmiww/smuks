@@ -223,8 +223,10 @@
 (defvar *green-x-pos* 30.0)
 (defvar *green-y-pos* 700.0)
 
+;; (defvar *red-x* 50.0)
+;; (defvar *red-y* 50.0)
 (defvar *red-x* 50.0)
-(defvar *red-y* 50.0)
+(defvar *red-y* 0.0)
 
 (defun render-frame ()
   (livesupport:update-repl-link)
@@ -245,7 +247,7 @@
 					      :color '(1.0 0.0 0.0 0.6))))
 
     (render-clients)
-    (shaders.texture:draw *texture-shader* *cursor* `(,(pointer-x *wayland*) ,(pointer-y *wayland*) 36.0 36.0))
+    (shaders.texture:draw *texture-shader* *cursor* `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0))
     (gl:flush)
     (gl:finish)
 

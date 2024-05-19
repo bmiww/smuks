@@ -26,23 +26,13 @@
 ;; ┴└─└─┘┴ ┴─┴┘└─┘┴└─└─┘
 (defmethod pointer-x ((display display))
   (case (orientation display)
-    (:landscape (cursor-x display))
-    (:portrait (cursor-y display))))
-
-(defmethod (setf pointer-x) (new-x (display display))
-  (case (orientation display)
-    (:landscape (setf (cursor-x display) new-x))
-    (:portrait (setf (cursor-y display) new-x))))
-
-(defmethod pointer-y ((display display))
-  (case (orientation display)
     (:landscape (cursor-y display))
     (:portrait (cursor-x display))))
 
-(defmethod (setf pointer-y) (new-y (display display))
+(defmethod pointer-y ((display display))
   (case (orientation display)
-    (:landscape (setf (cursor-y display) new-y))
-    (:portrait (setf (cursor-x display) new-y))))
+    (:landscape (cursor-x display))
+    (:portrait (cursor-y display))))
 
 (defmethod display-width ((display display))
   (case (orientation display)
@@ -136,20 +126,46 @@ and then clean the list out"
 ;; ┌─┐┌─┐┬┌┐┌┌┬┐┌─┐┬─┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;; ├─┘│ │││││ │ ├┤ ├┬┘  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
-(defmethod input ((display display) (type (eql :pointer-motion)) event)
-  (let* ((new-x (+ (pointer-x display) (flo (pointer-motion@-dx event))))
-	 (new-y (+ (pointer-y display) (flo (pointer-motion@-dy event))))
-	 (new-x (max 0 (min (display-width display) new-x)))
-	 (new-y (max 0 (min (display-height display) new-y)))
-	 (surface (surface-at-coords display new-x new-y)))
+(defmethod add-dx ((display display) dx)
+  (let ((width (display-width display))
+	(height (display-height display)))
+    (case (orientation display)
+      (:landscape
+       (incf (cursor-x display) dx)
+       (when (>= (cursor-x display) width) (setf (cursor-x display) width))
+       (when (< (cursor-x display) 0) (setf (cursor-x display) 0))
+       (cursor-x display))
+      (:portrait
+       (incf (cursor-y display) dx)
+       (when (>= (cursor-y display) height) (setf (cursor-y display) height))
+       (when (< (cursor-y display) 0) (setf (cursor-y display) 0))
+       (cursor-y display)))))
 
+(defmethod add-dy ((display display) dy)
+  (let ((width (display-width display))
+	(height (display-height display)))
+    (case (orientation display)
+      (:landscape
+       (incf (cursor-y display) dy)
+       (when (>= (cursor-y display) height) (setf (cursor-y display) height))
+       (when (< (cursor-y display) 0) (setf (cursor-y display) 0))
+       (cursor-y display))
+      (:portrait
+       (incf (cursor-x display) dy)
+       (when (>= (cursor-x display) width) (setf (cursor-x display) width))
+       (when (< (cursor-x display) 0) (setf (cursor-x display) 0))
+       (cursor-x display)))))
+
+
+(defmethod input ((display display) (type (eql :pointer-motion)) event)
+  (let* ((new-x (add-dx display (flo (pointer-motion@-dx event))))
+	 (new-y (add-dy display (flo (pointer-motion@-dy event))))
+	 (surface (surface-at-coords display new-x new-y)))
     (when surface
       (let* ((client (wl:client surface)) (seat (seat client)) (seat-pointer (seat-pointer seat)))
 	(if (and seat-pointer (active-surface seat-pointer))
 	    (pointer-motion seat new-x new-y)
-	    (when seat-pointer (pointer-enter seat surface new-x new-y)))))
-    (setf (pointer-x display) new-x)
-    (setf (pointer-y display) new-y)))
+	    (when seat-pointer (pointer-enter seat surface new-x new-y)))))))
 
 ;; NOTE: Additionally - sets display keyboard focus to the surface
 (defmethod input ((display display) (type (eql :pointer-button)) event)
