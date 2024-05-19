@@ -245,7 +245,7 @@
 					      :color '(1.0 0.0 0.0 0.6))))
 
     (render-clients)
-    (shaders.texture:draw *texture-shader* *cursor* `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0))
+    (shaders.texture:draw *texture-shader* *cursor* `(,(pointer-x *wayland*) ,(pointer-y *wayland*) 36.0 36.0))
     (gl:flush)
     (gl:finish)
 
@@ -271,9 +271,10 @@
 	  ((> z x) (setf *orientation* :landscape))
 	  ((> x z) (setf *orientation* :portrait)))))
     (unless (eq current-orient *orientation*)
+      (setf (orientation *wayland*) *orientation*)
       (let ((projection (sglutil:make-projection-matrix
-			 (case *orientation* (:landscape (width *drm*)) (:portrait (height *drm*)))
-			 (case *orientation* (:landscape (height *drm*)) (:portrait (width *drm*))))))
+			 (case *orientation* (:portrait (height *drm*)) (:landscape (width *drm*)))
+			 (case *orientation* (:portrait (width *drm*)) (:landscape (height *drm*))))))
 	(mapcar (lambda (shader) (shaders:update-projection shader projection)) *shaders*)))))
 
 

@@ -13,12 +13,56 @@
    (cursor-x :initform 0 :accessor cursor-x)
    (cursor-y :initform 0 :accessor cursor-y)
    ;; TODO: Both of these are dumb - these should be per CRTC/monitor/whatever
-   (display-width :initarg :display-width :accessor display-width)
-   (display-height :initarg :display-height :accessor display-height)
+   (display-width :initarg :display-width)
+   (display-height :initarg :display-height)
    (dev-t :initarg :dev-t :accessor dev-t)
    (display-serial :initform 0 :accessor display-serial)
-   (keyboard-focus :initform nil)))
+   (keyboard-focus :initform nil)
+   (orientation :initarg :orientation :initform :landscape :accessor orientation)))
 
+
+;; ┬─┐┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
+;; ├┬┘├┤ ├─┤ ││├┤ ├┬┘└─┐
+;; ┴└─└─┘┴ ┴─┴┘└─┘┴└─└─┘
+(defmethod pointer-x ((display display))
+  (case (orientation display)
+    (:landscape (cursor-x display))
+    (:portrait (cursor-y display))))
+
+(defmethod (setf pointer-x) (new-x (display display))
+  (case (orientation display)
+    (:landscape (setf (cursor-x display) new-x))
+    (:portrait (setf (cursor-y display) new-x))))
+
+(defmethod pointer-y ((display display))
+  (case (orientation display)
+    (:landscape (cursor-y display))
+    (:portrait (cursor-x display))))
+
+(defmethod (setf pointer-y) (new-y (display display))
+  (case (orientation display)
+    (:landscape (setf (cursor-y display) new-y))
+    (:portrait (setf (cursor-x display) new-y))))
+
+(defmethod display-width ((display display))
+  (case (orientation display)
+    (:landscape (slot-value display 'display-width))
+    (:portrait (slot-value display 'display-height))))
+
+(defmethod (setf display-width) (new-width (display display))
+  (setf (slot-value display 'display-width) new-width))
+
+(defmethod display-height ((display display))
+  (case (orientation display)
+    (:landscape (slot-value display 'display-height))
+    (:portrait (slot-value display 'display-width))))
+
+(defmethod (setf display-height) (new-height (display display))
+  (setf (slot-value display 'display-height) new-height))
+
+;; ┌┬┐┌─┐┌─┐┬  ┌─┐
+;;  │ │ ││ ││  └─┐
+;;  ┴ └─┘└─┘┴─┘└─┘
 (defmethod next-serial ((display display)) (incf (display-serial display)))
 
 (defmethod (setf keyboard-focus) (focus-surface (display display))
@@ -93,8 +137,8 @@ and then clean the list out"
 ;; ├─┘│ │││││ │ ├┤ ├┬┘  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
 (defmethod input ((display display) (type (eql :pointer-motion)) event)
-  (let* ((new-x (+ (cursor-x display) (flo (pointer-motion@-dx event))))
-	 (new-y (+ (cursor-y display) (flo (pointer-motion@-dy event))))
+  (let* ((new-x (+ (pointer-x display) (flo (pointer-motion@-dx event))))
+	 (new-y (+ (pointer-y display) (flo (pointer-motion@-dy event))))
 	 (new-x (max 0 (min (display-width display) new-x)))
 	 (new-y (max 0 (min (display-height display) new-y)))
 	 (surface (surface-at-coords display new-x new-y)))
@@ -104,8 +148,8 @@ and then clean the list out"
 	(if (and seat-pointer (active-surface seat-pointer))
 	    (pointer-motion seat new-x new-y)
 	    (when seat-pointer (pointer-enter seat surface new-x new-y)))))
-    (setf (cursor-x display) new-x)
-    (setf (cursor-y display) new-y)))
+    (setf (pointer-x display) new-x)
+    (setf (pointer-y display) new-y)))
 
 ;; NOTE: Additionally - sets display keyboard focus to the surface
 (defmethod input ((display display) (type (eql :pointer-button)) event)

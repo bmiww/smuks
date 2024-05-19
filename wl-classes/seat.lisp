@@ -112,9 +112,7 @@
 (defmethod pointer-motion ((seat seat) x y)
   (let* ((seat-pointer (seat-pointer seat))
 	 (surface (active-surface seat-pointer)))
-    (log! "Pointer move try")
     (unless surface (error "No active surface for pointer motion"))
-    (log! "Pointer move")
     (wl-pointer:send-motion seat-pointer (get-ms) (- x (x surface)) (- y (y surface)))))
 
 (defmethod pointer-button ((seat seat) button state)
