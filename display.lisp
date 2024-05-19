@@ -36,16 +36,16 @@
 
 (defmethod display-width ((display display))
   (case (orientation display)
-    (:landscape (slot-value display 'display-width))
-    (:portrait (slot-value display 'display-height))))
+    (:landscape (slot-value display 'display-height))
+    (:portrait (slot-value display 'display-width))))
 
 (defmethod (setf display-width) (new-width (display display))
   (setf (slot-value display 'display-width) new-width))
 
 (defmethod display-height ((display display))
   (case (orientation display)
-    (:landscape (slot-value display 'display-height))
-    (:portrait (slot-value display 'display-width))))
+    (:landscape (slot-value display 'display-width))
+    (:portrait (slot-value display 'display-height))))
 
 (defmethod (setf display-height) (new-height (display display))
   (setf (slot-value display 'display-height) new-height))
