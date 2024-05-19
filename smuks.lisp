@@ -67,9 +67,13 @@
 (defun recursively-render-frame ()
   (if *smuks-exit*
       (cl-async:exit-event-loop)
-      (progn
-	(render-frame)
-	(cl-async:delay 'recursively-render-frame :time 0.016))))
+      (restart-case
+	  (progn
+	    (render-frame)
+	    (cl-async:delay 'recursively-render-frame :time 0.016))
+	(skip-frame ()
+	  :report "Skip frame"
+	  (cl-async:delay 'recursively-render-frame :time 0.016)))))
 
 (defun init-shaders ()
   (prep-gl-implementation (framebuffer-id *framebuffer*) (width *drm*) (height *drm*))
