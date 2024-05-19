@@ -65,7 +65,7 @@ void main() {
 }
 ")
 
-(defmethod update-projection ((program shader) new-projection)
+(defmethod shaders:update-projection ((program shader) new-projection)
   (with-slots (pointer projection uni-projection) program
     (setf projection new-projection)
     (gl:use-program pointer)
