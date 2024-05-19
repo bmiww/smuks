@@ -85,7 +85,7 @@ void main() {
 
     (shaders:array-buffer-data instanced-vbo shaders:*instanced-vert*)
 
-    (when projection (update-projection program projection))))
+    (when projection (shaders:update-projection program projection))))
 
 (defmethod draw ((program shader) rects)
   (with-slots (vao pointer instanced-vbo runtime-vbo attr-vert attr-position attr-color) program

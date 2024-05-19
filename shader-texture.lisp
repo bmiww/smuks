@@ -93,7 +93,7 @@ void main() {
     (gl:uniformi uni-sampler 0)
     (shaders:array-buffer-data instanced-vbo shaders:*instanced-vert*)
 
-    (when projection (update-projection program projection))))
+    (when projection (shaders:update-projection program projection))))
 
 
 ;; TODO: This could be improved by sending in a list of surfaces to draw at once.
