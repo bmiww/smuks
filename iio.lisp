@@ -58,7 +58,8 @@
 
 (defmethod accelerometer-fd ((iio iio)) (iio:get-poll-fd (accelerometer iio)))
 (defmethod read-accelerometer ((iio iio))
-  (print (iio:get-samples (accelerometer iio))))
+  (destructuring-bind (x y z) (iio:get-samples (accelerometer iio))
+    (log! "ACCEL: x: ~a, y: ~a, z: ~a" x y z)))
 
 (defmethod cleanup-iio ((iio iio))
   (iio:destroy-context (iio-context iio)))
