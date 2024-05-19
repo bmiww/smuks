@@ -8,15 +8,12 @@
 (declaim (optimize (speed 0) (safety 0) (debug 3) (compilation-speed 0)))
 
 (defpackage :shaders.texture
-  (:use :cl :sglutil)
-  (:export shader update-projection update-matrix draw))
+  (:use :cl :sglutil :shaders)
+  (:export shader update-matrix draw))
 (in-package :shaders.texture)
 
 (defclass shader (shaders:shader-base)
-  ((pointer :accessor pointer)
-   (projection :accessor projection)
-   (uni-projection :accessor uni-projection)
-   (uni-matrix :accessor uni-matrix)
+  ((uni-matrix :accessor uni-matrix)
    (uni-texture :accessor uni-texture)
    (uni-sampler :accessor uni-sampler)
 
@@ -102,10 +99,10 @@ void main() {
 (defvar *draw-instances* 1)
 
 ;; TODO: TRANSFORM???
-(defmethod draw ((program shader) texture position)
+(defmethod draw ((program shader) texture position orientation)
   (destructuring-bind (x y width height) position
     (let ((pos-matrix (make-position-matrix (coerce x 'double-float) (coerce y 'double-float)))
-	  (tex-matrix (texture-matrix width height)))
+	  (tex-matrix (texture-matrix width height orientation)))
       (with-slots (vao pointer instanced-vbo runtime-vbo attr-vert attr-position
 		   uni-matrix uni-texture) program
 	(gl:use-program pointer)
@@ -148,7 +145,7 @@ void main() {
     (setf (clem:mref matrix 1 1) y)
     matrix))
 
-(defun texture-matrix (width height)
+(defun texture-matrix (width height orientation)
   (matrix->array
    (clem:m* (clem:identity-matrix 3)
 	    (from-nonuniform-scale (coerce (/ 1.0 width) 'double-float) (coerce (/ 1.0 height) 'double-float)))))

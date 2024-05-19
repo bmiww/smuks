@@ -29,6 +29,7 @@
 	       #:str
 	       #:png-read
 	       #:clem
+	       #:3d-math
 	       #:split-sequence
 	       #:file-notify
 	       #:cl-libinput

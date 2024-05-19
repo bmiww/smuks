@@ -65,7 +65,25 @@
   (let ((list (clem::matrix->list clem-matrix)))
     (make-array (list (length list)) :initial-contents list)))
 
-(defun make-projection-matrix (width height)
+(defun cos! (angle)
+  "Cosine of an angle in degrees"
+  (cos (* angle (/ pi 180))))
+
+(defun sin! (angle)
+  "Sine of an angle in degrees"
+  (sin (* angle (/ pi 180))))
+
+(defun make-rot-matrix (angle)
+  (let* ((cos (coerce (cos! angle) 'double-float))
+	 (sin (coerce (sin! angle) 'double-float))
+	 (matrix (clem:identity-matrix 3)))
+    (setf (clem:mref matrix 0 0) cos)
+    (setf (clem:mref matrix 0 1) (- sin))
+    (setf (clem:mref matrix 1 0) sin)
+    (setf (clem:mref matrix 1 1) cos)
+    matrix))
+
+(defun make-projection-matrix (width height &optional (rotation 0))
   (let* ((projection (clem:identity-matrix 3))
 	 (x (/ 2.0 width))
 	 (y (/ 2.0 height)))
@@ -78,6 +96,7 @@
 	  (coerce (* -1.0 (copysign (+ (multf (clem:mref projection 0 1) y)
 				       (multf (clem:mref projection 1 1) y)))) 'double-float))
 
+    (setf projection (clem:m* projection (make-rot-matrix rotation)))
     (matrix->array projection)))
 
 (defun make-position-matrix (x y)

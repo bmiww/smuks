@@ -201,7 +201,7 @@
 	(height (flo (height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height))
+    (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height) *orientation*)
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)))
 
@@ -247,7 +247,7 @@
 					      :color '(1.0 0.0 0.0 0.6))))
 
     (render-clients)
-    (shaders.texture:draw *texture-shader* *cursor* `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0))
+    (shaders.texture:draw *texture-shader* *cursor* `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0) *orientation*)
     (gl:flush)
     (gl:finish)
 
@@ -275,8 +275,8 @@
     (unless (eq current-orient *orientation*)
       (setf (orientation *wayland*) *orientation*)
       (let ((projection (sglutil:make-projection-matrix
-			 (case *orientation* (:portrait (height *drm*)) (:landscape (width *drm*)))
-			 (case *orientation* (:portrait (width *drm*)) (:landscape (height *drm*))))))
+			 (width *drm*) (height *drm*)
+			 (case *orientation* (:landscape -90) (:portrait 0)))))
 	(mapcar (lambda (shader) (shaders:update-projection shader projection)) *shaders*)))))
 
 

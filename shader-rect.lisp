@@ -4,8 +4,8 @@
 (declaim (optimize (speed 0) (safety 0) (debug 3) (compilation-speed 0)))
 
 (defpackage :shaders.rectangle
-  (:use :cl)
-  (:export shader update-projection update-matrix draw))
+  (:use :cl :shaders)
+  (:export shader update-matrix draw))
 (in-package :shaders.rectangle)
 
 ;; TODO Rect - move/remove/improve
@@ -15,10 +15,7 @@
 
 
 (defclass shader (shaders:shader-base)
-  ((pointer :accessor pointer)
-   (projection :accessor projection)
-   (matrix :accessor matrix)
-   (uni-projection :accessor uni-projection)
+  ((matrix :accessor matrix)
    (instanced-vbo :accessor instanced-vbo)
    (runtime-vbo :accessor runtime-vbo)
    (attr-vert)
@@ -64,12 +61,6 @@ void main() {
     color = incolor;
 }
 ")
-
-(defmethod shaders:update-projection ((program shader) new-projection)
-  (with-slots (pointer projection uni-projection) program
-    (setf projection new-projection)
-    (gl:use-program pointer)
-    (gl:uniform-matrix-3fv uni-projection projection nil)))
 
 (defmethod initialize-instance :before ((program shader) &key projection)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position attr-color) program

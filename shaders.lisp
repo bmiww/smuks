@@ -13,14 +13,21 @@
    ;; Params
    *instanced-vert* *instanced-texture-vert*
    ;; Shader base
-   shader-base update-projection))
+   shader-base update-projection pointer projection uni-projection))
 
 (in-package :shaders)
 
 (defclass shader-base ()
-  ())
+  ((pointer :accessor pointer)
+   (projection :accessor projection)
+   (uni-projection :accessor uni-projection)))
 
 (defgeneric update-projection (shader projection))
+(defmethod update-projection ((shader shader-base) new-projection)
+  (with-slots (pointer projection uni-projection) shader
+    (setf projection new-projection)
+    (gl:use-program pointer)
+    (gl:uniform-matrix-3fv uni-projection projection nil)))
 
 ;; ┌─┐┬ ┬┌┐┌┌─┐┌─┐
 ;; ├┤ │ │││││  └─┐
