@@ -196,6 +196,8 @@
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐
 ;; ├┤ ├┬┘├─┤│││├┤
 ;; └  ┴└─┴ ┴┴ ┴└─┘
+;; TODO: Pointer coordinates are not matching the display coordinates
+;; Affects pointer move/click/enter/leave
 ;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
 ;; So that the main loop can know if it should render the display cursor or not
 (defun render-cursor (surface)
