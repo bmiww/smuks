@@ -18,6 +18,7 @@
    (dev-t :initarg :dev-t :accessor dev-t)
    (display-serial :initform 0 :accessor display-serial)
    (keyboard-focus :initform nil)
+   (pointer-focus :initform nil :accessor pointer-focus)
    (orientation :initarg :orientation :initform :landscape :accessor orientation)))
 
 
@@ -147,15 +148,26 @@ and then clean the list out"
        (cursor-x display)))))
 
 
+;; TODO: This is a bit shit in case if 2 windows are overlapping or next to each other
+;; If a pointer focus switches from one surface to another - then hell breaks loose
 (defmethod input ((display display) (type (eql :pointer-motion)) event)
   (let* ((new-x (add-dx display (flo (pointer-motion@-dx event))))
 	 (new-y (add-dy display (flo (pointer-motion@-dy event))))
 	 (surface (surface-at-coords display new-x new-y)))
-    (when surface
-      (let* ((client (wl:client surface)) (seat (seat client)) (seat-pointer (seat-pointer seat)))
-	(if (and seat-pointer (active-surface seat-pointer))
-	    (pointer-motion seat new-x new-y)
-	    (when seat-pointer (pointer-enter seat surface new-x new-y)))))))
+    (if surface
+	(let* ((client (wl:client surface)) (seat (seat client)) (seat-mouse (seat-mouse seat)))
+	  (if (and seat-mouse (active-surface seat-mouse))
+	      (pointer-motion seat new-x new-y)
+	      (when seat-mouse
+		(pointer-enter seat surface new-x new-y)
+		(setf (pointer-focus display) surface))))
+	(when (pointer-focus display)
+	  (let* ((client (wl:client (pointer-focus display))) (seat (seat client)))
+	    (pointer-leave seat)
+	    (setf (pointer-focus display) nil))))))
+
+
+
 
 ;; NOTE: Additionally - sets display keyboard focus to the surface
 (defmethod input ((display display) (type (eql :pointer-button)) event)

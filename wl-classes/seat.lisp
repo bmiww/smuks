@@ -46,7 +46,7 @@
   ((name :initarg :name :initform nil)
    (capabilities :initarg :capabilities :initform nil)
    (event-serial :initarg :event-serial :initform 0)
-   (pointer :initform nil :accessor seat-pointer)
+   (pointer :initform nil :accessor seat-mouse)
    (keyboard :initform nil :accessor seat-keyboard)
    (touch :initform nil :accessor seat-touch)))
 
@@ -101,25 +101,31 @@
 ;; ├─┘│ │││││ │ ├┤ ├┬┘
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─
 (defmethod wl-seat:get-pointer ((seat seat) id)
-  (setf (seat-pointer seat) (wl:mk-if 'pointer seat id :seat seat)))
+  (setf (seat-mouse seat) (wl:mk-if 'pointer seat id :seat seat)))
 
 (defmethod pointer-enter ((seat seat) surface x y)
-  (let ((seat-pointer (seat-pointer seat)))
-    (setf (active-surface seat-pointer) surface)
-    (wl-pointer:send-enter seat-pointer (next-serial seat) surface
+  (let ((seat-mouse (seat-mouse seat)))
+    (setf (active-surface seat-mouse) surface)
+    (wl-pointer:send-enter seat-mouse (next-serial seat) surface
 			   (- x (x surface)) (- y (y surface)))))
 
+(defmethod pointer-leave ((seat seat))
+  (let ((seat-mouse (seat-mouse seat)))
+    (unless (active-surface seat-mouse) (error "No active surface for pointer leave"))
+    (wl-pointer:send-leave seat-mouse (next-serial seat) (active-surface seat-mouse))
+    (setf (active-surface seat-mouse) nil)))
+
 (defmethod pointer-motion ((seat seat) x y)
-  (let* ((seat-pointer (seat-pointer seat))
-	 (surface (active-surface seat-pointer)))
+  (let* ((seat-mouse (seat-mouse seat))
+	 (surface (active-surface seat-mouse)))
     (unless surface (error "No active surface for pointer motion"))
-    (wl-pointer:send-motion seat-pointer (get-ms) (- x (x surface)) (- y (y surface)))))
+    (wl-pointer:send-motion seat-mouse (get-ms) (- x (x surface)) (- y (y surface)))))
 
 (defmethod pointer-button ((seat seat) button state)
-  (let* ((seat-pointer (seat-pointer seat))
-	 (surface (active-surface seat-pointer)))
+  (let* ((seat-mouse (seat-mouse seat))
+	 (surface (active-surface seat-mouse)))
     (unless surface (error "No active surface for pointer button"))
-    (wl-pointer:send-button seat-pointer (next-serial seat) (get-ms) button
+    (wl-pointer:send-button seat-mouse (next-serial seat) (get-ms) button
 			    (case state (:pressed 1) (:released 0)))))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
