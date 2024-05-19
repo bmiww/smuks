@@ -196,10 +196,25 @@
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐
 ;; ├┤ ├┬┘├─┤│││├┤
 ;; └  ┴└─┴ ┴┴ ┴└─┘
-;; Rendering
-;; X IS UP
-;; Y IS RIGHT
-(defun render-surface (surface)
+;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
+;; So that the main loop can know if it should render the display cursor or not
+(defun render-cursor (surface)
+  (let ((texture (texture surface))
+	(width (flo (width surface)))
+	(height (flo (height surface)))
+	(x (+ (flo (x surface)) (cursor-x *wayland*)))
+	(y (+ (flo (y surface)) (cursor-y *wayland*))))
+    (if (active-surface (role surface))
+	(progn
+	  (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height) *orientation*)
+	  (flush-frame-callbacks surface)
+	  (setf (needs-redraw surface) nil)
+	  t)
+	nil)))
+
+;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
+;; So that the main loop can know if it should render the display cursor or not
+(defun render-toplevel (surface)
   (let ((texture (texture surface))
 	(width (flo (width surface)))
 	(height (flo (height surface)))
@@ -207,7 +222,13 @@
 	(y (flo (y surface))))
     (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height) *orientation*)
     (flush-frame-callbacks surface)
-    (setf (needs-redraw surface) nil)))
+    (setf (needs-redraw surface) nil)
+    nil))
+
+(defun render-surface (surface)
+  (typecase (role surface)
+    (pointer (render-cursor surface))
+    (t (render-toplevel surface))))
 
 (defun render-clients ()
   (let* ((clients (wl:all-clients *wayland*))
@@ -229,35 +250,39 @@
 
 (defun render-frame ()
   (livesupport:update-repl-link)
-  (when *frame-ready*
-    (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
-    (gl:clear :color-buffer-bit)
+  (let ((cursor-drawn nil))
+    (when *frame-ready*
+      (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
+      (gl:clear :color-buffer-bit)
 
-    (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-					      :x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
-					      :color '(0.2 0.2 0.2 1.0))))
+      (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
+						:x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
+						:color '(0.2 0.2 0.2 1.0))))
 
-    (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-					      :x *red-x* :y *red-y* :w 200.0 :h 50.0
-					      :color '(1.0 0.0 0.0 0.6))))
+      (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
+						:x *red-x* :y *red-y* :w 200.0 :h 50.0
+						:color '(1.0 0.0 0.0 0.6))))
 
-    (render-clients)
-    (shaders.texture:draw *texture-shader* *cursor* `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0) *orientation*)
-    (gl:flush)
-    (gl:finish)
+      (setf cursor-drawn (some (lambda (val) val) (render-clients)))
+      (unless cursor-drawn
+	(shaders.texture:draw *texture-shader* *cursor*
+			      `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0)
+			      *orientation*))
+      (gl:flush)
+      (gl:finish)
 
-    (setf *frame-ready* nil))
+      (setf *frame-ready* nil))
 
-  ;; TODO: Wasteful - also - didn't really help much at the moment.
-  ;; Try to bring it back inside the *frame-ready* check
-  (handler-case
-      (drm-page-flip *drm* (framebuffer-id *framebuffer*))
-    (error (err) (declare (ignore err)) ()))
+    ;; TODO: Wasteful - also - didn't really help much at the moment.
+    ;; Try to bring it back inside the *frame-ready* check
+    (handler-case
+	(drm-page-flip *drm* (framebuffer-id *framebuffer*))
+      (error (err) (declare (ignore err)) ()))
 
-  ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
-  ;; Any events or changes that i could instead attach to?
-  ;; Maybe instead use per client flushes - for example when receiving commit from them
-  (wl:flush-clients *wayland*))
+    ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
+    ;; Any events or changes that i could instead attach to?
+    ;; Maybe instead use per client flushes - for example when receiving commit from them
+    (wl:flush-clients *wayland*)))
 
 (defun determine-orientation (orient)
   (let ((current-orient *orientation*))
