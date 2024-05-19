@@ -128,5 +128,5 @@
 		      :buffer buffer-object)))
 
 (defun rm-framebuffer (device framebuffer)
-  (destroy-bo (buffer framebuffer))
-  (check-err (drm::mode-remove-framebuffer (fd device) (id framebuffer))))
+  (destroy-bo (framebuffer-buffer framebuffer))
+  (check-err (drm::mode-remove-framebuffer (fd device) (framebuffer-id framebuffer))))
