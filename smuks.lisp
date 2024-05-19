@@ -263,15 +263,19 @@
   (let ((current-orient *orientation*))
     (destructuring-bind (x y z) orient
       (declare (ignore y))
-      (let ((x (abs (car x))) (z (abs (car z))))
+      (let* ((x (car x)) (z (car z))
+	     (z-neg (<= z 0)) (x-neg (<= x 0))
+	     (x (abs x)) (z (abs z)))
 	(cond
-	  ((> z x) (setf *orientation* :landscape))
-	  ((> x z) (setf *orientation* :portrait)))))
+	  ((and z-neg (> z x)) (setf *orientation* :landscape))
+	  ((> z x) (setf *orientation* :landscape-i))
+	  ((and x-neg (> x z)) (setf *orientation* :portrait))
+	  ((> x z) (setf *orientation* :portrait-i)))))
     (unless (eq current-orient *orientation*)
       (setf (orientation *wayland*) *orientation*)
       (let ((projection (sglutil:make-projection-matrix
 			 (sdrm:screen-width *drm* *orientation*) (sdrm:screen-height *drm* *orientation*)
-			 (case *orientation* (:landscape -90) (:portrait 0)))))
+			 (case *orientation* (:landscape -90) (:portrait 0) (:landscape-i 90) (:portrait-i 180)))))
 	(mapcar (lambda (shader) (shaders:update-projection shader projection)) *shaders*)))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐

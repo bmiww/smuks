@@ -31,9 +31,9 @@
    (original-crtc :initarg :original-crtc :accessor original-crtc)))
 
 (defmethod screen-width ((device gbm-device) orientation)
-  (case orientation (:landscape (height device)) (:portrait (width device))))
+  (case orientation ((:landscape :landscape-i) (height device)) ((:portrait :portrait-i) (width device))))
 (defmethod screen-height ((device gbm-device) orientation)
-  (case orientation (:landscape (width device)) (:portrait (height device))))
+  (case orientation ((:landscape :landscape-i) (width device)) ((:portrait :portrait-i) (height device))))
 
 (defmethod initialize-instance :after ((device gbm-device) &key file)
   ;; TODO: SBCL EXCLUSIVE

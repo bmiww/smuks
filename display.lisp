@@ -24,31 +24,15 @@
 ;; ┬─┐┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
 ;; ├┬┘├┤ ├─┤ ││├┤ ├┬┘└─┐
 ;; ┴└─└─┘┴ ┴─┴┘└─┘┴└─└─┘
-(defmethod pointer-x ((display display))
-  (case (orientation display)
-    (:landscape (cursor-y display))
-    (:portrait (cursor-x display))))
-
-(defmethod pointer-y ((display display))
-  (case (orientation display)
-    (:landscape (cursor-x display))
-    (:portrait (cursor-y display))))
-
 (defmethod display-width ((display display))
   (case (orientation display)
-    (:landscape (slot-value display 'display-height))
-    (:portrait (slot-value display 'display-width))))
-
-(defmethod (setf display-width) (new-width (display display))
-  (setf (slot-value display 'display-width) new-width))
+    ((:landscape :landscape-i) (slot-value display 'display-height))
+    ((:portrait :portrait-i) (slot-value display 'display-width))))
 
 (defmethod display-height ((display display))
   (case (orientation display)
-    (:landscape (slot-value display 'display-width))
-    (:portrait (slot-value display 'display-height))))
-
-(defmethod (setf display-height) (new-height (display display))
-  (setf (slot-value display 'display-height) new-height))
+    ((:landscape :landscape-i) (slot-value display 'display-width))
+    ((:portrait :portrait-i) (slot-value display 'display-height))))
 
 ;; ┌┬┐┌─┐┌─┐┬  ┌─┐
 ;;  │ │ ││ ││  └─┐
@@ -130,12 +114,15 @@ and then clean the list out"
   (let ((width (display-width display))
 	(height (display-height display)))
     (case (orientation display)
-      (:landscape
+      (:landscape-i (setf dx (- dx)))
+      (:portrait-i (setf dx (- dx))))
+    (case (orientation display)
+      ((:landscape :landscape-i)
        (incf (cursor-x display) dx)
        (when (>= (cursor-x display) width) (setf (cursor-x display) width))
        (when (< (cursor-x display) 0) (setf (cursor-x display) 0))
        (cursor-x display))
-      (:portrait
+      ((:portrait :portrait-i)
        (incf (cursor-y display) dx)
        (when (>= (cursor-y display) height) (setf (cursor-y display) height))
        (when (< (cursor-y display) 0) (setf (cursor-y display) 0))
@@ -145,12 +132,15 @@ and then clean the list out"
   (let ((width (display-width display))
 	(height (display-height display)))
     (case (orientation display)
-      (:landscape
+      (:portrait (setf dy (- dy)))
+      (:landscape-i (setf dy (- dy))))
+    (case (orientation display)
+      ((:landscape :landscape-i)
        (incf (cursor-y display) dy)
        (when (>= (cursor-y display) height) (setf (cursor-y display) height))
        (when (< (cursor-y display) 0) (setf (cursor-y display) 0))
        (cursor-y display))
-      (:portrait
+      ((:portrait :portrait-i)
        (incf (cursor-x display) dy)
        (when (>= (cursor-x display) width) (setf (cursor-x display) width))
        (when (< (cursor-x display) 0) (setf (cursor-x display) 0))
