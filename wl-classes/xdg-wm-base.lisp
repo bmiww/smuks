@@ -14,33 +14,33 @@
   ((xdg-surfaces :initform (make-hash-table :test 'eq) :accessor xdg-surfaces)))
 
 (defmethod xdg-wm-base:get-xdg-surface ((xdg wm-base) id surface)
-  (let ((xdg-surface (wl:mk-if 'xdg-surface xdg id :wl-surface surface)))
+  (let ((xdg-surface (wl:up-if 'xdg-surface surface id)))
     (setf (gethash id (xdg-surfaces xdg)) xdg-surface)
     (setf (role surface) xdg-surface)))
 
 ;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
-(defclass xdg-surface (xdg-surface:dispatch)
-  ((wl-surface :initarg :wl-surface :accessor wl-surface)
-   (width :initform 0 :accessor width)
+(defclass xdg-surface (xdg-surface:dispatch surface)
+  ((width :initform 0 :accessor width)
    (height :initform 0 :accessor height)
    (toplevel :initarg :toplevel :accessor toplevel)
    (popup :initarg :popup :accessor popup)))
 
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
-  (let ((toplevel (wl:mk-if 'toplevel xdg id :xdg-surface xdg)))
+  (let ((toplevel (wl:up-if 'toplevel xdg id)))
     (setf (toplevel xdg) toplevel)
-    (setf (role (wl-surface xdg)) toplevel)
+    (setf (role xdg) toplevel)
 
     ;; TODO: Make an actual window manager instead of these random coordinates :)
-    (setf (x (wl-surface xdg)) (random 800))
-    (setf (y (wl-surface xdg)) (random 640))
+    (setf (x xdg) (random 800))
+    (setf (y xdg) (random 640))
 
     ;; TODO: Make an actual window manager instead of these random dimensions :)
     ;; TODO: One for maximized - get the enum stuff in order
     (xdg-toplevel:send-configure toplevel 200 200 '(1))
-    (xdg-surface:send-configure xdg (incf (configure-serial (wl-surface xdg))))))
+    (xdg-surface:send-configure toplevel (incf (configure-serial xdg)))
+    ))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (setf (width xdg) width)
@@ -56,7 +56,7 @@
 ;; ┌┬┐┌─┐┌─┐┬  ┌─┐┬  ┬┌─┐┬
 ;;  │ │ │├─┘│  ├┤ └┐┌┘├┤ │
 ;;  ┴ └─┘┴  ┴─┘└─┘ └┘ └─┘┴─┘
-(defclass toplevel (xdg-toplevel:dispatch)
+(defclass toplevel (xdg-toplevel:dispatch xdg-surface)
   ((xdg-surface :initarg :xdg-surface :accessor xdg-surface)
    (title :initform nil :accessor title)
    (app-id :initform nil :accessor app-id)
@@ -100,4 +100,4 @@ Supposed to answer with a configure event showing the new size."
   (log! "xdg-toplevel:set-maximized: Not considered in great detail")
   (let ((xdg (xdg-surface toplevel)))
     (xdg-toplevel:send-configure toplevel 400 400 '(1))
-    (xdg-surface:send-configure xdg (incf (configure-serial (wl-surface xdg))))))
+    (xdg-surface:send-configure xdg (incf (configure-serial xdg)))))

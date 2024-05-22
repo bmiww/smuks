@@ -155,7 +155,7 @@ This is one of the double buffered actions - so applied only after next commit"
 (defclass callback (wl-callback:dispatch) ())
 (defmethod done ((callback callback))
   (wl-callback:send-done callback (get-ms))
-  (wl:destroy-resource callback))
+  (wl:destroy callback))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
