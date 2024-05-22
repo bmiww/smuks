@@ -297,6 +297,7 @@
 	  ((> x z) (setf *orientation* :portrait-i)))))
     (unless (eq current-orient *orientation*)
       (setf (orientation *wayland*) *orientation*)
+      (recalculate-layout *wayland*)
       (let ((projection (sglutil:make-projection-matrix
 			 (sdrm:screen-width *drm* *orientation*) (sdrm:screen-height *drm* *orientation*)
 			 (case *orientation* (:landscape -90) (:portrait 0) (:landscape-i 90) (:portrait-i 180)))))
