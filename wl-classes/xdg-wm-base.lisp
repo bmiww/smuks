@@ -32,14 +32,12 @@
     (wl:up-if 'toplevel xdg id)
     (setf (role xdg) xdg)
 
-    ;; TODO: Make an actual window manager instead of these random coordinates :)
-    (setf (x xdg) 0)
-    (setf (y xdg) 0)
+    (destructuring-bind (x y width height) (new-toplevel display xdg)
+      (setf (x xdg) x) (setf (y xdg) y)
 
-    ;; TODO: Make an actual window manager instead of these random dimensions :)
-    ;; TODO: One for maximized - get the enum stuff in order
-    (xdg-toplevel:send-configure xdg (display-width display) (display-height display) '(1))
-    (xdg-surface:send-configure xdg (incf (configure-serial xdg)))))
+      ;; TODO: One for maximized - get the enum stuff in order
+      (xdg-toplevel:send-configure xdg width height '(1))
+      (xdg-surface:send-configure xdg (incf (configure-serial xdg))))))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (setf (width xdg) width)
