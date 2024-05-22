@@ -75,6 +75,10 @@
   (let* ((keyboard (seat-keyboard seat)))
     (wl-keyboard:send-modifiers keyboard serial depressed latched locked group)))
 
+(defmethod keyboard-destroy-callback ((seat seat) callback)
+  (let* ((keyboard (seat-keyboard seat)))
+    (setf (wl::destroy-callback keyboard) callback)))
+
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤

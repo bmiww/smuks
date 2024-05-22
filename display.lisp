@@ -44,6 +44,7 @@
   (let* ((client (wl:client focus-surface))
 	 (seat (seat client)))
     (setf (slot-value display 'keyboard-focus) focus-surface)
+    (keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))
 
     ;; TODO: You're supposed to send the actual pressed keys as last arg
     ;; But currently don't have a keypress manager/tracker
