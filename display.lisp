@@ -184,6 +184,7 @@ and then clean the list out"
 ;; ├┴┐├┤ └┬┘├┴┐│ │├─┤├┬┘ ││
 ;; ┴ ┴└─┘ ┴ └─┘└─┘┴ ┴┴└──┴┘
 ;; TODO: Very annoyed by the nil checks here
+;; TODO: This does not clean up the keyboard-focus property when a client is gone.
 (defmethod input ((display display) (type (eql :keyboard-key)) event)
   (let* ((key (keyboard@-key event))
 	 (state (keyboard@-state event))

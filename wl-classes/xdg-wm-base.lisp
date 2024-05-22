@@ -39,8 +39,7 @@
     ;; TODO: Make an actual window manager instead of these random dimensions :)
     ;; TODO: One for maximized - get the enum stuff in order
     (xdg-toplevel:send-configure toplevel 200 200 '(1))
-    (xdg-surface:send-configure toplevel (incf (configure-serial xdg)))
-    ))
+    (xdg-surface:send-configure toplevel (incf (configure-serial xdg)))))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (setf (width xdg) width)
@@ -57,8 +56,7 @@
 ;;  │ │ │├─┘│  ├┤ └┐┌┘├┤ │
 ;;  ┴ └─┘┴  ┴─┘└─┘ └┘ └─┘┴─┘
 (defclass toplevel (xdg-toplevel:dispatch xdg-surface)
-  ((xdg-surface :initarg :xdg-surface :accessor xdg-surface)
-   (title :initform nil :accessor title)
+  ((title :initform nil :accessor title)
    (app-id :initform nil :accessor app-id)
    (parent :initform nil :accessor parent)
    (min-width :initform 0 :accessor min-width)
@@ -98,6 +96,5 @@
 For tiling managers - i think i'll just resend the original configure event.
 Supposed to answer with a configure event showing the new size."
   (log! "xdg-toplevel:set-maximized: Not considered in great detail")
-  (let ((xdg (xdg-surface toplevel)))
-    (xdg-toplevel:send-configure toplevel 400 400 '(1))
-    (xdg-surface:send-configure xdg (incf (configure-serial xdg)))))
+  (xdg-toplevel:send-configure toplevel 400 400 '(1))
+  (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
