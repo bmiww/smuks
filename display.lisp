@@ -225,6 +225,10 @@ and then clean the list out"
   ;; TODO: Maybe instead of doing this address stuff - could do (member surface windows)
   (let* ((addr (xdg-toplevel::xdg_toplevel-ptr surface)))
     (setf (gethash (cffi:pointer-address addr) (windows display)) surface)
+    (wl:add-destroy-callback
+     surface
+     (lambda (surf) (declare (ignore surf)) (remhash (cffi:pointer-address addr) (windows display))))
+
     (recalculate-layout display)))
 
 (defmethod finalize-toplevel ((display display) surface)

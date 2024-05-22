@@ -77,7 +77,7 @@
 
 (defmethod keyboard-destroy-callback ((seat seat) callback)
   (let* ((keyboard (seat-keyboard seat)))
-    (setf (wl::destroy-callback keyboard) callback)))
+    (wl:add-destroy-callback keyboard callback)))
 
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
