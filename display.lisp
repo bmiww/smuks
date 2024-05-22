@@ -227,7 +227,10 @@ and then clean the list out"
     (setf (gethash (cffi:pointer-address addr) (windows display)) surface)
     (wl:add-destroy-callback
      surface
-     (lambda (surf) (declare (ignore surf)) (remhash (cffi:pointer-address addr) (windows display))))
+     (lambda (surf)
+       (declare (ignore surf))
+       (remhash (cffi:pointer-address addr) (windows display))
+       (recalculate-layout display)))
 
     (recalculate-layout display)))
 
