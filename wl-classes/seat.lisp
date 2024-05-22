@@ -184,4 +184,6 @@
     ;; TODO: Not a big fan of key repeats in general - but not going to block clients on this
     ;; Adjust on feel when trying out clients
     ;; Values of 0 could be used to disable repeat behaviour also
-    (wl-keyboard:send-repeat-info keyboard *key-repeat-rate* *key-repeat-delay*)))
+    ;; TODO: Since version 4 - until you figure out how to handle versions - disabling
+    ;; (wl-keyboard:send-repeat-info keyboard *key-repeat-rate* *key-repeat-delay*)
+    ))
