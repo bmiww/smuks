@@ -19,7 +19,8 @@
    (display-serial :initform 0 :accessor display-serial)
    (keyboard-focus :initform nil)
    (pointer-focus :initform nil :accessor pointer-focus)
-   (orientation :initarg :orientation :initform :landscape :accessor orientation)))
+   (orientation :initarg :orientation :initform :landscape :accessor orientation)
+   (windows :initform (make-hash-table :test 'eq) :accessor windows)))
 
 
 ;; ┬─┐┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
@@ -204,9 +205,26 @@ and then clean the list out"
 ;; ┬ ┬┬┌┐┌┌┬┐┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┬┌┐┌┌─┐
 ;; │││││││ │││ ││││  ├─┤├─┤│││ │││  │││││ ┬
 ;; └┴┘┴┘└┘─┴┘└─┘└┴┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘┴┘└┘└─┘
+(defmethod recalculate-layout ((display display))
+  (let* ((d-width (display-width display)) (d-height (display-height display))
+	 (windows (windows display))
+	 (amount (hash-table-count windows))
+	 (width-per (floor (/ d-width amount))))
+    (loop
+      for ptr being the hash-keys of windows
+      using (hash-value window)
+      for i from 0
+      do (with-slots (x y width height) window
+	   (setf x (* i width-per)
+		 y 0
+		 width width-per
+		 height d-height)))))
+
 (defmethod new-toplevel ((display display) surface)
-  (let ((x 0) (y 0) (width (display-width display)) (height (display-height display)))
-    `(,x ,y ,width ,height)))
+  ;; TODO: Maybe instead of doing this address stuff - could do (member surface windows)
+  (let* ((addr (xdg-toplevel::xdg_toplevel-ptr surface)))
+    (setf (gethash (cffi:pointer-address addr) (windows display)) surface)
+    (recalculate-layout display)))
 
 (defmethod finalize-toplevel ((display display) surface)
   (with-slots (x y width height) surface

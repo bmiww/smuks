@@ -22,9 +22,7 @@
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
 (defclass xdg-surface (xdg-surface:dispatch surface)
-  ((width :initform 0 :accessor width)
-   (height :initform 0 :accessor height)
-   (toplevel :initarg :toplevel :accessor toplevel)
+  ((toplevel :initarg :toplevel :accessor toplevel)
    (popup :initarg :popup :accessor popup)))
 
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
@@ -32,13 +30,11 @@
     (wl:up-if 'toplevel xdg id)
     (setf (role xdg) xdg)
 
-    (destructuring-bind (x y width height) (new-toplevel display xdg)
-      (setf (x xdg) x) (setf (y xdg) y)
-      (setf (width xdg) width) (setf (height xdg) height)
+    (new-toplevel display xdg)
 
       ;; TODO: One for maximized - get the enum stuff in order
-      (xdg-toplevel:send-configure xdg width height '(1))
-      (xdg-surface:send-configure xdg (incf (configure-serial xdg))))))
+    (xdg-toplevel:send-configure xdg (width xdg) (height xdg) '(1))
+    (xdg-surface:send-configure xdg (incf (configure-serial xdg)))))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (setf (width xdg) width)
