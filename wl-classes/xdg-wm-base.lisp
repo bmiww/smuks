@@ -28,18 +28,18 @@
    (popup :initarg :popup :accessor popup)))
 
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
-  (let ((toplevel (wl:up-if 'toplevel xdg id)))
-    (setf (toplevel xdg) toplevel)
-    (setf (role xdg) toplevel)
+  (let ((display (wl:get-display xdg)))
+    (wl:up-if 'toplevel xdg id)
+    (setf (role xdg) xdg)
 
     ;; TODO: Make an actual window manager instead of these random coordinates :)
-    (setf (x xdg) (random 800))
-    (setf (y xdg) (random 640))
+    (setf (x xdg) 0)
+    (setf (y xdg) 0)
 
     ;; TODO: Make an actual window manager instead of these random dimensions :)
     ;; TODO: One for maximized - get the enum stuff in order
-    (xdg-toplevel:send-configure toplevel 200 200 '(1))
-    (xdg-surface:send-configure toplevel (incf (configure-serial xdg)))))
+    (xdg-toplevel:send-configure xdg (display-width display) (display-height display) '(1))
+    (xdg-surface:send-configure xdg (incf (configure-serial xdg)))))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (setf (width xdg) width)
