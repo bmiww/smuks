@@ -34,6 +34,7 @@
 
     (destructuring-bind (x y width height) (new-toplevel display xdg)
       (setf (x xdg) x) (setf (y xdg) y)
+      (setf (width xdg) width) (setf (height xdg) height)
 
       ;; TODO: One for maximized - get the enum stuff in order
       (xdg-toplevel:send-configure xdg width height '(1))

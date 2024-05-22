@@ -204,12 +204,15 @@ and then clean the list out"
 ;; │││││││ │││ ││││  ├─┤├─┤│││ │││  │││││ ┬
 ;; └┴┘┴┘└┘─┴┘└─┘└┴┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘┴┘└┘└─┘
 (defmethod new-toplevel ((display display) surface)
-  (let ((x 0) (y 0) (width (display-width display)) (height (display-height display))
-	(cursor-x (cursor-x display)) (cursor-y (cursor-y display)))
-    (when (and (<= x cursor-x (+ x width)) (<= y cursor-y (+ y height)))
-      (setf (pointer-focus display) surface)
-      (setf (keyboard-focus display) surface))
+  (let ((x 0) (y 0) (width (display-width display)) (height (display-height display)))
     `(,x ,y ,width ,height)))
+
+(defmethod finalize-toplevel ((display display) surface)
+  (with-slots (x y width height) surface
+    (when (and (<= x (cursor-x display) (+ x width)) (<= y (cursor-y display) (+ y height)))
+      ;; (setf (pointer-focus display) surface)
+      ;; (setf (keyboard-focus display) surface)
+      )))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
