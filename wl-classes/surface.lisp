@@ -127,6 +127,11 @@
 (defmethod wl-surface:damage ((surface surface) x y width height)
   (setf (pending-damage surface) (make-damage :x x :y y :width width :height height)))
 
+(defmethod wl-surface:damage-buffer ((surface surface) x y width height)
+  "This damage method is the same as wl-surface:damage - with one difference.
+The damage coordinates are in buffer coordinates, not surface coordinates."
+  (log! "UNIMPLEMENTED: wl-surface:damage-buffer"))
+
 (defmethod wl-surface:set-opaque-region ((surface surface) region)
   "Sets the region which should be considered more carefully for repaints.
 Basically client notifying the compositor that there are alpha < 1 pixels in this region"
@@ -145,9 +150,17 @@ means the client doesn't have to receive that touch/pointer event."
 This is one of the double buffered actions - so applied only after next commit"
   (log! "UNIMPLEMENTED: Set buffer scale"))
 
+(defmethod wl-surface:set-buffer-transform ((surface surface) transform)
+  "Sets the transform for the surface buffer. This is an optimization thing if the client is made aware
+of the screen rotation - it can rotate the buffer itself and save the compositor from doing it.
+Or some such."
+  (log! "UNIMPLEMENTED: Set buffer transform"))
+
+
 (defmethod in-bounds ((surface surface) x y)
   (and (<= (x surface) x (+ (x surface) (width surface)))
        (<= (y surface) y (+ (y surface) (height surface)))))
+
 
 ;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─
 ;; │  ├─┤│  │  ├┴┐├─┤│  ├┴┐
