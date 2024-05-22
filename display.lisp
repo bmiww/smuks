@@ -218,7 +218,8 @@ and then clean the list out"
 	   (setf x (* i width-per)
 		 y 0
 		 width width-per
-		 height d-height)))))
+		 height d-height)
+	   (xdg-toplevel:send-configure window width height '(1))))))
 
 (defmethod new-toplevel ((display display) surface)
   ;; TODO: Maybe instead of doing this address stuff - could do (member surface windows)
