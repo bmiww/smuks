@@ -45,22 +45,31 @@
 
 (defmethod enable-accelerometer-scan ((iio iio))
   (let* ((accelerometer (accelerometer iio))
-	 (channels (iio:device-channels accelerometer)))
+	 (channels (iio:device-channels accelerometer))
+	 (x 0) (y 0) (z 0))
     (loop for channel in channels
 	  for id = (iio:channel-id channel)
-	  when (string= id "accel_x") do (iio:enable-channel accelerometer channel)
-	  when (string= id "accel_y") do (iio:enable-channel accelerometer channel)
-	  when (string= id "accel_z") do (iio:enable-channel accelerometer channel))
+	  when (string= id "accel_x") do
+	    (setf x (cadar (iio:channel-attrs channel)))
+	    (iio:enable-channel accelerometer channel)
+	  when (string= id "accel_y") do
+	    (setf y (cadar (iio:channel-attrs channel)))
+	    (iio:enable-channel accelerometer channel)
+	  when (string= id "accel_z") do
+	    (setf z (cadar (iio:channel-attrs channel)))
+	    (iio:enable-channel accelerometer channel))
     (iio:device-create-buffer accelerometer 1)
     ;; TODO: Maybe do get-samples instead??
     (iio:buffer-refill accelerometer)
-    (iio:get-poll-fd accelerometer)))
+    (describe accelerometer)
+    (iio:get-poll-fd accelerometer)
+    `(,(parse-integer x) ,(parse-integer y) ,(parse-integer z))))
 
 (defmethod accelerometer-fd ((iio iio)) (iio:get-poll-fd (accelerometer iio)))
 (defmethod read-accelerometer ((iio iio))
   (destructuring-bind (x y z) (iio:get-samples (accelerometer iio))
     ;; (log! "ACCEL: x: ~a, y: ~a, z: ~a" x y z)
-    `(,x ,y ,z)))
+    `(,(car x) ,(car y) ,(car z))))
 
 (defmethod cleanup-iio ((iio iio))
   (iio:destroy-context (iio-context iio)))

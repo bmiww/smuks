@@ -125,10 +125,6 @@
   (unless *seat* (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
   (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
 
-  (setf *iio* (init-libiio))
-  (enable-accelerometer-scan *iio*)
-
-
   ;; TODO: Can sometimes fail when running main anew in the same lisp image
   (setf *drm* (init-drm))
   (setf *socket* (init-socket))
@@ -157,6 +153,8 @@
   (setf *cursor* (load-cursor-texture))
   (setf *shaders* (init-shaders))
 
+  (setf *iio* (init-libiio))
+  (determine-orientation (enable-accelerometer-scan *iio*))
 
   (init-globals)
 
@@ -290,8 +288,7 @@
   (let ((current-orient *orientation*))
     (destructuring-bind (x y z) orient
       (declare (ignore y))
-      (let* ((x (car x)) (z (car z))
-	     (z-neg (<= z 0)) (x-neg (<= x 0))
+      (let* ((z-neg (<= z 0)) (x-neg (<= x 0))
 	     (x (abs x)) (z (abs z)))
 	(cond
 	  ((and z-neg (> z x)) (setf *orientation* :landscape))
