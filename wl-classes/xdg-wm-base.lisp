@@ -91,5 +91,13 @@
 For tiling managers - i think i'll just resend the original configure event.
 Supposed to answer with a configure event showing the new size."
   (log! "xdg-toplevel:set-maximized: Not considered in great detail")
-  (xdg-toplevel:send-configure toplevel 400 400 '(1))
+  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) '(1))
+  (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
+
+(defmethod xdg-toplevel:unset-maximized ((toplevel toplevel))
+  "A client wants to unset maximized state.
+For tiling managers - i think i'll just resend the original configure event.
+Supposed to answer with a configure event showing the new size."
+  (log! "xdg-toplevel:unset-maximized: Not considered in great detail")
+  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) '(1))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
