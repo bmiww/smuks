@@ -67,6 +67,15 @@
     ;; I should perform keyboard focus when BOTH TOPLEVEL and KEYBOARD are created.
     (when surface (setf (keyboard-focus (wl:get-display surface)) surface))))
 
+(defmethod keyboard-enter ((seat seat) serial surface keys)
+  (let* ((keyboard (seat-keyboard seat)))
+    (wl-keyboard:send-enter keyboard serial surface keys)))
+
+(defmethod keyboard-modifiers ((seat seat) serial depressed latched locked group)
+  (let* ((keyboard (seat-keyboard seat)))
+    (wl-keyboard:send-modifiers keyboard serial depressed latched locked group)))
+
+
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤
 ;;  ┴ └─┘└─┘└─┘┴ ┴

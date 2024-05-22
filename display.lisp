@@ -42,16 +42,15 @@
 
 (defmethod (setf keyboard-focus) (focus-surface (display display))
   (let* ((client (wl:client focus-surface))
-	 (seat (seat client))
-	 (seat-keyboard (seat-keyboard seat)))
+	 (seat (seat client)))
     (setf (slot-value display 'keyboard-focus) focus-surface)
 
     ;; TODO: You're supposed to send the actual pressed keys as last arg
     ;; But currently don't have a keypress manager/tracker
-    (wl-keyboard:send-enter seat-keyboard (next-serial display) focus-surface '())
+    (keyboard-enter seat (next-serial display) focus-surface '())
     ;; TODO: We are supposed to send the active modifiers after an enter event.
     ;; For now lazy
-    (wl-keyboard:send-modifiers seat-keyboard (next-serial display) 0 0 0 0)))
+    (keyboard-modifiers seat (next-serial display) 0 0 0 0)))
 
 (defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))
 
