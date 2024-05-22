@@ -45,25 +45,18 @@
 
 (defmethod enable-accelerometer-scan ((iio iio))
   (let* ((accelerometer (accelerometer iio))
-	 (channels (iio:device-channels accelerometer))
-	 (x 0) (y 0) (z 0))
+	 (channels (iio:device-channels accelerometer)))
     (loop for channel in channels
 	  for id = (iio:channel-id channel)
-	  when (string= id "accel_x") do
-	    (setf x (cadar (iio:channel-attrs channel)))
-	    (iio:enable-channel accelerometer channel)
-	  when (string= id "accel_y") do
-	    (setf y (cadar (iio:channel-attrs channel)))
-	    (iio:enable-channel accelerometer channel)
-	  when (string= id "accel_z") do
-	    (setf z (cadar (iio:channel-attrs channel)))
-	    (iio:enable-channel accelerometer channel))
+	  when (string= id "accel_x") do (iio:enable-channel accelerometer channel)
+	  when (string= id "accel_y") do (iio:enable-channel accelerometer channel)
+	  when (string= id "accel_z") do (iio:enable-channel accelerometer channel))
     (iio:device-create-buffer accelerometer 1)
-    ;; TODO: Maybe do get-samples instead??
     (iio:buffer-refill accelerometer)
-    (describe accelerometer)
     (iio:get-poll-fd accelerometer)
-    `(,(parse-integer x) ,(parse-integer y) ,(parse-integer z))))
+    ;; TODO: Doesn't seem to be giving me the actual thing i need.
+    ;; Not sure if its because it's being done here or some other reasona
+    (read-accelerometer iio)))
 
 (defmethod accelerometer-fd ((iio iio)) (iio:get-poll-fd (accelerometer iio)))
 (defmethod read-accelerometer ((iio iio))
