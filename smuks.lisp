@@ -123,6 +123,8 @@
   ;; TODO: Give the loop like a 5 sec timeout? In case seatd/logind doesn't respond
   (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
   (unless *seat* (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
+  ;; TODO: We might be able to just run (libseat:dispatch *seat* 0) here instead of the loop
+  ;; If the 0 was a timeout, we could also give it a value
   (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
 
   ;; TODO: Can sometimes fail when running main anew in the same lisp image
@@ -437,10 +439,6 @@
 	     do (log! "🔴 ~a: ~a" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
        (log! "🟢 ~a: Client exit. Code: ~a" app-name (uiop:wait-process process))))
     process))
-
-(defun flo (num)
-  "Just a shorter form to coerce a number to float"
-  (coerce num 'single-float))
 
 ;; Can be called from repl to stop the compositor
 (defun shutdown () (setf *smuks-exit* t))

@@ -14,7 +14,7 @@
 	   check-gl-fb-status check-gl-error
 	   flatten get-ms
 	   with-xdg-mem-file
-
+	   flo
 	   make-mmap-pool mmap-pool-fd mmap-pool-size mmap-pool-ptr munmap))
 (in-package :smuks-util)
 
@@ -152,6 +152,15 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 	       (:framebuffer-undefined "Framebuffer undefined")
 	       (t (error "Uncovered GL framebuffer error code")))))
     (when msg (error (format nil "~a: ~a~%" prefix msg)))))
+
+
+;; ┌─┐┬  ┌─┐
+;; ├┤ │  │ │
+;; └  ┴─┘└─┘
+;; A util function to coerce a value to single-float
+(defun flo (num)
+  "Just a shorter form to coerce a number to float"
+  (coerce num 'single-float))
 
 
 ;; ┌┬┐┌┬┐┌─┐┌─┐
