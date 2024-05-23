@@ -17,6 +17,13 @@
   :build-operation program-op
   :build-pathname "smuks"
   :entry-point "smuks::main"
+  :around-compile (lambda (next)
+		    (when (uiop/os:getenv "DEBUG")
+		      (proclaim '(optimize
+                                  (safety 3)
+                                  (debug 3)
+                                  (speed 0))))
+		    (funcall next))
   :depends-on (#:cl-drm ;; TODO: Add to my own distribution
 	       #:cl-opengl ;; TODO: Add to my own distribution
 	       #:cl-egl ;; TODO: Add to my own distribution
