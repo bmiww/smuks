@@ -207,7 +207,7 @@
     ;; (if (active-surface (role surface))
     (log! "⚠️ You did some magic with active-surface. The cursor is probably rendering wrong.")
     (progn
-      (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height) *orientation*)
+      (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height))
       (flush-frame-callbacks surface)
       (setf (needs-redraw surface) nil)
       t)
@@ -222,7 +222,7 @@
 	(height (flo (height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height) *orientation*)
+    (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)
     nil))
@@ -268,8 +268,7 @@
       (setf cursor-drawn (some (lambda (val) val) (render-clients)))
       (unless cursor-drawn
 	(shaders.texture:draw *texture-shader* *cursor*
-			      `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0)
-			      *orientation*))
+			      `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0)))
       (gl:flush)
       (gl:finish)
 

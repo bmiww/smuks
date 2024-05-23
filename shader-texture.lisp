@@ -99,10 +99,10 @@ void main() {
 (defvar *draw-instances* 1)
 
 ;; TODO: TRANSFORM???
-(defmethod draw ((program shader) texture position orientation)
+(defmethod draw ((program shader) texture position)
   (destructuring-bind (x y width height) position
     (let ((pos-matrix (make-position-matrix (coerce x 'double-float) (coerce y 'double-float)))
-	  (tex-matrix (texture-matrix width height orientation)))
+	  (tex-matrix (texture-matrix width height)))
       (with-slots (vao pointer instanced-vbo runtime-vbo attr-vert attr-position
 		   uni-matrix uni-texture) program
 	(gl:use-program pointer)
@@ -145,7 +145,7 @@ void main() {
     (setf (clem:mref matrix 1 1) y)
     matrix))
 
-(defun texture-matrix (width height orientation)
+(defun texture-matrix (width height)
   (matrix->array
    (clem:m* (clem:identity-matrix 3)
 	    (from-nonuniform-scale (coerce (/ 1.0 width) 'double-float) (coerce (/ 1.0 height) 'double-float)))))
