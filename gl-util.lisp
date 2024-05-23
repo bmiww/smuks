@@ -13,7 +13,7 @@
    check-gl-fb-status
    prep-gl-implementation
    create-gl-framebuffer
-   create-image-texture
+   create-image-texture create-texture
    make-projection-matrix
    make-position-matrix
    matrix->array))
@@ -41,6 +41,23 @@
     (gl:bind-texture :texture-2d texture)
     (%gl:egl-image-target-texture-2d-oes :texture-2d image)
     (check-gl-error "egl-image-target-texture-2d-oes")
+
+    texture))
+
+;; TODO: Make this be based off of the used format
+(defvar *pixel-size* 4)
+;; TODO: Possibly move this closer to the GL code
+(defun create-texture (ptr width height stride offset &optional texture)
+  (let ((texture (or texture (gl:gen-texture))))
+    (gl:bind-texture :texture-2d texture)
+    (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
+    (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
+    (gl:pixel-store :unpack-row-length (/ stride *pixel-size*))
+    ;; TODO: Format is hardcoded - should be taken from the buffer values and mapped to a gl format
+    ;; Shouldn't be :rgba twice - i guess
+    (gl:tex-image-2d :texture-2d 0 :rgba width height
+		     0 :rgba :unsigned-byte
+		     (cffi:inc-pointer ptr offset))
 
     texture))
 

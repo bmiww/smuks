@@ -83,33 +83,14 @@
 
 (defmethod commit-shm-buffer ((surface surface))
   (commit-buffer surface
-    (setf (texture surface) (gen-texture (pending-buffer surface) texture))
-    (setf (texture-type surface) :shm)))
+    (with-slots (pool-ptr width height stride offset) (pending-buffer surface)
+      (setf (texture surface)
+	    (sglutil:create-texture
+	     pool-ptr width height stride offset
+	     texture))
+      (setf (texture-type surface) :shm))))
 
 
-;; TODO: Make this be based off of the used format
-(defvar *pixel-size* 4)
-;; TODO: Possibly move this closer to the GL code
-;; TODO: Maybe i can use the mmap ptr directly for pumping into the GL texture???
-(defun gen-texture (pending-buffer &optional texture)
-  (let ((texture (or texture (gl:gen-texture))))
-    (gl:bind-texture :texture-2d texture)
-    (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
-    (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
-    (gl:pixel-store :unpack-row-length (/ (stride pending-buffer) *pixel-size*))
-    ;; TODO: Format is hardcoded - should be taken from the buffer values and mapped to a gl format
-    ;; Shouldn't be :rgba twice - i guess
-    (gl:tex-image-2d :texture-2d 0 :rgba
-		     (width pending-buffer) (height pending-buffer)
-		     0 :rgba :unsigned-byte
-		     (cffi:inc-pointer (pool-ptr pending-buffer) (offset pending-buffer)))
-
-    texture))
-
-;; ┌─┐┌┬┐┌┬┐┌─┐┌─┐┬ ┬
-;; ├─┤ │  │ ├─┤│  ├─┤
-;; ┴ ┴ ┴  ┴ ┴ ┴└─┘┴ ┴
-;; https://wayland.app/protocols/wayland#wl_surface:request:attach
 (defmethod wl-surface:attach ((surface surface) buffer x y)
   ;; TODO: Protocol deprecation thing - you should instead notify the client
   ;; of errors instead of breaking the compositor.
