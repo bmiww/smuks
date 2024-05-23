@@ -36,8 +36,8 @@
 
     framebuffer))
 
-(defun create-image-texture (image)
-  (let* ((texture (gl:gen-texture)))
+(defun create-image-texture (image &optional texture)
+  (let* ((texture (or texture (gl:gen-texture))))
     (gl:bind-texture :texture-2d texture)
     (%gl:egl-image-target-texture-2d-oes :texture-2d image)
     (check-gl-error "egl-image-target-texture-2d-oes")

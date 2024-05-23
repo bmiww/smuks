@@ -45,45 +45,46 @@
     (setf (needs-redraw surface) t)))
 
 
+(defmacro commit-buffer (surface &body body)
+  `(let ((new-dimensions? nil))
+     (unless (eq (width (pending-buffer ,surface)) (width ,surface))
+       (setf (width ,surface) (width (pending-buffer ,surface)))
+       (setf new-dimensions? t))
+
+     (unless (eq (height (pending-buffer ,surface)) (height ,surface))
+       (setf (height ,surface) (height (pending-buffer ,surface)))
+       (setf new-dimensions? t))
+
+     (when new-dimensions? (gl:delete-texture (texture ,surface)))
+
+     ;; TODO: the texture here is implied and a bit annoying
+     ;; Could add it as a reference in the macro args
+     (let ((texture (unless new-dimensions? (texture ,surface))))
+       ,@body)
+
+     (setf (pending-buffer ,surface) nil)
+     (setf (needs-redraw ,surface) t)))
+
+
 ;; TODO: For now only supporting a single plane
-;; TODO: The width height of surface is getting a bit annoying
+;; TODO: Can we destroy the image once the texture has been created?
 (defmethod commit-dma-buffer ((surface surface))
-  (let* ((buffer (pending-buffer surface))
-	 (plane (gethash 0 (planes buffer)))
-	 (image (seglutil:create-egl-image-from-buffer
-		 (egl (wl:get-display surface))
-		 (width buffer) (height buffer)
-		 (pixel-format buffer)
-		 (fd plane) (offset plane) (stride plane))))
+  (commit-buffer surface
+    (let* ((buffer (pending-buffer surface))
+	   (plane (gethash 0 (planes buffer)))
+	   (image (seglutil:create-egl-image-from-buffer
+		   (egl (wl:get-display surface))
+		   (width buffer) (height buffer)
+		   (pixel-format buffer)
+		   (fd plane) (offset plane) (stride plane))))
+      (setf (texture surface) (sglutil:create-image-texture image texture))
+      (setf (texture-type surface) :dma))))
 
-    (setf (width surface) (width (pending-buffer surface)))
-    (setf (height surface) (height (pending-buffer surface)))
-
-    (setf (texture surface) (sglutil:create-image-texture image))
-    (setf (texture-type surface) :dma)
-
-    (setf (pending-buffer surface) nil)
-    (setf (needs-redraw surface) t)))
 
 (defmethod commit-shm-buffer ((surface surface))
-  (let ((new-dimensions? nil))
-    (unless (eq (width (pending-buffer surface)) (width surface))
-      (setf (width surface) (width (pending-buffer surface)))
-      (setf new-dimensions? t))
-
-    (unless (eq (height (pending-buffer surface)) (height surface))
-      (setf (height surface) (height (pending-buffer surface)))
-      (setf new-dimensions? t))
-
-    ;; TODO: If a new texture is being generated - delete the old texture!!!
-    ;; aka new-dimensions is true - delete the old texture before reassigning
-    (setf (texture surface)
-	  (gen-texture (pending-buffer surface) (unless new-dimensions? (texture surface))))
-    (setf (texture-type surface) :shm)
-
-    (wl-buffer:send-release (pending-buffer surface))
-    (setf (pending-buffer surface) nil)
-    (setf (needs-redraw surface) t)))
+  (commit-buffer surface
+    (setf (texture surface) (gen-texture (pending-buffer surface) texture))
+    (setf (texture-type surface) :shm)))
 
 
 ;; TODO: Make this be based off of the used format
@@ -91,7 +92,7 @@
 ;; TODO: Possibly move this closer to the GL code
 ;; TODO: Maybe i can use the mmap ptr directly for pumping into the GL texture???
 (defun gen-texture (pending-buffer &optional texture)
-  (let ((texture (if texture texture (gl:gen-texture))))
+  (let ((texture (or texture (gl:gen-texture))))
     (gl:bind-texture :texture-2d texture)
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
     (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
