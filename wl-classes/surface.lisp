@@ -8,8 +8,7 @@
 (in-package :smuks)
 
 (defclass surface (wl-surface:dispatch)
-  ((role :initform nil :accessor role)
-   (configure-serial :initform 0 :accessor configure-serial)
+  ((configure-serial :initform 0 :accessor configure-serial)
    (pending-buffer :initform nil :accessor pending-buffer)
    (needs-redraw :initform nil :accessor needs-redraw)
    (texture :initform nil :accessor texture)
@@ -28,11 +27,11 @@
 ;; └─┘└─┘┴ ┴┴ ┴┴ ┴
 ;; https://wayland.app/protocols/wayland#wl_surface:request:commit
 (defmethod wl-surface:commit ((surface surface))
-  (typecase (role surface)
+  (typecase surface
     (toplevel (commit-toplevel surface))
-    (xdg-surface (commit-toplevel surface))
-    (pointer (commit-toplevel surface))
-    (t (format nil "Unsupported surface role: ~a" (role surface)))))
+    (cursor (commit-toplevel surface))
+    ;; (xdg-surface (commit-toplevel surface)) ;; Don't think this is a thing
+    (t (format nil "Unsupported surface role: ~a" (type-of surface)))))
 
 (defmethod commit-toplevel ((surface surface))
   (typecase (pending-buffer surface)
@@ -45,55 +44,10 @@
     (setf (needs-redraw surface) t)))
 
 
-(defmacro commit-buffer (surface &body body)
-  `(let ((new-dimensions? nil))
-     (unless (eq (width (pending-buffer ,surface)) (width ,surface))
-       (setf (width ,surface) (width (pending-buffer ,surface)))
-       (setf new-dimensions? t))
-
-     (unless (eq (height (pending-buffer ,surface)) (height ,surface))
-       (setf (height ,surface) (height (pending-buffer ,surface)))
-       (setf new-dimensions? t))
-
-     (when new-dimensions? (gl:delete-texture (texture ,surface)))
-
-     ;; TODO: the texture here is implied and a bit annoying
-     ;; Could add it as a reference in the macro args
-     (let ((texture (unless new-dimensions? (texture ,surface))))
-       ,@body)
-
-     (setf (pending-buffer ,surface) nil)
-     (setf (needs-redraw ,surface) t)))
-
-
-;; TODO: For now only supporting a single plane
-;; TODO: Can we destroy the image once the texture has been created?
-(defmethod commit-dma-buffer ((surface surface))
-  (commit-buffer surface
-    (let* ((buffer (pending-buffer surface))
-	   (plane (gethash 0 (planes buffer)))
-	   (image (seglutil:create-egl-image-from-buffer
-		   (egl (wl:get-display surface))
-		   (width buffer) (height buffer)
-		   (pixel-format buffer)
-		   (fd plane) (offset plane) (stride plane))))
-      (setf (texture surface) (sglutil:create-image-texture image texture))
-      (setf (texture-type surface) :dma))))
-
-
-(defmethod commit-shm-buffer ((surface surface))
-  (commit-buffer surface
-    (with-slots (pool-ptr width height stride offset) (pending-buffer surface)
-      (setf (texture surface)
-	    (sglutil:create-texture
-	     pool-ptr width height stride offset
-	     texture))
-      (setf (texture-type surface) :shm))))
-
-
 (defmethod wl-surface:attach ((surface surface) buffer x y)
   ;; TODO: Protocol deprecation thing - you should instead notify the client
   ;; of errors instead of breaking the compositor.
+  ;; Or check the version that the client wishes to achieve
   ;; (unless (= x 0) (error "x must be 0"))
   ;; (unless (= y 0) (error "y must be 0"))
   (setf (pending-buffer surface) buffer))
@@ -152,6 +106,55 @@ Or some such."
   (wl-callback:send-done callback (get-ms))
   (wl:destroy callback))
 
+
+;; ┌┐ ┬ ┬┌─┐┌─┐┌─┐┬─┐
+;; ├┴┐│ │├┤ ├┤ ├┤ ├┬┘
+;; └─┘└─┘└  └  └─┘┴└─
+(defmacro commit-buffer (surface &body body)
+  `(let ((new-dimensions? nil))
+     (unless (eq (width (pending-buffer ,surface)) (width ,surface))
+       (setf (width ,surface) (width (pending-buffer ,surface)))
+       (setf new-dimensions? t))
+
+     (unless (eq (height (pending-buffer ,surface)) (height ,surface))
+       (setf (height ,surface) (height (pending-buffer ,surface)))
+       (setf new-dimensions? t))
+
+     (when new-dimensions? (gl:delete-texture (texture ,surface)))
+
+     ;; TODO: the texture here is implied and a bit annoying
+     ;; Could add it as a reference in the macro args
+     (let ((texture (unless new-dimensions? (texture ,surface))))
+       ,@body)
+
+     (setf (pending-buffer ,surface) nil)
+     (setf (needs-redraw ,surface) t)))
+
+
+;; TODO: For now only supporting a single plane
+;; TODO: Can we destroy the image once the texture has been created?
+(defmethod commit-dma-buffer ((surface surface))
+  (commit-buffer surface
+    (let* ((buffer (pending-buffer surface))
+	   (plane (gethash 0 (planes buffer)))
+	   (image (seglutil:create-egl-image-from-buffer
+		   (egl (wl:get-display surface))
+		   (width buffer) (height buffer)
+		   (pixel-format buffer)
+		   (fd plane) (offset plane) (stride plane))))
+      (setf (texture surface) (sglutil:create-image-texture image texture))
+      (setf (texture-type surface) :dma))))
+
+
+(defmethod commit-shm-buffer ((surface surface))
+  (commit-buffer surface
+    (with-slots (pool-ptr width height stride offset) (pending-buffer surface)
+      (setf (texture surface)
+	    (sglutil:create-texture
+	     pool-ptr width height stride offset
+	     texture))
+      (setf (texture-type surface) :shm))))
+
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
@@ -163,6 +166,8 @@ Or some such."
 
 (defun class-is? (object class)
   (typep object class))
+
+(defclass cursor (surface) ())
 
 
 ;; ███████╗██╗   ██╗██████╗ ███████╗██╗   ██╗██████╗ ███████╗ █████╗  ██████╗███████╗

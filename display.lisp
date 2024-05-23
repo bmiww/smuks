@@ -157,7 +157,7 @@ and then clean the list out"
 	 (surface (surface-at-coords display new-x new-y)))
     (if surface
 	(let* ((client (wl:client surface)) (seat (seat client)) (seat-mouse (seat-mouse seat)))
-	  (if (and seat-mouse (active-surface seat-mouse))
+	  (if (and seat-mouse (active-surface seat))
 	      (pointer-motion seat new-x new-y)
 	      (when seat-mouse
 		(pointer-enter seat surface new-x new-y)

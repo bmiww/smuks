@@ -29,7 +29,7 @@
 
 (defmethod toplevel-surface ((compositor compositor))
   (loop for value being the hash-values of (surfaces compositor)
-	when (typep (role value) 'toplevel)
+	when (typep value 'toplevel)
 	return value))
 
 ;; ┬─┐┌─┐┌─┐┬┌─┐┌┐┌

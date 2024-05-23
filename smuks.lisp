@@ -204,13 +204,17 @@
 	(height (flo (height surface)))
 	(x (+ (flo (x surface)) (cursor-x *wayland*)))
 	(y (+ (flo (y surface)) (cursor-y *wayland*))))
-    (if (active-surface (role surface))
-	(progn
-	  (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height) *orientation*)
-	  (flush-frame-callbacks surface)
-	  (setf (needs-redraw surface) nil)
-	  t)
-	nil)))
+    ;; TODO: Fix this active-surface usage. You moved active-surface to a client seat
+    ;; And this use case in general seems wrong (could be improved)
+    ;; (if (active-surface (role surface))
+    (log! "⚠️ You did some magic with active-surface. The cursor is probably rendering wrong.")
+    (progn
+      (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height) *orientation*)
+      (flush-frame-callbacks surface)
+      (setf (needs-redraw surface) nil)
+      t)
+    ;; nil)
+  ))
 
 ;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
 ;; So that the main loop can know if it should render the display cursor or not
@@ -226,8 +230,8 @@
     nil))
 
 (defun render-surface (surface)
-  (typecase (role surface)
-    (pointer (render-cursor surface))
+  (typecase surface
+    (cursor (render-cursor surface))
     (t (render-toplevel surface))))
 
 (defun render-clients ()

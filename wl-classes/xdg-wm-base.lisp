@@ -15,8 +15,7 @@
 
 (defmethod xdg-wm-base:get-xdg-surface ((xdg wm-base) id surface)
   (let ((xdg-surface (wl:up-if 'xdg-surface surface id)))
-    (setf (gethash id (xdg-surfaces xdg)) xdg-surface)
-    (setf (role surface) xdg-surface)))
+    (setf (gethash id (xdg-surfaces xdg)) xdg-surface)))
 
 ;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
@@ -28,8 +27,6 @@
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((display (wl:get-display xdg)))
     (wl:up-if 'toplevel xdg id)
-    (setf (role xdg) xdg)
-
     (new-toplevel display xdg)
 
       ;; TODO: One for maximized - get the enum stuff in order

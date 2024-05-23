@@ -46,6 +46,8 @@
   ((name :initarg :name :initform nil)
    (capabilities :initarg :capabilities :initform nil)
    (event-serial :initarg :event-serial :initform 0)
+   ;; TODO: Rename active surface to identify it as a mouse pointer active surface
+   (active-surface :initform nil :accessor active-surface)
    (pointer :initform nil :accessor seat-mouse)
    (keyboard :initform nil :accessor seat-keyboard)
    (touch :initform nil :accessor seat-touch)))
@@ -118,25 +120,25 @@
 
 (defmethod pointer-enter ((seat seat) surface x y)
   (let ((seat-mouse (seat-mouse seat)))
-    (setf (active-surface seat-mouse) surface)
+    (setf (active-surface seat) surface)
     (wl-pointer:send-enter seat-mouse (next-serial seat) surface
 			   (- x (x surface)) (- y (y surface)))))
 
 (defmethod pointer-leave ((seat seat))
   (let ((seat-mouse (seat-mouse seat)))
-    (unless (active-surface seat-mouse) (error "No active surface for pointer leave"))
-    (wl-pointer:send-leave seat-mouse (next-serial seat) (active-surface seat-mouse))
-    (setf (active-surface seat-mouse) nil)))
+    (unless (active-surface seat) (error "No active surface for pointer leave"))
+    (wl-pointer:send-leave seat-mouse (next-serial seat) (active-surface seat))
+    (setf (active-surface seat) nil)))
 
 (defmethod pointer-motion ((seat seat) x y)
   (let* ((seat-mouse (seat-mouse seat))
-	 (surface (active-surface seat-mouse)))
+	 (surface (active-surface seat)))
     (unless surface (error "No active surface for pointer motion"))
     (wl-pointer:send-motion seat-mouse (get-ms) (- x (x surface)) (- y (y surface)))))
 
 (defmethod pointer-button ((seat seat) button state)
   (let* ((seat-mouse (seat-mouse seat))
-	 (surface (active-surface seat-mouse)))
+	 (surface (active-surface seat)))
     (unless surface (error "No active surface for pointer button"))
     (wl-pointer:send-button seat-mouse (next-serial seat) (get-ms) button
 			    (case state (:pressed 1) (:released 0)))))
@@ -153,15 +155,11 @@
 ;; ├─┘│ │││││ │ ├┤ ├┬┘   │││└─┐├─┘├─┤ │ │  ├─┤
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
 (defclass pointer (wl-pointer:dispatch)
-  ((seat :initarg :seat :initform nil)
-   (active-surface :initform nil :accessor active-surface)))
+  ((seat :initarg :seat :initform nil)))
 
 ;; TODO: PROTOCOL: If surface is nil - the pointer image should be hidden
 (defmethod wl-pointer:set-cursor ((pointer pointer) serial surface hotspot-x hotspot-y)
-  (when surface
-    (setf (role surface) pointer)
-    (setf (x surface) hotspot-x)
-    (setf (y surface) hotspot-y)))
+  (change-class surface 'cursor :x hotspot-x :y hotspot-y))
 
 
 ;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
@@ -175,9 +173,7 @@
 
 (defmethod initialize-instance :after ((keyboard keyboard) &key)
   (let* ((seat (seat keyboard))
-	 (keymap-mmap (keymap-mmap seat))
-	 (client (wl:client keyboard))
-	 (surface (toplevel-surface (compositor client))))
+	 (keymap-mmap (keymap-mmap seat)))
     ;; TODO: 1 stands for xkb-keymap. Enumerate this properly
     ;; TODO: Explore how many clients actually WANT xkb - i would prefer to roll with no_keymap
     (wl-keyboard:send-keymap keyboard 1 (mmap-pool-fd keymap-mmap) (mmap-pool-size keymap-mmap))
