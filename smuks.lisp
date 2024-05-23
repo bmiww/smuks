@@ -132,10 +132,6 @@
 
   (setf *framebuffer* (sdrm:default-framebuffer *drm*))
 
-  ;; TODO: This is a bit awkward as an expected package export
-  ;; Without this - nothing in wayland-land would work.
-  ;; Maybe have the default display constructor do this in the :before step?
-  (wl:init-interface-definitions)
   (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
 		     ;; This dev-t is probably rather wrong - since client apps probably can't use card0/card1
 		     ;; But instead should be notified of the render nodes renderD128 and so on
