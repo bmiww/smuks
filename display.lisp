@@ -20,7 +20,7 @@
    (keyboard-focus :initform nil)
    (pointer-focus :initform nil :accessor pointer-focus)
    (orientation :initarg :orientation :initform :landscape :accessor orientation)
-   (windows :initform (make-hash-table :test 'eq) :accessor windows)))
+   (windows :initform nil :accessor windows)))
 
 
 ;; ┬─┐┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
@@ -206,33 +206,29 @@ and then clean the list out"
 ;; │││││││ │││ ││││  ├─┤├─┤│││ │││  │││││ ┬
 ;; └┴┘┴┘└┘─┴┘└─┘└┴┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘┴┘└┘└─┘
 (defmethod recalculate-layout ((display display))
-  (let* ((d-width (display-width display)) (d-height (display-height display))
-	 (windows (windows display))
-	 (amount (hash-table-count windows))
-	 (width-per (floor (/ d-width amount))))
-    (loop
-      for ptr being the hash-keys of windows
-      using (hash-value window)
-      for i from 0
-      do (with-slots (x y width height) window
-	   (setf x (* i width-per)
-		 y 0
-		 width width-per
-		 height d-height)
-	   (xdg-toplevel:send-configure window width height '(1))))))
+  (when (windows display)
+    (let* ((d-width (display-width display)) (d-height (display-height display))
+	   (amount (length (windows display)))
+	   (width-per (floor (/ d-width amount))))
+      (loop
+	for window in (windows display)
+	for i from 0
+	do (with-slots (x y width height) window
+	     (setf x (* i width-per)
+		   y 0
+		     width width-per
+		     height d-height)
+	     (xdg-toplevel:send-configure window width height '(1)))))))
 
 (defmethod new-toplevel ((display display) surface)
-  ;; TODO: Maybe instead of doing this address stuff - could do (member surface windows)
-  (let* ((addr (xdg-toplevel::xdg_toplevel-ptr surface)))
-    (setf (gethash (cffi:pointer-address addr) (windows display)) surface)
-    (wl:add-destroy-callback
-     surface
-     (lambda (surf)
-       (declare (ignore surf))
-       (remhash (cffi:pointer-address addr) (windows display))
-       (recalculate-layout display)))
+  (setf (windows display) (pushnew surface (windows display)))
+  (wl:add-destroy-callback
+   surface
+   (lambda (surf)
+     (setf (windows display) (remove surf (windows display)))
+     (recalculate-layout display)))
 
-    (recalculate-layout display)))
+  (recalculate-layout display))
 
 (defmethod finalize-toplevel ((display display) surface)
   (with-slots (x y width height) surface
@@ -255,3 +251,17 @@ and then clean the list out"
 				return surface)
 	  when candidate
 	  return candidate)))
+
+
+;; (defclass doot () ((poot :initarg :poot :accessor poot)))
+;; (defvar *doot* (make-instance 'doot :poot 1))
+;; (defvar *doot2* (make-instance 'doot :poot 2))
+;; (defclass soot () ((soot :initarg :soot :accessor soot)))
+;; (defvar *soot* (make-instance 'soot :soot 1))
+;; (defvar *soot2* (make-instance 'soot :soot 2))
+
+
+;; (defvar *doot-list* (list *doot* *doot2* *soot* *soot2*))
+
+;; (member *doot* *doot-list* :test #'eq)
+;; (remove *doot2* *doot-list* :test #'eq)
