@@ -92,6 +92,9 @@
       (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))
       crtc)))
 
+;; TODO: Iterate cards - but actually check their capabilities.
+;; TODO: Could also combine with render card capability reading
+;; TODO: Figure out the stupid style warning - it doesnt affect anything so far, but annoys me
 (defun init-drm ()
   (let* ((card (loop for i from 0 below 32
 		     for path = (format nil "/dev/dri/card~A" i)
