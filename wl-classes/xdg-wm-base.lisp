@@ -24,8 +24,7 @@
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
 (defclass xdg-surface (xdg-surface:dispatch surface)
-  ((toplevel :initarg :toplevel :accessor toplevel)
-   (popup :initarg :popup :accessor popup)))
+  ())
 
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((display (wl:get-display xdg)))
