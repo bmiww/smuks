@@ -122,26 +122,33 @@
   (let ((seat-mouse (seat-mouse seat)))
     (setf (active-surface seat) surface)
     (wl-pointer:send-enter seat-mouse (next-serial seat) surface
-			   (- x (x surface)) (- y (y surface)))))
+			   (- x (x surface)) (- y (y surface)))
+    (pointer-frame seat)))
 
 (defmethod pointer-leave ((seat seat))
   (let ((seat-mouse (seat-mouse seat)))
     (unless (active-surface seat) (error "No active surface for pointer leave"))
     (wl-pointer:send-leave seat-mouse (next-serial seat) (active-surface seat))
-    (setf (active-surface seat) nil)))
+    (setf (active-surface seat) nil)
+    (pointer-frame seat)))
 
 (defmethod pointer-motion ((seat seat) x y)
   (let* ((seat-mouse (seat-mouse seat))
 	 (surface (active-surface seat)))
     (unless surface (error "No active surface for pointer motion"))
-    (wl-pointer:send-motion seat-mouse (get-ms) (- x (x surface)) (- y (y surface)))))
+    (wl-pointer:send-motion seat-mouse (get-ms) (- x (x surface)) (- y (y surface)))
+    (pointer-frame seat)))
 
 (defmethod pointer-button ((seat seat) button state)
   (let* ((seat-mouse (seat-mouse seat))
 	 (surface (active-surface seat)))
     (unless surface (error "No active surface for pointer button"))
     (wl-pointer:send-button seat-mouse (next-serial seat) (get-ms) button
-			    (case state (:pressed 1) (:released 0)))))
+			    (case state (:pressed 1) (:released 0)))
+    (pointer-frame seat)))
+
+(defmethod pointer-frame ((seat seat))
+  (wl-pointer:send-frame (seat-mouse seat)))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤   │││└─┐├─┘├─┤ │ │  ├─┤

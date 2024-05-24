@@ -246,22 +246,9 @@ and then clean the list out"
     (loop for client in clients
 	  for compositor = (compositor client)
 	  for surfaces = (all-surfaces compositor)
+
 	  for candidate = (loop for surface in surfaces
 				when (in-bounds surface x y)
-				return surface)
+				  return surface)
 	  when candidate
 	  return candidate)))
-
-
-;; (defclass doot () ((poot :initarg :poot :accessor poot)))
-;; (defvar *doot* (make-instance 'doot :poot 1))
-;; (defvar *doot2* (make-instance 'doot :poot 2))
-;; (defclass soot () ((soot :initarg :soot :accessor soot)))
-;; (defvar *soot* (make-instance 'soot :soot 1))
-;; (defvar *soot2* (make-instance 'soot :soot 2))
-
-
-;; (defvar *doot-list* (list *doot* *doot2* *soot* *soot2*))
-
-;; (member *doot* *doot-list* :test #'eq)
-;; (remove *doot2* *doot-list* :test #'eq)
