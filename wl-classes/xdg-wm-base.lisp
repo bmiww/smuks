@@ -17,6 +17,9 @@
   (let ((xdg-surface (wl:up-if 'xdg-surface surface id)))
     (setf (gethash id (xdg-surfaces xdg)) xdg-surface)))
 
+(defmethod xdg-wm-base:create-positioner ((xdg wm-base) id)
+  (wl:mk-if 'positioner xdg id))
+
 ;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
@@ -102,3 +105,44 @@ Supposed to answer with a configure event showing the new size."
 (defmethod xdg-toplevel:resize ((toplevel toplevel) seat serial edges)
   "A client wants to resize their window."
   (log! "xdg-toplevel:resize: Not implemented"))
+
+
+;; ┌─┐┌─┐┌─┐┬┌┬┐┬┌─┐┌┐┌┌─┐┬─┐
+;; ├─┘│ │└─┐│ │ ││ ││││├┤ ├┬┘
+;; ┴  └─┘└─┘┴ ┴ ┴└─┘┘└┘└─┘┴└─
+(defclass positioner (xdg-positioner:dispatch)
+  ((x :initform 0 :accessor x)
+   (y :initform 0 :accessor y)
+   (width :initform 0 :accessor width)
+   (height :initform 0 :accessor height)
+   (a-width :initform 0 :accessor a-width)
+   (a-height :initform 0 :accessor a-height)
+   (anchor :initform 'bottom :accessor anchor)
+   (gravity :initform 'top :accessor gravity)))
+
+(defmethod xdg-positioner:set-size ((positioner positioner) width height)
+  (setf (width positioner) width
+	(height positioner) height))
+
+(defmethod xdg-positioner:set-anchor-rect ((positioner positioner) x! y! width height)
+  (with-slots (x y a-width a-height) positioner
+  (setf x x!
+	y y!
+	a-width width
+	a-height height)))
+
+;; TODO: Finally do the enum stuff in cl-wl
+(defmethod xdg-positioner:set-anchor ((positioner positioner) anchor)
+  (setf (anchor positioner) (case anchor
+    (0 :none) (1 :top) (2 :bottom)
+    (3 :left) (4 :right) (5 :top-left)
+    (6 :top-right) (7 :bottom-left) (8 :bottom-right))))
+
+(defmethod xdg-positioner:set-gravity ((positioner positioner) gravity)
+  (setf (gravity positioner) (case gravity
+    (0 :none) (1 :top) (2 :bottom)
+    (3 :left) (4 :right) (5 :top-left)
+    (6 :top-right) (7 :bottom-left) (8 :bottom-right))))
+
+(defmethod xdg-positioner:set-constraint-adjustment ((positioner positioner) constraint)
+  (log! "xdg-positioner:set-constraint-adjustment: Not implemented"))
