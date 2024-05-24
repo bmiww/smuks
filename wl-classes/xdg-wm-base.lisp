@@ -20,6 +20,7 @@
 (defmethod xdg-wm-base:create-positioner ((xdg wm-base) id)
   (wl:mk-if 'positioner xdg id))
 
+
 ;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
@@ -34,6 +35,9 @@
       ;; TODO: One for maximized - get the enum stuff in order
     (xdg-toplevel:send-configure xdg (width xdg) (height xdg) '(1))
     (xdg-surface:send-configure xdg (incf (configure-serial xdg)))))
+
+(defmethod xdg-surface:get-popup ((xdg xdg-surface) id toplevel positioner)
+  (wl:up-if 'popup xdg id :toplevel toplevel :positioner positioner))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (setf (width xdg) width)
@@ -105,6 +109,14 @@ Supposed to answer with a configure event showing the new size."
   "A client wants to resize their window."
   (log! "xdg-toplevel:resize: Not implemented"))
 
+
+
+;; ┌─┐┌─┐┌─┐┬ ┬┌─┐
+;; ├─┘│ │├─┘│ │├─┘
+;; ┴  └─┘┴  └─┘┴
+(defclass popup (xdg-popup:dispatch xdg-surface)
+  ((toplevel :initarg :toplevel :accessor toplevel)
+   (positioner :initarg :positioner :accessor positioner)))
 
 ;; ┌─┐┌─┐┌─┐┬┌┬┐┬┌─┐┌┐┌┌─┐┬─┐
 ;; ├─┘│ │└─┐│ │ ││ ││││├┤ ├┬┘
