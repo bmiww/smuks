@@ -148,10 +148,11 @@ Or some such."
 
 (defmethod commit-shm-buffer ((surface surface))
   (commit-buffer surface
-    (with-slots (pool-ptr width height stride offset) (pending-buffer surface)
+    (with-slots (width height stride offset) (pending-buffer surface)
       (setf (texture surface)
 	    (sglutil:create-texture
-	     pool-ptr width height stride offset
+	     (pool-ptr (pending-buffer surface))
+	     width height stride offset
 	     texture))
       (setf (texture-type surface) :shm))))
 
