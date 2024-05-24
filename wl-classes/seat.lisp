@@ -166,8 +166,11 @@
 
 ;; TODO: PROTOCOL: If surface is nil - the pointer image should be hidden
 (defmethod wl-pointer:set-cursor ((pointer pointer) serial surface hotspot-x hotspot-y)
-  (change-class surface 'cursor)
-  (setf (x surface) hotspot-x (y surface) hotspot-y))
+  (if surface
+      (progn
+	(change-class surface 'cursor)
+	(setf (x surface) hotspot-x (y surface) hotspot-y))
+      (log! "UNIMPLEMENTED: hiding cursor via set-cursor")))
 
 
 ;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
