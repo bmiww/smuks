@@ -205,7 +205,6 @@
     ;; TODO: Fix this active-surface usage. You moved active-surface to a client seat
     ;; And this use case in general seems wrong (could be improved)
     ;; (if (active-surface (role surface))
-    (log! "⚠️ You did some magic with active-surface. The cursor is probably rendering wrong.")
     (progn
       (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height))
       (flush-frame-callbacks surface)

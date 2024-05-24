@@ -98,3 +98,7 @@ Supposed to answer with a configure event showing the new size."
   (log! "xdg-toplevel:unset-maximized: Not considered in great detail")
   (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) '(1))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
+
+(defmethod xdg-toplevel:resize ((toplevel toplevel) seat serial edges)
+  "A client wants to resize their window."
+  (log! "xdg-toplevel:resize: Not implemented"))
