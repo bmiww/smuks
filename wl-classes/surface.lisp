@@ -120,7 +120,7 @@ Or some such."
        (setf (height ,surface) (height (pending-buffer ,surface)))
        (setf new-dimensions? t))
 
-     (when new-dimensions? (gl:delete-texture (texture ,surface)))
+     (when (and new-dimensions? (texture ,surface)) (gl:delete-texture (texture ,surface)))
 
      ;; TODO: the texture here is implied and a bit annoying
      ;; Could add it as a reference in the macro args
