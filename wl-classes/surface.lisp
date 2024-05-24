@@ -127,6 +127,7 @@ Or some such."
      (let ((texture (unless new-dimensions? (texture ,surface))))
        ,@body)
 
+     (wl-buffer:send-release (pending-buffer surface))
      (setf (pending-buffer ,surface) nil)
      (setf (needs-redraw ,surface) t)))
 
@@ -154,8 +155,7 @@ Or some such."
 	     (pool-ptr (pending-buffer surface))
 	     width height stride offset
 	     texture))
-      (setf (texture-type surface) :shm)
-      (wl-buffer:send-release (pending-buffer surface)))))
+      (setf (texture-type surface) :shm))))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
