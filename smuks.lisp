@@ -200,8 +200,9 @@
   (let ((texture (texture surface))
 	(width (flo (width surface)))
 	(height (flo (height surface)))
-	(x (+ (flo (x surface)) (cursor-x *wayland*)))
-	(y (+ (flo (y surface)) (cursor-y *wayland*))))
+	(x (- (cursor-x *wayland*) (flo (x surface))))
+	(y (- (cursor-y *wayland*) (flo (y surface)))))
+
     ;; TODO: Fix this active-surface usage. You moved active-surface to a client seat
     ;; And this use case in general seems wrong (could be improved)
     ;; (if (active-surface (role surface))
