@@ -62,19 +62,27 @@
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;;  │ │ ││ ││  ├─┤  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;;  ┴ └─┘└─┘└─┘┴ ┴  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
+(defmethod orient-point ((display display) x y)
+  (case (orientation display)
+    (:landscape (values y (- (display-height display) x)))
+    (:portrait (- (display-width display) x))))
+
+
 (defmethod input ((display display) (type (eql :touch-down)) event)
   "Notify a client that a touch event has occured.
 Save the client as interested in the slot for later reference."
   (let* ((x (flo (touch@-x event)))
 	 (y (flo (touch@-y event)))
-	 (slot (touch@-seat-slot event))
-	 (surface (surface-at-coords display x y)))
-    (when surface
-      (let* ((client (wl:client surface))
-	     (seat (seat client)))
-	(when (seat-touch seat)
-	  (pushnew client (aref (touch-slot-interesses display) slot))
-	  (touch-down seat surface slot x y))))))
+	 (slot (touch@-seat-slot event)))
+
+    (setf (values x y) (orient-point display x y))
+    (let ((surface (surface-at-coords display x y)))
+      (when surface
+	(let* ((client (wl:client surface))
+	       (seat (seat client)))
+	  (when (seat-touch seat)
+	    (pushnew client (aref (touch-slot-interesses display) slot))
+	    (touch-down seat surface slot x y)))))))
 
 (defmethod input ((display display) (type (eql :touch-up)) event)
   "Notify all clients interested in the specific touch slot
@@ -93,6 +101,8 @@ and then clean the list out"
 	 (slot (touch@-seat-slot event))
 	 (clients (aref (touch-slot-interesses display) slot))
 	 (motiond? nil))
+
+    (setf (values x y) (orient-point display x y))
     (dolist (client clients)
       (when (seat-touch (seat client))
 	(setf motiond? t)
