@@ -154,7 +154,8 @@ Or some such."
 	     (pool-ptr (pending-buffer surface))
 	     width height stride offset
 	     texture))
-      (setf (texture-type surface) :shm))))
+      (setf (texture-type surface) :shm)
+      (wl-buffer:send-release (pending-buffer surface)))))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
