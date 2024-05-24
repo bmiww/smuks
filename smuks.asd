@@ -18,7 +18,8 @@
   :build-pathname "smuks"
   :entry-point "smuks::main"
   :around-compile (lambda (next)
-		    (when (uiop/os:getenv "DEBUG")
+		    (when (uiop/os:getenv "DEBUG_SMUKS")
+		      (format t "~%DEBUG_SMUKS is set~%")
 		      (proclaim '(optimize
                                   (safety 3)
                                   (debug 3)
