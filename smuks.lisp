@@ -49,10 +49,10 @@
 	   *wayland* *socket* *seat* *cursor* *iio*))
 
 (defun load-cursor-texture ()
-  (let* ((texture (gl:gen-texture))
+  (let* ((texture (sglutil:mk-tex))
 	 (image (png-read:read-png-file (merge-pathnames "assets/mouse.png" (asdf:system-source-directory :smuks))))
 	 (data (png-read:image-data image)))
-    (gl:bind-texture :texture-2d texture)
+    (gl:bind-texture :texture-2d (tex-id texture))
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
     (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
     (gl:tex-image-2d :texture-2d 0 :rgba
@@ -196,6 +196,7 @@
 ;; Affects pointer move/click/enter/leave
 ;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
 ;; So that the main loop can know if it should render the display cursor or not
+;; TODO: This is almost identical to render-toplevel, with the difference being the coordinates
 (defun render-cursor (surface)
   (let ((texture (texture surface))
 	(width (flo (width surface)))

@@ -34,6 +34,10 @@
     (t (format nil "Unsupported surface role: ~a" (type-of surface)))))
 
 (defmethod commit-toplevel ((surface surface))
+  (when (pending-damage surface)
+    (setf (damage surface) (pending-damage surface))
+    (setf (pending-damage surface) nil))
+
   (typecase (pending-buffer surface)
     (buffer (commit-shm-buffer surface))
     (dma-buffer (commit-dma-buffer surface)))
@@ -61,12 +65,15 @@
   (setf (frame-callbacks surface) nil))
 
 (defmethod wl-surface:damage ((surface surface) x y width height)
-  (setf (pending-damage surface) (make-damage :x x :y y :width width :height height)))
+  "Notify the compositor of a an area that needs to be redrawn.
+This request seems to be deprecated in favor of the damage-buffer request."
+  (log! "Old damage called")
+  (push (sglutil:make-damage :x x :y y :width width :height height) (pending-damage surface)))
 
 (defmethod wl-surface:damage-buffer ((surface surface) x y width height)
   "This damage method is the same as wl-surface:damage - with one difference.
 The damage coordinates are in buffer coordinates, not surface coordinates."
-  (log! "UNIMPLEMENTED: wl-surface:damage-buffer"))
+  (push (sglutil:make-damage :x x :y y :width width :height height) (pending-damage surface)))
 
 (defmethod wl-surface:set-opaque-region ((surface surface) region)
   "A hint to the region which should be considered more carefully for repaints.
@@ -123,7 +130,7 @@ Or some such."
        (setf (height ,surface) (height (pending-buffer ,surface)))
        (setf new-dimensions? t))
 
-     (when (and new-dimensions? (texture ,surface)) (gl:delete-texture (texture ,surface)))
+     (when (and new-dimensions? (texture ,surface)) (gl:delete-texture (sglutil:tex-id (texture ,surface))))
 
      ;; TODO: the texture here is implied and a bit annoying
      ;; Could add it as a reference in the macro args
@@ -157,18 +164,14 @@ Or some such."
 	    (sglutil:create-texture
 	     (pool-ptr (pending-buffer surface))
 	     width height stride offset
-	     texture))
+	     :damage (damage surface)
+	     :texture texture))
+      (setf (damage surface) nil)
       (setf (texture-type surface) :shm))))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
-(defstruct damage
-  (x 0)
-  (y 0)
-  (width 0)
-  (height 0))
-
 (defun class-is? (object class)
   (typep object class))
 

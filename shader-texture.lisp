@@ -109,7 +109,7 @@ void main() {
 	(gl:bind-vertex-array vao)
 
 	(gl:active-texture :texture0)
-	(gl:bind-texture :texture-2d texture)
+	(gl:bind-texture :texture-2d (tex-id texture))
 
 	(gl:tex-parameter :texture-2d :texture-min-filter :linear)
 	(gl:tex-parameter :texture-2d :texture-mag-filter :linear)
