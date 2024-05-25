@@ -69,9 +69,12 @@ The damage coordinates are in buffer coordinates, not surface coordinates."
   (log! "UNIMPLEMENTED: wl-surface:damage-buffer"))
 
 (defmethod wl-surface:set-opaque-region ((surface surface) region)
-  "Sets the region which should be considered more carefully for repaints.
-Basically client notifying the compositor that there are alpha < 1 pixels in this region"
-  (log! "UNIMPLEMENTED: Set opaque region"))
+  "A hint to the region which should be considered more carefully for repaints.
+Unimportant if there are no alpha < 1 pixels.
+Can help to identify that theres no point in rendering something behind this region.
+This hint could perhaps ignore the alpha channel.
+SMUKS: I'm not going to consider it for now, since i'm building tiling, and overlaps shouldn't be a focus."
+  )
 
 ;; TODO: This one is meaningful for me - for now i'm sending all events to the client
 (defmethod wl-surface:set-input-region ((surface surface) region)
