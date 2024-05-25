@@ -147,6 +147,39 @@
 			    (case state (:pressed 1) (:released 0)))
     (pointer-frame seat)))
 
+(defmethod pointer-scroll-stop ((seat seat) axis)
+  (let* ((seat-mouse (seat-mouse seat))
+	 (surface (active-surface seat)))
+    (unless surface (error "No active surface for pointer scroll stop"))
+    (wl-pointer:send-axis-stop seat-mouse (get-ms) axis)
+    (pointer-frame seat)))
+
+(defmethod pointer-scroll-finger ((seat seat) dx dy)
+  (let* ((seat-mouse (seat-mouse seat))
+	 (surface (active-surface seat)))
+    (when surface
+      (if dx
+	  (progn
+	    (wl-pointer:send-axis-source seat-mouse 1)
+	    (wl-pointer:send-axis seat-mouse (get-ms) 0 dx))
+	  (progn
+	    (wl-pointer:send-axis-source seat-mouse 1)
+	    (pointer-scroll-stop seat 0)))
+
+
+      (if dy
+	  (progn
+	    (wl-pointer:send-axis-source seat-mouse 1)
+	    (wl-pointer:send-axis seat-mouse (get-ms) 1 dy))
+	  (progn
+	    (wl-pointer:send-axis-source seat-mouse 1)
+	    (pointer-scroll-stop seat 1)))
+
+      ;; TODO: One stands for finger
+      ;; Do the damn enums for wl
+      (wl-pointer:send-frame seat-mouse))))
+
+
 (defmethod pointer-frame ((seat seat))
   (wl-pointer:send-frame (seat-mouse seat)))
 

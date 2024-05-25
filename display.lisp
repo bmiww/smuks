@@ -191,6 +191,16 @@ and then clean the list out"
 	(pointer-button seat button state)))))
 
 
+(defmethod input ((display display) (type (eql :pointer-axis)) event)
+  "This is deprecated in libinput >1.19. Therefore ignorable.")
+
+(defmethod input ((display display) (type (eql :pointer-scroll-finger)) event)
+  (let* ((surface (surface-at-coords display (cursor-x display) (cursor-y display))))
+    (when surface
+      (let* ((client (wl:client surface)) (seat (seat client)))
+	(pointer-scroll-finger seat (pointer-scroll-finger@-dy event) (pointer-scroll-finger@-dx event))))))
+
+
 ;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐
 ;; ├┴┐├┤ └┬┘├┴┐│ │├─┤├┬┘ ││
 ;; ┴ ┴└─┘ ┴ └─┘└─┘┴ ┴┴└──┴┘
