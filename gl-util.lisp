@@ -54,16 +54,15 @@
 
 ;; TODO: Make this be based off of the used format
 (defvar *pixel-size* 4)
-(defun damage-pointer (ptr dmg offset width)
+(defun damage-pointer (ptr dmg width)
   (cffi:inc-pointer
    ptr
    (* (+ (* (damage-y dmg) width)
-	 offset
 	 (damage-x dmg))
       *pixel-size*)))
 
 ;; TODO: Possibly move this closer to the GL code
-(defun create-texture (ptr width height stride offset &key damage texture)
+(defun create-texture (ptr width height stride &key damage texture)
   (let ((texture (or texture (mk-tex)))
 	;; TODO: This math is a bit wasteful. But without this - evil clients could crash the server
 	;; TODO: Could instead do bounds checking during the damage event. Applying (min and max)
@@ -79,20 +78,20 @@
     (if (and damage (tex-initd texture))
 	;; NOTE: Partial texture upload - only update the damaged areas
 	(loop for dmg in damage
-	      for pointy = (damage-pointer ptr dmg offset width)
+	      for pointy = (damage-pointer ptr dmg width)
 	      do (if (< (cffi:pointer-address pointy) (cffi:pointer-address ptr-max))
-		     (progn
-		       (gl:tex-sub-image-2d :texture-2d 0
-					    (damage-x dmg) (damage-y dmg)
-					    (damage-width dmg) (damage-height dmg)
-					    :rgba :unsigned-byte
-					    pointy))
-		     (log! "Texture damage rectangle out of bounds, skipping. Otherwise this would memory corrupt.")))
+		     (gl:tex-sub-image-2d
+		      :texture-2d 0
+		      (damage-x dmg) (damage-y dmg)
+		      (damage-width dmg) (damage-height dmg)
+		      :rgba :unsigned-byte
+		      pointy)
+		     (log! "⚠️:Texture damage rectangle out of bounds, skipping. Otherwise this would memory corrupt.")))
 	;; NOTE: Full texture upload
 	(progn
 	  (gl:tex-image-2d :texture-2d 0 :rgba width height
 			   0 :rgba :unsigned-byte
-			   (cffi:inc-pointer ptr offset))
+			   ptr)
 	  (setf (tex-initd texture) t)))
 
     texture))

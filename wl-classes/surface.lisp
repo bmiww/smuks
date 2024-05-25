@@ -67,7 +67,6 @@
 (defmethod wl-surface:damage ((surface surface) x y width height)
   "Notify the compositor of a an area that needs to be redrawn.
 This request seems to be deprecated in favor of the damage-buffer request."
-  (log! "Old damage called")
   (push (sglutil:make-damage :x x :y y :width width :height height) (pending-damage surface)))
 
 (defmethod wl-surface:damage-buffer ((surface surface) x y width height)
@@ -159,11 +158,11 @@ Or some such."
 
 (defmethod commit-shm-buffer ((surface surface))
   (commit-buffer surface
-    (with-slots (width height stride offset) (pending-buffer surface)
+    (with-slots (width height stride) (pending-buffer surface)
       (setf (texture surface)
 	    (sglutil:create-texture
 	     (pool-ptr (pending-buffer surface))
-	     width height stride offset
+	     width height stride
 	     :damage (damage surface)
 	     :texture texture))
       (setf (damage surface) nil)
