@@ -110,6 +110,11 @@ Supposed to answer with a configure event showing the new size."
   (log! "xdg-toplevel:resize: Not implemented"))
 
 
+(defmethod xdg-toplevel:unset-fullscreen ((toplevel toplevel))
+  "A client wants to unset fullscreen state."
+  (log! "xdg-toplevel:unset-fullscreen: Not implemented"))
+
+
 
 ;; ┌─┐┌─┐┌─┐┬ ┬┌─┐
 ;; ├─┘│ │├─┘│ │├─┘

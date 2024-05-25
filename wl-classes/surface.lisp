@@ -101,6 +101,11 @@ of the screen rotation - it can rotate the buffer itself and save the compositor
 Or some such."
   (log! "UNIMPLEMENTED: Set buffer transform"))
 
+(defmethod wl-surface:offset ((surface surface) x y)
+  "Sets the offset of the surface."
+  (log! "UNIMPLEMENTED: Set offset"))
+
+
 
 (defmethod in-bounds ((surface surface) x y)
   (and (<= (x surface) x (+ (x surface) (width surface)))
