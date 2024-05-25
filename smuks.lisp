@@ -18,6 +18,9 @@
 (defvar *iio* nil)
 (defvar *orientation* nil)
 (defvar *shaders* nil)
+(defvar *enable-frame-counter* t)
+(defvar *frame-counter* 0)
+(defvar *frame-counter-thread* nil)
 (defnil
     *socket* *smuks-exit* *frame-ready*
   *framebuffer* *active-crtc*
@@ -30,6 +33,8 @@
   *test-app*)
 
 (defun cleanup ()
+  (disable-frame-counter)
+
   (when *iio* (cleanup-iio *iio*))
   (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
   (when (and *drm* *framebuffer*) (sdrm:rm-framebuffer *drm* *framebuffer*))
@@ -178,8 +183,6 @@
      (log! "Starting the accelerometer poller. Waiting for accelerometer events...")
      (setf *accelerometer-poller* (accelerometer-listener))
 
-     ;; (setf *test-app* (test-app "weston-simple-shm"))
-
      (recursively-render-frame))))
 
 (defun main ()
@@ -284,7 +287,8 @@
     ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
     ;; Any events or changes that i could instead attach to?
     ;; Maybe instead use per client flushes - for example when receiving commit from them
-    (wl:flush-clients *wayland*)))
+    (wl:flush-clients *wayland*)
+    (when *enable-frame-counter* (incf *frame-counter*))))
 
 (defun determine-orientation (orient)
   (let ((current-orient *orientation*))
@@ -443,6 +447,23 @@
 ;; Can be called from repl to stop the compositor
 (defun shutdown () (setf *smuks-exit* t))
 
+(defun disable-frame-counter ()
+  (when *frame-counter-thread*
+    (bt:destroy-thread *frame-counter-thread*)
+    (setf
+     *enable-frame-counter* nil
+     *frame-counter* 0
+     *frame-counter-thread* nil)))
+
+(defun enable-frame-counter ()
+  (setf *enable-frame-counter* t)
+  (setf *frame-counter* 0)
+  (setf *frame-counter-thread*
+	(bt:make-thread
+	 (lambda ()
+	   (loop do (sleep 1)
+		 do (log! (format nil "Frames: ~a" *frame-counter*))
+		 do (setf *frame-counter* 0))))))
 
 ;; ┬ ┬┌─┐┌─┐┬┌─┌─┐
 ;; ├─┤├─┤│  ├┴┐└─┐
