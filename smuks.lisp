@@ -90,34 +90,6 @@
   (setf *texture-shader* (shader-init:create-texture-shader *drm*))
   `(,*rect-shader* ,*texture-shader*))
 
-
-;; TODO: This is very incomplete.
-;; Lots of fake stuff here
-;; Everything is based on the SINGLE crtc that i enable
-;; Real width/height are just width/height - should be mm of real screen size
-;; X/Y are just 0,0 - since i'm only handling one screen
-(defun init-output ()
-  (let ((crtc (sdrm::crtc *drm*)))
-    (make-instance 'output-global :display *wayland* :dispatch-impl 'output
-		      :x 0 :y 0
-		      :width (drm::crtc!-width crtc) :height (drm::crtc!-height crtc)
-		      :real-width (drm::crtc!-width crtc) :real-height (drm::crtc!-height crtc)
-		      :refresh-rate (getf (drm::crtc!-mode crtc) 'drm::vrefresh)
-		      :make "TODO: Fill out make" :model "TODO: Fill out model")))
-
-;; TODO: Part of display init?
-(defun init-globals ()
-  ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
-  (make-instance 'wl-compositor:global :display *wayland* :dispatch-impl 'compositor)
-  (make-instance 'wl-subcompositor:global :display *wayland* :dispatch-impl 'subcompositor)
-  (make-instance 'shm-global :display *wayland* :dispatch-impl 'shm)
-  (make-instance 'seat-global :display *wayland* :dispatch-impl 'seat)
-  (make-instance 'wl-data-device-manager:global :display *wayland* :dispatch-impl 'dd-manager)
-  (make-instance 'xdg-wm-base:global :display *wayland* :dispatch-impl 'wm-base)
-  (make-instance 'dmabuf-global :display *wayland* :dispatch-impl 'dmabuf)
-  (init-output))
-
-
 (defun mainer ()
   (setf *log-output* *standard-output*)
   (setf *frame-ready* t)
@@ -166,7 +138,7 @@
   (setf *udev* (udev:udev-new))
   (setf *udev-monitor* (udev:monitor-udev *udev*))
 
-  (init-globals)
+  (init-globals *wayland* *drm*)
 
   ;; TODO: You might be able to remove the *active-crtc* indirection.
   ;; At least it's not really used elsewwhere
