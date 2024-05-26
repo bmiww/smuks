@@ -26,6 +26,7 @@
                                   (speed 0))))
 		    (funcall next))
   :depends-on (#:cl-drm ;; TODO: Add to my own distribution
+	       #:cl-udev ;; TODO: Add to my own distribution
 	       #:cl-opengl ;; TODO: Add to my own distribution
 	       #:cl-egl ;; TODO: Add to my own distribution
 	       #:cl-gbm ;; TODO: Add to my own distribution

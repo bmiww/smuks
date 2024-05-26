@@ -21,6 +21,9 @@
 (defvar *enable-frame-counter* t)
 (defvar *frame-counter* 0)
 (defvar *frame-counter-thread* nil)
+(defvar *udev* nil)
+(defvar *udev-monitor* nil)
+
 (defnil
     *socket* *smuks-exit* *frame-ready*
   *framebuffer* *active-crtc*
@@ -29,6 +32,7 @@
   *gl-frame-buffer*
   *rect-shader* *texture-shader* *cursor*
   *client-poller* *wl-poller* *drm-poller* *input-poller* *seat-poller* *device-poller* *accelerometer-poller*
+  *udev-poller*
 
   *test-app*)
 
@@ -114,7 +118,6 @@
   (init-output))
 
 
-
 (defun mainer ()
   (setf *log-output* *standard-output*)
   (setf *frame-ready* t)
@@ -132,7 +135,6 @@
   ;; If the 0 was a timeout, we could also give it a value
   (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
 
-  ;; TODO: Can sometimes fail when running main anew in the same lisp image
   (setf *drm* (init-drm))
   (setf *socket* (init-socket))
   (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
@@ -143,6 +145,7 @@
 		     ;; This dev-t is probably rather wrong - since client apps probably can't use card0/card1
 		     ;; But instead should be notified of the render nodes renderD128 and so on
 		     ;; But it might also match main-device proper
+		     ;; It could also be interesting to have more than one dev-t.
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
 			      :display-width (width *drm*)
 			      :display-height (height *drm*)))
@@ -150,6 +153,7 @@
 
   (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
+
   (setf *egl-image* (create-egl-image *egl* (framebuffer-buffer *framebuffer*) (width *drm*) (height *drm*)))
 
   (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
@@ -158,6 +162,9 @@
 
   (setf *iio* (init-libiio))
   (determine-orientation (enable-accelerometer-scan *iio*))
+
+  (setf *udev* (udev:udev-new))
+  (setf *udev-monitor* (udev:monitor-udev *udev*))
 
   (init-globals)
 
@@ -174,14 +181,16 @@
      (setf *client-poller* (client-listener))
      (log! "Starting wayland event loop listener. Waiting for events...")
      (setf *wl-poller* (wayland-listener))
-     (log! "Starting event node watch poller. Waiting for device changes...")
-     (setf *device-poller* (notify-listener))
+     ;; (log! "Starting event node watch poller. Waiting for device changes...")
+     ;; (setf *device-poller* (notify-listener))
      (log! "Starting input event poller. Waiting for user inputs...")
      (setf *input-poller* (input-listener))
      (log! "Starting the umpeenth poller. Now for seat events...")
      (setf *seat-poller* (seat-listener))
      (log! "Starting the accelerometer poller. Waiting for accelerometer events...")
      (setf *accelerometer-poller* (accelerometer-listener))
+     (log! "Starting the udev poller. Waiting for udev events...")
+     (setf *udev-poller* (udev-listener))
 
      (recursively-render-frame))))
 
@@ -335,22 +344,43 @@
 (defun input-listener () (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable)))
 (defun seat-listener () (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable)))
 (defun accelerometer-listener () (cl-async:poll (accelerometer-fd *iio*) 'accelerometer-callback :poll-for '(:readable)))
+;; TODO: Depending on what you figure out in the udev monitor - might be able to get rid of inotify here
 (defun notify-listener ()
   (notify::init)
   (notify:watch "/dev/input/" :events '(:create :delete))
   (cl-async:poll notify::*fd* 'notify-callback :poll-for '(:readable)))
+(defun udev-listener ()
+  ;; (udev:monitor-add-match-subsystem *udev* "drm")
+  ;; (udev:monitor-add-match-subsystem *udev* "input")
+  ;; (udev:monitor-add-match-subsystem *udev* "iio")
+  (udev::%monitor-enable-receiving *udev-monitor*)
+  (cl-async:poll (udev:get-fd *udev-monitor*) 'udev-callback :poll-for '(:readable)))
 
 ;; Slightly annoying callbacks
 (defun ready (ev) (member :readable ev))
 (defun wayland-callback (ev) (when (ready ev) (handle-wayland-event)))
 (defun input-callback (ev) (when (ready ev) (smuks::dispatch *libinput* 'handle-input)))
-(defun notify-callback (ev) (when (ready ev) (notify::process 'device-change)))
+(defun notify-callback (ev) (when (ready ev) (notify::process 'process-inotify)))
 (defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm*) :page-flip 'set-frame-ready)))
 (defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
 (defun accelerometer-callback (ev) (when (ready ev) (determine-orientation (read-accelerometer *iio*))))
 (defun client-callback (ev)
   (when (ready ev)
     (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
+
+(defun udev-callback (ev)
+  (when (ready ev)
+    (loop for dev = (udev:receive-device *udev-monitor*)
+	  while dev
+	  do (progn
+	       (if (and (string= (udev:dev-subsystem dev) "drm")
+			(string= (udev:dev-sys-name dev) "card0"))
+		   (progn (sleep 0.5) (handle-drm-device-event dev))
+		   (print dev))))))
+
+(defun handle-drm-device-event (dev)
+  (declare (ignore dev))
+  (sdrm::recheck-resources *drm*))
 
 (defun handle-input (event) (input *wayland* (event-type event) event))
 
@@ -365,13 +395,17 @@
   (declare (ignore a b c d e))
   (setf *frame-ready* t))
 
-(defun device-change (path change)
-  (let ((path (namestring path)))
-    (when (str:contains? "/event" path)
-      (case change
+(defun process-inotify (path change)
+  (let ((stringy-path (namestring path)))
+    (cond
+      ;; ((str:contains? "/event" stringy-path) (process-device-change path change)))))
+      ((str:contains? "/event" stringy-path) (log! "You disabled device change processing. Because you are a coward.")))))
+
+(defun process-device-change (path change)
+  (case change
 	(:create (add-device *libinput* path))
 	(:delete (rem-device *libinput* path))
-	(t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change))))))
+	(t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change))))
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
@@ -480,6 +514,8 @@
     ((cffi:pointer-eq (cl-async::poller-c *client-poller*) handle) (cl-async:free-poller *client-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *input-poller*) handle) (cl-async:free-poller *input-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *accelerometer-poller*) handle) (cl-async:free-poller *accelerometer-poller*))
+    ((cffi:pointer-eq (cl-async::poller-c *udev-poller*) handle) (cl-async:free-poller *udev-poller*))
+
     ((cffi:pointer-eq (cl-async::poller-c *device-poller*) handle)
      (notify:shutdown)
      (cl-async:free-poller *device-poller*))

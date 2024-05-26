@@ -56,6 +56,10 @@
       (setf (height device) (drm::crtc!-height valid)))))
 
 
+(defmethod recheck-resources ((device gbm-device))
+  ;; (let* ((resources  (setf (resources device) (drm:get-resources (fd device)))))))
+  (drm:get-resources (fd device)))
+
 
 ;; TODO: Free connector is expecting a pointer
 ;; but receiving a full connector structure
@@ -86,22 +90,22 @@
 		   framebuffer
 		   0 0
 		   (list (drm::connector!-id connector))
-		   ;; TODO: I'm using the pointer to all the modes in hopes that i the first one is valid
-		   ;; And that set-crtc will read exactly the first one
-		   modes)))
+		   ;; TODO: Using the first mode.
+		   ;; Not yet checking if the mode is valid at all
+		   (car modes))))
       (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))
       crtc)))
 
 ;; TODO: Iterate cards - but actually check their capabilities.
 ;; TODO: Could also combine with render card capability reading
 ;; TODO: Figure out the stupid style warning - it doesnt affect anything so far, but annoys me
+;; TODO: Mesa drm has a function to get the devices and then read their capabilities
 (defun init-drm ()
   (let* ((card (loop for i from 0 below 32
 		     for path = (format nil "/dev/dri/card~A" i)
 		     when (probe-file path) return path))
 	 (fd (open card :direction :io :if-exists :append)))
     (make-instance 'gbm-device :file fd)))
-
 
 (defun drm-page-flip (drm-dev framebuffer)
   (let* ((result (- (drm::mode-page-flip (fd drm-dev)
