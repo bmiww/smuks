@@ -44,11 +44,31 @@
    (fb :initarg :fb :accessor fb)
    (connector :initarg :connector :accessor connector)
    (egl-image :accessor egl-image)
-   (mode :initarg :mode :accessor mode)))
+   (mode :initarg :mode :accessor mode)
+   (crtc :initarg :crtc :accessor crtc)))
 
 (defmethod width ((screen screen)) (drm:mode-hdisplay (mode screen)))
 (defmethod height ((screen screen)) (drm:mode-vdisplay (mode screen)))
 (defmethod connector-type ((screen screen)) (drm:connector!-connector-type (connector screen)))
+(defmethod set-crtc ((screen screen) crtc)
+  ())
+
+(defmethod set-crtc ((device gbm-device) framebuffer)
+  (let* ((crtc (crtc device))
+	 (connector (car (connected-connectors device)))
+	 (modes (drm::connector!-modes connector)))
+
+    (let ((result (drm:set-crtc
+		   (fd device)
+		   (drm::crtc!-id crtc)
+		   framebuffer
+		   0 0
+		   (list (drm::connector!-id connector))
+		   ;; TODO: Using the first mode.
+		   ;; Not yet checking if the mode is valid at all
+		   (car modes))))
+      (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))
+      crtc)))
 
 ;; (defmethod create-egl-image ((screen screen) egl)
   ;; )
@@ -128,6 +148,7 @@
 
   (init-globals *wayland* *drm*)
 
+  (set-crtc *first* )
   (set-crtc *drm* (fb *first*))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
@@ -329,7 +350,7 @@
 (defun wayland-callback (ev) (when (ready ev) (handle-wayland-event)))
 (defun input-callback (ev) (when (ready ev) (smuks::dispatch *libinput* 'handle-input)))
 (defun notify-callback (ev) (when (ready ev) (notify::process 'process-inotify)))
-(defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm*) :page-flip 'set-frame-ready)))
+(defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm*) :page-flip2 'set-frame-ready)))
 (defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
 (defun accelerometer-callback (ev) (when (ready ev) (determine-orientation (read-accelerometer *iio*))))
 (defun client-callback (ev)
@@ -359,8 +380,10 @@
       (error "Error in wayland event loop dispatch: ~A" result))))
 
 
-(defun set-frame-ready (a b c d e)
-  (declare (ignore a b c d e))
+(defun set-frame-ready (a b c d crtc-id f)
+  (declare (ignore a b c d f))
+  ;; (log! "Arguments: ~A ~A ~A ~A ~A ~A" a b c d crtc-id f)
+  ;; (log! "crtc: ~a" crtc-id)
   (setf *frame-ready* t))
 
 (defun process-inotify (path change)
