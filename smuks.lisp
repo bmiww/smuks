@@ -23,10 +23,12 @@
 (defvar *frame-counter-thread* nil)
 (defvar *udev* nil)
 (defvar *udev-monitor* nil)
+(defvar *screen-tracker* nil)
+;; TODO: Only for refactoring - remove when handling multiple screens
+(defvar *first* nil)
 
 (defnil
     *socket* *smuks-exit* *frame-ready*
-  *framebuffer*
   *libinput* *seat*
   *egl* *egl-context* *egl-image*
   *gl-frame-buffer*
@@ -35,6 +37,44 @@
   *udev-poller*
 
   *test-app*)
+
+;; screen
+(defclass screen ()
+  ((buffer :initarg :buffer :accessor buffer)
+   (fb :initarg :fb :accessor fb)
+   (connector :initarg :connector :accessor connector)
+   (egl-image :accessor egl-image)
+   (mode :initarg :mode :accessor mode)))
+
+(defmethod width ((screen screen)) (drm:mode-hdisplay (mode screen)))
+(defmethod height ((screen screen)) (drm:mode-vdisplay (mode screen)))
+(defmethod connector-type ((screen screen)) (drm:connector!-connector-type (connector screen)))
+
+;; (defmethod create-egl-image ((screen screen) egl)
+  ;; )
+
+;; screen-tracker
+;; TODO: Maybe this can also have egl in it?
+(defclass screen-tracker ()
+  ((drm :initarg :drm :accessor drm)
+   (screens :initform nil :accessor screens)))
+
+(defmethod initialize-instance :after ((tracker screen-tracker) &key drm)
+  (let ((connectors (connectors drm)))
+    (setf (screens tracker)
+	  (loop for connector in connectors
+		for fb-obj = (create-connector-framebuffer drm connector)
+		collect (make-instance 'screen
+			   :connector connector
+			   :buffer (framebuffer-buffer fb-obj)
+			   :fb (framebuffer-id fb-obj)
+			   :mode (framebuffer-mode fb-obj))))))
+
+;; TODO: Get rid of this - this is compat during refactoring
+(defmethod testie ((tracker screen-tracker)) (first (screens tracker)))
+
+;; NOTE: I'll maybe use this to identify my tablet screen for the sake of associating touch or accelerometer events with it.
+(defmethod dsi-screen ((tracker screen-tracker)) (find-if (lambda (screen) (eq (connector-type screen) :dsi)) (screens tracker)))
 
 (defun mainer ()
   (setf *log-output* *standard-output*)
@@ -54,10 +94,12 @@
   (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
 
   (setf *drm* (init-drm))
+  (setf *screen-tracker* (make-instance 'screen-tracker :drm *drm*))
+  ;; TODO: Only for refactoring - remove when handling multiple screens
+  (setf *first* (testie *screen-tracker*))
+
   (setf *socket* (init-socket))
   (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
-
-  (setf *framebuffer* (sdrm:default-framebuffer *drm*))
 
   (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
 		     ;; This dev-t is probably rather wrong - since client apps probably can't use card0/card1
@@ -65,14 +107,14 @@
 		     ;; But it might also match main-device proper
 		     ;; It could also be interesting to have more than one dev-t.
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
-			      :display-width (width *drm*)
-			      :display-height (height *drm*)))
+			      :display-width (width *first*)
+			      :display-height (height *first*)))
 
 
   (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
 
-  (setf *egl-image* (create-egl-image *egl* (framebuffer-buffer *framebuffer*) (width *drm*) (height *drm*)))
+  (setf *egl-image* (create-egl-image *egl* (buffer *first*) (width *first*) (height *first*)))
 
   (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
   (setf *cursor* (load-cursor-texture))
@@ -86,7 +128,7 @@
 
   (init-globals *wayland* *drm*)
 
-  (set-crtc *drm* (framebuffer-id *framebuffer*))
+  (set-crtc *drm* (fb *first*))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
   (cl-async:start-event-loop
@@ -216,7 +258,7 @@
     ;; TODO: Wasteful - also - didn't really help much at the moment.
     ;; Try to bring it back inside the *frame-ready* check
     (handler-case
-	(drm-page-flip *drm* (framebuffer-id *framebuffer*))
+	(drm-page-flip *drm* (fb *first*))
       (error (err) (declare (ignore err)) ()))
 
     ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
@@ -446,7 +488,7 @@
     texture))
 
 (defun init-shaders ()
-  (prep-gl-implementation (framebuffer-id *framebuffer*) (width *drm*) (height *drm*))
+  (prep-gl-implementation (fb *first*) (width *drm*) (height *drm*))
   (setf *rect-shader* (shader-init:create-rect-shader *drm*))
   (setf *texture-shader* (shader-init:create-texture-shader *drm*))
   `(,*rect-shader* ,*texture-shader*))
@@ -455,8 +497,10 @@
   (disable-frame-counter)
 
   (when *iio* (cleanup-iio *iio*))
+  ;; TODO: Before cleaning up *egl* clean up screen-tracker
   (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
-  (when (and *drm* *framebuffer*) (sdrm:rm-framebuffer *drm* *framebuffer*))
+  ;; TODO: Before cleaning up *drm* clean up screen-tracker
+  (when (and *drm* *first*) (sdrm:rm-framebuffer! *drm* (fb *first*) (buffer *first*)))
 
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
   (when *drm* (sdrm:close-drm *drm*))
@@ -469,7 +513,7 @@
     (unix-sockets:close-unix-socket *socket*)
     (delete-file +socket-file+))
 
-  (setfnil *egl* *egl-context* *egl-image* *drm* *framebuffer* *smuks-exit*
+  (setfnil *egl* *egl-context* *egl-image* *drm* *smuks-exit*
 	   *wayland* *socket* *seat* *cursor* *iio*))
 
 ;; ┬ ┬┌─┐┌─┐┬┌─┌─┐

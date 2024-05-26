@@ -9,7 +9,9 @@
    close-drm
 
    add-framebuffer rm-framebuffer default-framebuffer
-   framebuffer-id framebuffer-buffer
+   framebuffer-id framebuffer-buffer framebuffer-mode rm-framebuffer!
+
+   create-connector-framebuffer
 
    free-crtc set-crtc
    create-bo destroy-bo
@@ -120,16 +122,39 @@
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐┌┐ ┬ ┬┌─┐┌─┐┌─┐┬─┐
 ;; ├┤ ├┬┘├─┤│││├┤ ├┴┐│ │├┤ ├┤ ├┤ ├┬┘
 ;; └  ┴└─┴ ┴┴ ┴└─┘└─┘└─┘└  └  └─┘┴└─
-;; NOTE: For now - since we have a 1:1 mapping between how i use the buffer and the framebuffer
-;; I'll store them together
-(defstruct framebuffer id buffer)
+(defstruct framebuffer id buffer mode)
 
 (defvar *bo-flags* (logior gbm::BO_USE_SCANOUT gbm::BO_USE_RENDERING))
-(defun create-bo (device)
-  (gbm:bo-create (gbm-pointer device) (width device) (height device) gbm::FORMAT_XRGB8888 *bo-flags*))
 
+(defun create-bo! (device width height) (gbm:bo-create (gbm-pointer device) width height gbm::FORMAT_XRGB8888 *bo-flags*))
 (defun destroy-bo (buffer-object) (check-err (gbm:bo-destroy buffer-object)))
 
+;; TODO: Figure out bpp. For now, just hardcoding it
+;; TODO: Figure out depth. For now, just hardcoding it
+(defun create-connector-framebuffer (device connector)
+  "By default uses the first available mode"
+  (let* ((mode (car (drm::connector!-modes connector)))
+	 (width (drm:mode-hdisplay mode))
+	 (height (drm:mode-vdisplay mode))
+	 (buffer-object (create-bo! device width height))
+	 (bpp 32) (depth 24))
+    (make-framebuffer :id (add-framebuffer (fd device) width height depth bpp
+					   (gbm:bo-get-stride buffer-object)
+					   (gbm:bo-get-handle buffer-object))
+		      :buffer buffer-object
+		      :mode mode)))
+
+(defun rm-framebuffer! (device fb buffer)
+  (destroy-bo buffer)
+  (check-err (drm::mode-remove-framebuffer (fd device) fb)))
+
+
+
+;; ┌┬┐┬─┐┌─┐┌─┐┬ ┬
+;;  │ ├┬┘├─┤└─┐├─┤
+;;  ┴ ┴└─┴ ┴└─┘┴ ┴
+;; TODO: Remove these
+;; TODO: Get rid of this. Favor create-connector-framebuffer
 (defun default-framebuffer (device)
   (let* ((buffer-object (create-bo device))
 	 (width (width device))
@@ -140,6 +165,11 @@
     (make-framebuffer :id (add-framebuffer (fd device) width height depth bpp stride handle)
 		      :buffer buffer-object)))
 
+;; TODO: Get rid of this. For now favor rm-framebuffer!. Albeit it also still isn't perfect
 (defun rm-framebuffer (device framebuffer)
   (destroy-bo (framebuffer-buffer framebuffer))
   (check-err (drm::mode-remove-framebuffer (fd device) (framebuffer-id framebuffer))))
+
+;; TODO: Get rid of this. Favor create-bo!
+(defun create-bo (device)
+  (gbm:bo-create (gbm-pointer device) (width device) (height device) gbm::FORMAT_XRGB8888 *bo-flags*))
