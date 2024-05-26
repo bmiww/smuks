@@ -26,7 +26,7 @@
 
 (defnil
     *socket* *smuks-exit* *frame-ready*
-  *framebuffer* *active-crtc*
+  *framebuffer*
   *libinput* *seat*
   *egl* *egl-context* *egl-image*
   *gl-frame-buffer*
@@ -35,60 +35,6 @@
   *udev-poller*
 
   *test-app*)
-
-(defun cleanup ()
-  (disable-frame-counter)
-
-  (when *iio* (cleanup-iio *iio*))
-  (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
-  (when (and *drm* *framebuffer*) (sdrm:rm-framebuffer *drm* *framebuffer*))
-
-  (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
-  (when *drm* (sdrm:close-drm *drm*))
-
-  (when *wayland* (wl:destroy *wayland*))
-
-  (when *seat* (libseat:close-seat *seat*))
-
-  (when *socket*
-    (unix-sockets:close-unix-socket *socket*)
-    (delete-file +socket-file+))
-
-  (setfnil *egl* *egl-context* *egl-image* *drm* *framebuffer* *smuks-exit* *active-crtc*
-	   *wayland* *socket* *seat* *cursor* *iio*))
-
-(defun load-cursor-texture ()
-  (let* ((texture (sglutil:mk-tex))
-	 (image (png-read:read-png-file (merge-pathnames "assets/mouse.png" (asdf:system-source-directory :smuks))))
-	 (data (png-read:image-data image)))
-    (gl:bind-texture :texture-2d (tex-id texture))
-    (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
-    (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
-    (gl:tex-image-2d :texture-2d 0 :rgba
-		     (png-read:width image) (png-read:height image)
-		     0 :rgba :unsigned-byte (make-array
-					     (array-total-size data)
-					     :element-type '(unsigned-byte 8)
-					     :displaced-to data))
-    texture))
-
-
-(defun recursively-render-frame ()
-  (if *smuks-exit*
-      (cl-async:exit-event-loop)
-      (restart-case
-	  (progn
-	    (render-frame)
-	    (cl-async:delay 'recursively-render-frame :time 0.016))
-	(skip-frame ()
-	  :report "Skip frame"
-	  (cl-async:delay 'recursively-render-frame :time 0.016)))))
-
-(defun init-shaders ()
-  (prep-gl-implementation (framebuffer-id *framebuffer*) (width *drm*) (height *drm*))
-  (setf *rect-shader* (shader-init:create-rect-shader *drm*))
-  (setf *texture-shader* (shader-init:create-texture-shader *drm*))
-  `(,*rect-shader* ,*texture-shader*))
 
 (defun mainer ()
   (setf *log-output* *standard-output*)
@@ -140,9 +86,7 @@
 
   (init-globals *wayland* *drm*)
 
-  ;; TODO: You might be able to remove the *active-crtc* indirection.
-  ;; At least it's not really used elsewwhere
-  (unless *active-crtc* (setf *active-crtc* (set-crtc *drm* (framebuffer-id *framebuffer*))))
+  (set-crtc *drm* (framebuffer-id *framebuffer*))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
   (cl-async:start-event-loop
@@ -153,6 +97,7 @@
      (setf *client-poller* (client-listener))
      (log! "Starting wayland event loop listener. Waiting for events...")
      (setf *wl-poller* (wayland-listener))
+     ;; TODO: Might be replacable with the udev-poller/listener
      ;; (log! "Starting event node watch poller. Waiting for device changes...")
      ;; (setf *device-poller* (notify-listener))
      (log! "Starting input event poller. Waiting for user inputs...")
@@ -176,8 +121,17 @@
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐
 ;; ├┤ ├┬┘├─┤│││├┤
 ;; └  ┴└─┴ ┴┴ ┴└─┘
-;; TODO: Pointer coordinates are not matching the display coordinates
-;; Affects pointer move/click/enter/leave
+(defun recursively-render-frame ()
+  (if *smuks-exit*
+      (cl-async:exit-event-loop)
+      (restart-case
+	  (progn
+	    (render-frame)
+	    (cl-async:delay 'recursively-render-frame :time 0.016))
+	(skip-frame ()
+	  :report "Skip frame"
+	  (cl-async:delay 'recursively-render-frame :time 0.016)))))
+
 ;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
 ;; So that the main loop can know if it should render the display cursor or not
 ;; TODO: This is almost identical to render-toplevel, with the difference being the coordinates
@@ -368,6 +322,7 @@
   (setf *frame-ready* t))
 
 (defun process-inotify (path change)
+  (declare (ignore change))
   (let ((stringy-path (namestring path)))
     (cond
       ;; ((str:contains? "/event" stringy-path) (process-device-change path change)))))
@@ -470,6 +425,52 @@
 	   (loop do (sleep 1)
 		 do (log! (format nil "Frames: ~a" *frame-counter*))
 		 do (setf *frame-counter* 0))))))
+
+
+;; ┬ ┬┌┐┌┌─┐┌─┐┬─┐┌┬┐┌─┐┌┬┐
+;; │ ││││└─┐│ │├┬┘ │ ├┤  ││
+;; └─┘┘└┘└─┘└─┘┴└─ ┴ └─┘─┴┘
+(defun load-cursor-texture ()
+  (let* ((texture (sglutil:mk-tex))
+	 (image (png-read:read-png-file (merge-pathnames "assets/mouse.png" (asdf:system-source-directory :smuks))))
+	 (data (png-read:image-data image)))
+    (gl:bind-texture :texture-2d (tex-id texture))
+    (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
+    (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
+    (gl:tex-image-2d :texture-2d 0 :rgba
+		     (png-read:width image) (png-read:height image)
+		     0 :rgba :unsigned-byte (make-array
+					     (array-total-size data)
+					     :element-type '(unsigned-byte 8)
+					     :displaced-to data))
+    texture))
+
+(defun init-shaders ()
+  (prep-gl-implementation (framebuffer-id *framebuffer*) (width *drm*) (height *drm*))
+  (setf *rect-shader* (shader-init:create-rect-shader *drm*))
+  (setf *texture-shader* (shader-init:create-texture-shader *drm*))
+  `(,*rect-shader* ,*texture-shader*))
+
+(defun cleanup ()
+  (disable-frame-counter)
+
+  (when *iio* (cleanup-iio *iio*))
+  (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
+  (when (and *drm* *framebuffer*) (sdrm:rm-framebuffer *drm* *framebuffer*))
+
+  (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
+  (when *drm* (sdrm:close-drm *drm*))
+
+  (when *wayland* (wl:destroy *wayland*))
+
+  (when *seat* (libseat:close-seat *seat*))
+
+  (when *socket*
+    (unix-sockets:close-unix-socket *socket*)
+    (delete-file +socket-file+))
+
+  (setfnil *egl* *egl-context* *egl-image* *drm* *framebuffer* *smuks-exit*
+	   *wayland* *socket* *seat* *cursor* *iio*))
 
 ;; ┬ ┬┌─┐┌─┐┬┌─┌─┐
 ;; ├─┤├─┤│  ├┴┐└─┐
