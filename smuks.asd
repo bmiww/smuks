@@ -55,7 +55,9 @@
 	       #:split-sequence
 	       #:file-notify)
   :components ((:file "util")
-	       (:file "drm")
+	       (:module "drm"
+		:components ((:file "package"
+			      :file "main")))
 	       (:file "shaders")
 	       (:file "gl-util")
 	       (:file "egl-util")
