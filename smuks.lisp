@@ -27,14 +27,13 @@
 (defvar *first* nil)
 
 (defnil
-    *socket* *smuks-exit* *frame-ready*
+    *socket* *smuks-exit*
   *libinput* *seat*
   *egl* *egl-context*
   *cursor*
-  *client-poller* *wl-poller* *drm-poller* *input-poller* *seat-poller* *device-poller* *accelerometer-poller*
-  *udev-poller*
-
-  *test-app*)
+  *client-poller* *wl-poller* *drm-poller* *input-poller*
+  *seat-poller* *device-poller* *accelerometer-poller*
+  *udev-poller*)
 
 ;; screen
 (defclass screen ()
@@ -42,7 +41,6 @@
    (fb :initarg :fb :accessor fb)
    (connector :initarg :connector :accessor connector)
    (egl-image :initform nil :accessor egl-image)
-   (mode :initarg :mode :accessor mode)
    (crtc :initarg :crtc :accessor crtc)
    (drm :initarg :drm :accessor drm)
    (frame-ready :initform t :accessor frame-ready)
@@ -54,8 +52,8 @@
 (defmethod screen-height ((screen screen) orientation)
   (case orientation ((:landscape :landscape-i) (width screen)) ((:portrait :portrait-i) (height screen))))
 
-(defmethod width ((screen screen)) (hdisplay (mode screen)))
-(defmethod height ((screen screen)) (vdisplay (mode screen)))
+(defmethod width ((screen screen)) (hdisplay (crtc screen)))
+(defmethod height ((screen screen)) (vdisplay (crtc screen)))
 (defmethod connector-type ((screen screen)) (connector-type (connector screen)))
 (defmethod start-monitor ((screen screen))
   (setf (egl-image screen)
@@ -66,9 +64,7 @@
   (set-crtc! (fd (drm screen))
 	     (fb screen)
 	     (connector screen)
-	     (setf (crtc screen) (connector-crtc (drm screen) (connector screen)))
-	     (mode screen)))
-
+	     (setf (crtc screen) (connector-crtc (drm screen) (connector screen)))))
 
 (defmethod shader ((screen screen) (type (eql :rect))) (car (shaders screen)))
 (defmethod shader ((screen screen) (type (eql :texture))) (cadr (shaders screen)))
@@ -92,9 +88,6 @@
   (when (egl-image screen)
     (seglutil:destroy-image *egl* (egl-image screen))
     (setf (egl-image screen) nil))
-  ;; TODO: Wasn't really doing this any more - but might be worth checking some day
-  ;; (when (crtc screen)
-    ;; (set-crtc! (fd (drm screen)) (fb screen) (connector screen) nil nil))
   (when (fb screen)
     (sdrm:rm-framebuffer! (drm screen) (fb screen) (buffer screen))
     (setf (fb screen) nil)))
@@ -154,7 +147,6 @@
 
 (defun mainer ()
   (setf *log-output* *standard-output*)
-  (setf *frame-ready* t)
   (heading)
 
   (setf (uiop/os:getenv "WAYLAND_DEBUG") *enable-wayland-debug-logs*)

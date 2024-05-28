@@ -43,7 +43,6 @@
    (height :initarg :height :accessor height)
    (mode :initarg :mode :accessor mode)
    (mode-valid :initarg :mode-valid :accessor mode-valid)
-   (mode-ptr :initarg :mode-ptr :accessor mode-ptr)
    (gamma-size :initarg :gamma-size :accessor gamma-size)))
 
 (defun init-crtc (crtc)
@@ -57,6 +56,9 @@
      :mode (init-mode (drm:crtc!-mode crtc))
      :mode-valid (drm:crtc!-mode-valid crtc)
      :gamma-size (drm:crtc!-gamma-size crtc)))
+
+(defmethod hdisplay ((crtc crtc)) (hdisplay (mode crtc)))
+(defmethod vdisplay ((crtc crtc)) (vdisplay (mode crtc)))
 
 
 ;; ┌─┐┌┐┌┌─┐┌─┐┌┬┐┌─┐┬─┐

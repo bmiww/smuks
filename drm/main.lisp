@@ -49,11 +49,11 @@
     (drm::mode-add-framebuffer fd width height depth bpp pitch handle buf-id)
     (cffi:mem-ref buf-id :uint32)))
 
-(defun set-crtc! (fd fb connector crtc mode)
+(defun set-crtc! (fd fb connector crtc)
   (let ((result (drm:set-crtc
 		 fd (id crtc)
 		 fb 0 0
-		 (list (id connector)) (ptr mode))))
+		 (list (id connector)) (ptr (mode crtc)))))
     (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))))
 
 (defmethod page-flip ((drm gbm-device) framebuffer crtc)
