@@ -132,20 +132,24 @@
   (let ((connectors (sdrm::recheck-resources (drm tracker))))
     (loop for connector in connectors
 	  for existing-screen = (find-if (lambda (screen) (eq (id (connector screen)) (id connector))) (screens tracker))
-	  do (if existing-screen
-		 (unless (connected (connector existing-screen))
-		   (cleanup-screen existing-screen)
-		   (remove existing-screen (screens tracker)))
-		 (when (connected connector)
-		   (let ((fb-obj (create-connector-framebuffer (drm tracker) connector)))
-		     (when fb-obj
-		       (let ((screen (make-instance 'screen
-					:connector connector
-					:buffer (framebuffer-buffer fb-obj)
-					:fb (framebuffer-id fb-obj)
-					:drm (drm tracker))))
-			 (start-monitor screen)
-			 (push screen (screens tracker))))))))))
+	  do
+	     (progn
+	       (if existing-screen
+		   (unless (connected (connector existing-screen))
+		     (print "DISCONNECTING")
+		     (cleanup-screen existing-screen)
+		     (setf (screens tracker) (remove existing-screen (screens tracker))))
+		   (when (connected connector)
+		     (print "ADDING")
+		     (let ((fb-obj (create-connector-framebuffer (drm tracker) connector)))
+		       (when fb-obj
+			 (let ((screen (make-instance 'screen
+					  :connector connector
+					  :buffer (framebuffer-buffer fb-obj)
+					  :fb (framebuffer-id fb-obj)
+					  :drm (drm tracker))))
+			   (start-monitor screen)
+			   (push screen (screens tracker)))))))))))
 
 
 ;; TODO: Get rid of this - this is compat during refactoring
@@ -441,7 +445,7 @@
 (defun set-frame-ready (a b c d crtc-id f)
   (declare (ignore a b c d f))
   (let ((screen (screen-by-crtc *screen-tracker* crtc-id)))
-    (unless screen(error "No crtc found for id ~A" crtc-id))
+    (unless screen (error "No crtc found for id ~A" crtc-id))
     (setf (frame-ready screen) t)
     (recursively-render-frame)))
 

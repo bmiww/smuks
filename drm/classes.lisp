@@ -32,7 +32,13 @@
 (defmethod hdisplay ((connector connector)) (hdisplay (crtc connector)))
 (defmethod vdisplay ((connector connector)) (vdisplay (crtc connector)))
 (defmethod vrefresh ((connector connector)) (vrefresh (mode (crtc connector))))
-(defmethod connected ((connector connector)) (connection connector))
+(defmethod connected ((connector connector)) (case (connection connector)
+					(:connected t)
+					(:disconnected nil)
+					;; TODO: Unknown connection could also mean
+					;; That it is connected
+					;; For now - don't know how to check that
+					(:unknown-connection nil)))
 
 ;; TODO: Make it possible to select encoder?
 ;; For now - selecting the first one - since i haven't seen connectors have more than one yet
