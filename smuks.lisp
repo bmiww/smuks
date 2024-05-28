@@ -230,13 +230,10 @@
 (defun recursively-render-frame ()
   (if *smuks-exit*
       (cl-async:exit-event-loop)
-      (restart-case
-	  (progn
-	    (render-frame)
-	    (cl-async:delay 'recursively-render-frame :time 0.016))
+      (restart-case (render-frame)
 	(skip-frame ()
 	  :report "Skip frame"
-	  (cl-async:delay 'recursively-render-frame :time 0.016)))))
+	  (print "Skipping frame")))))
 
 ;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
 ;; So that the main loop can know if it should render the display cursor or not
@@ -436,7 +433,8 @@
   (declare (ignore a b c d f))
   (let ((screen (screen-by-crtc *screen-tracker* crtc-id)))
     (unless screen(error "No crtc found for id ~A" crtc-id))
-    (setf (frame-ready screen) t)))
+    (setf (frame-ready screen) t)
+    (recursively-render-frame)))
 
 (defun process-inotify (path change)
   (declare (ignore change))
