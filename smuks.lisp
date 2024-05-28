@@ -258,7 +258,7 @@
 
 ;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
 ;; So that the main loop can know if it should render the display cursor or not
-(defun render-toplevel (surface)
+(defun render-toplevel (screen surface)
   (let ((texture (texture surface))
 	(width (flo (width surface)))
 	(height (flo (height surface)))
@@ -272,7 +272,7 @@
 (defun render-surface (screen surface)
   (typecase surface
     (cursor (render-cursor screen surface))
-    (t (render-toplevel surface))))
+    (t (render-toplevel screen surface))))
 
 (defun render-clients (screen)
   (let* ((clients (wl:all-clients *wayland*))
