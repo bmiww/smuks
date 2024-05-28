@@ -32,7 +32,7 @@
 	(error "No CRTCs found"))
       (unless (setf (encoders device) (loop for encoder in (drm:resources-encoders resources) collect (init-encoder encoder)))
 	(error "No connectors found"))
-      (unless (setf (connectors device) (loop for connector in (drm:resources-connectors resources) collect (init-connector connector)))
+      (unless (setf (connectors device) (loop for connector in (drm:resources-connectors resources) collect (init-connector connector (encoders device) (crtcs device))))
 	(error "No encoders found")))))
 
 (defmethod recheck-resources ((device gbm-device))
@@ -49,15 +49,18 @@
     (drm::mode-add-framebuffer fd width height depth bpp pitch handle buf-id)
     (cffi:mem-ref buf-id :uint32)))
 
-(defun set-crtc! (fd fb connector crtc)
-  (let ((result (drm:set-crtc
-		 fd (id crtc)
-		 fb 0 0
-		 (list (id connector)) (ptr (mode crtc)))))
+(defun set-crtc! (fd fb connector)
+  (let* ((crtc (crtc connector))
+	 (result (drm:set-crtc
+		  fd (id crtc)
+		  fb 0 0
+		  (list (id connector))
+		  (ptr (mode crtc)))))
     (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))))
 
-(defmethod page-flip ((drm gbm-device) framebuffer crtc)
-  (let* ((result (- (drm::mode-page-flip (fd drm) (id crtc)
+(defmethod page-flip ((drm gbm-device) framebuffer connector)
+  (let* ((crtc (crtc connector))
+	 (result (- (drm::mode-page-flip (fd drm) (id crtc)
 					 framebuffer
 					 :page-flip-event
 					 (cffi:null-pointer))))

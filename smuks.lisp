@@ -41,7 +41,6 @@
    (fb :initarg :fb :accessor fb)
    (connector :initarg :connector :accessor connector)
    (egl-image :initform nil :accessor egl-image)
-   (crtc :initarg :crtc :accessor crtc)
    (drm :initarg :drm :accessor drm)
    (frame-ready :initform t :accessor frame-ready)
    (gl-framebuffer :initform nil :accessor gl-framebuffer)
@@ -52,8 +51,9 @@
 (defmethod screen-height ((screen screen) orientation)
   (case orientation ((:landscape :landscape-i) (width screen)) ((:portrait :portrait-i) (height screen))))
 
-(defmethod width ((screen screen)) (hdisplay (crtc screen)))
-(defmethod height ((screen screen)) (vdisplay (crtc screen)))
+(defmethod width ((screen screen)) (hdisplay (connector screen)))
+(defmethod height ((screen screen)) (vdisplay (connector screen)))
+(defmethod vrefresh ((screen screen)) (vrefresh (connector screen)))
 (defmethod connector-type ((screen screen)) (connector-type (connector screen)))
 (defmethod start-monitor ((screen screen))
   (setf (egl-image screen) (create-egl-image *egl* (buffer screen) (width screen) (height screen)))
@@ -61,8 +61,7 @@
 
   (set-crtc! (fd (drm screen))
 	     (fb screen)
-	     (connector screen)
-	     (setf (crtc screen) (connector-crtc (drm screen) (connector screen)))))
+	     (connector screen)))
 
 (defmethod shader ((screen screen) (type (eql :rect))) (car (shaders screen)))
 (defmethod shader ((screen screen) (type (eql :texture))) (cadr (shaders screen)))
@@ -114,7 +113,7 @@
 	do (start-monitor screen)))
 
 (defmethod screen-by-crtc ((tracker screen-tracker) crtc-id)
-  (find-if (lambda (screen) (eq (sdrm:id (crtc screen)) crtc-id)) (screens tracker)))
+  (find-if (lambda (screen) (eq (crtc-id (connector screen)) crtc-id)) (screens tracker)))
 
 (defmethod prep-shaders ((tracker screen-tracker))
   (loop for screen in (screens tracker)
@@ -318,7 +317,7 @@
 	     ;; TODO: Wasteful - also - didn't really help much at the moment.
 	     ;; Try to bring it back inside the *frame-ready* check
 	     (handler-case
-		 (page-flip *drm* (fb screen) (crtc screen))
+		 (page-flip *drm* (fb screen) (connector screen))
 	       (error (err) (declare (ignore err)) ()))
 
 	     ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do

@@ -20,7 +20,7 @@
 
    create-connector-framebuffer
 
-   free-crtc
+   crtc-id free-crtc
 
    init-drm page-flip
 

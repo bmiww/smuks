@@ -38,20 +38,19 @@
   (make-instance 'xdg-wm-base:global :display display :dispatch-impl 'wm-base)
   (make-instance 'dmabuf-global :display display :dispatch-impl 'dmabuf)
   (loop for screen in screens
-	do (init-output display (crtc screen))))
+	do (init-output display screen)))
 
 
 ;; TODO: This is very incomplete.
 ;; Lots of fake stuff here
-;; Everything is based on the SINGLE crtc that i enable
 ;; Real width/height are just width/height - should be mm of real screen size
 ;; X/Y are just 0,0 - since i'm only handling one screen
-(defmethod init-output ((display display) crtc)
+(defmethod init-output ((display display) screen)
   (make-instance 'output-global :display display :dispatch-impl 'output
 		    :x 0 :y 0
-		    :width (sdrm:width crtc) :height (sdrm:height crtc)
-		    :real-width (sdrm:width crtc) :real-height (sdrm:height crtc)
-		    :refresh-rate (sdrm:vrefresh (sdrm:mode crtc))
+		    :width (width screen) :height (height screen)
+		    :real-width (width screen) :real-height (height screen)
+		    :refresh-rate (sdrm:vrefresh screen)
 		    :make "TODO: Fill out make" :model "TODO: Fill out model"))
 
 

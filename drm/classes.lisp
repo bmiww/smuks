@@ -1,5 +1,14 @@
-(in-package :smuks-drm)
 
+;; ██████╗ ██████╗ ███╗   ███╗
+;; ██╔══██╗██╔══██╗████╗ ████║
+;; ██║  ██║██████╔╝██╔████╔██║
+;; ██║  ██║██╔══██╗██║╚██╔╝██║
+;; ██████╔╝██║  ██║██║ ╚═╝ ██║
+;; ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝
+;; ┌─┐┬  ┌─┐┌─┐┌─┐┌─┐┌─┐
+;; │  │  ├─┤└─┐└─┐├┤ └─┐
+;; └─┘┴─┘┴ ┴└─┘└─┘└─┘└─┘
+(in-package :smuks-drm)
 
 ;; ┌─┐┌─┐┌┐┌┌┐┌┌─┐┌─┐┌┬┐┌─┐┬─┐
 ;; │  │ │││││││├┤ │   │ │ │├┬┘
@@ -17,6 +26,11 @@
    (encoders :initarg :encoders :accessor encoders)
    (encoder :initarg :encoder :accessor encoder)
    (crtc :initarg :crtc :accessor crtc)))
+
+(defmethod crtc-id ((connector connector)) (id (crtc connector)))
+(defmethod hdisplay ((connector connector)) (hdisplay (crtc connector)))
+(defmethod vdisplay ((connector connector)) (vdisplay (crtc connector)))
+(defmethod vrefresh ((connector connector)) (vrefresh (mode (crtc connector))))
 
 ;; TODO: Make it possible to select encoder?
 ;; For now - selecting the first one - since i haven't seen connectors have more than one yet
