@@ -45,30 +45,18 @@
    (connector :initarg :connector :accessor connector)
    (egl-image :accessor egl-image)
    (mode :initarg :mode :accessor mode)
-   (crtc :initarg :crtc :accessor crtc)))
+   (crtc :initarg :crtc :accessor crtc)
+   (drm :initarg :drm :accessor drm)))
 
 (defmethod width ((screen screen)) (drm:mode-hdisplay (mode screen)))
 (defmethod height ((screen screen)) (drm:mode-vdisplay (mode screen)))
 (defmethod connector-type ((screen screen)) (drm:connector!-connector-type (connector screen)))
-(defmethod set-crtc ((screen screen) crtc)
-  ())
-
-(defmethod set-crtc ((device gbm-device) framebuffer)
-  (let* ((crtc (crtc device))
-	 (connector (car (connected-connectors device)))
-	 (modes (drm::connector!-modes connector)))
-
-    (let ((result (drm:set-crtc
-		   (fd device)
-		   (drm::crtc!-id crtc)
-		   framebuffer
-		   0 0
-		   (list (drm::connector!-id connector))
-		   ;; TODO: Using the first mode.
-		   ;; Not yet checking if the mode is valid at all
-		   (car modes))))
-      (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))
-      crtc)))
+(defmethod start-monitor ((screen screen))
+  (set-crtc! (fd (drm screen))
+	     (fb screen)
+	     (connector screen)
+	     (setf (crtc screen) (connector-crtc (drm screen) (connector screen)))
+	     (mode screen)))
 
 ;; (defmethod create-egl-image ((screen screen) egl)
   ;; )
@@ -88,7 +76,9 @@
 			   :connector connector
 			   :buffer (framebuffer-buffer fb-obj)
 			   :fb (framebuffer-id fb-obj)
-			   :mode (framebuffer-mode fb-obj))))))
+			   :mode (framebuffer-mode fb-obj)
+			   :drm drm)))))
+
 
 ;; TODO: Get rid of this - this is compat during refactoring
 (defmethod testie ((tracker screen-tracker)) (first (screens tracker)))
@@ -148,8 +138,7 @@
 
   (init-globals *wayland* *drm*)
 
-  (set-crtc *first* )
-  (set-crtc *drm* (fb *first*))
+  (start-monitor *first*)
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
   (cl-async:start-event-loop

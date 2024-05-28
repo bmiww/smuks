@@ -10,10 +10,11 @@
 
    add-framebuffer rm-framebuffer default-framebuffer
    framebuffer-id framebuffer-buffer framebuffer-mode rm-framebuffer!
+   set-crtc! connector-crtc
 
    create-connector-framebuffer
 
-   free-crtc set-crtc
+   free-crtc
    create-bo destroy-bo
    init-drm drm-page-flip))
 (in-package :smuks-drm)
@@ -46,6 +47,7 @@
     (setf (gbm-pointer device) (gbm:create-device fd))
     (let* ((resources  (setf (resources device) (drm:get-resources fd)))
 	   (crtcs      (setf (crtcs device) (drm:resources-crtcs resources)))
+	   (encoders   (setf (encoders device) (drm:resources-encoders resources)))
 	   (connectors (setf (connectors device) (drm:resources-connectors resources)))
 	   (valid      (find-if (lambda (crtc) (> (drm::crtc!-mode-valid crtc) 0)) crtcs)))
 
@@ -56,6 +58,16 @@
       (setf (crtc device) valid)
       (setf (width device) (drm::crtc!-width valid))
       (setf (height device) (drm::crtc!-height valid)))))
+
+;; TODO: Make it possible to select encoder?
+	 ;; For now - selecting the first one - since i haven't seen connectors have more than one yet
+(defmethod connector-crtc ((device gbm-device) connector)
+  (let* ((id (car (drm:connector!-encoders connector)))
+	 (matched (find-if (lambda (encoder) (eq (drm:encoder!-id encoder) id)) (encoders device)))
+	 (crtc-id (drm:encoder!-crtc-id matched)))
+    (find-if (lambda (crtc) (eq (drm:crtc!-id crtc) crtc-id)) (crtcs device))))
+
+
 
 
 (defmethod recheck-resources ((device gbm-device))
@@ -81,22 +93,12 @@
 	when (eq :connected (drm::connector!-connection connector))
 	  collect connector))
 
-(defmethod set-crtc ((device gbm-device) framebuffer)
-  (let* ((crtc (crtc device))
-	 (connector (car (connected-connectors device)))
-	 (modes (drm::connector!-modes connector)))
-
-    (let ((result (drm:set-crtc
-		   (fd device)
-		   (drm::crtc!-id crtc)
-		   framebuffer
-		   0 0
-		   (list (drm::connector!-id connector))
-		   ;; TODO: Using the first mode.
-		   ;; Not yet checking if the mode is valid at all
-		   (car modes))))
-      (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))
-      crtc)))
+(defun set-crtc! (fd fb connector crtc mode)
+  (let ((result (drm:set-crtc
+		 fd (drm::crtc!-id crtc)
+		 fb 0 0
+		 (list (drm::connector!-id connector)) mode)))
+    (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))))
 
 ;; TODO: Iterate cards - but actually check their capabilities.
 ;; TODO: Could also combine with render card capability reading
