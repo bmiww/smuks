@@ -36,13 +36,27 @@
 	(error "No encoders found")))))
 
 (defmethod recheck-resources ((device gbm-device))
-  ;; (let* ((resources (setf (resources device) (drm:get-resources (fd device)))))
-    ;; (loop for crtc in (drm:resources-crtcs resources)
-    ;; do )
+  (let* ((resources (setf (resources device) (drm:get-resources (fd device))))
+	 (crtcs (loop for crtc in (drm:resources-crtcs resources) collect (init-crtc crtc)))
+	 (encoders (loop for encoder in (drm:resources-encoders resources) collect (init-encoder encoder)))
+	 (connectors (loop for connector in (drm:resources-connectors resources) collect (init-connector connector encoders crtcs))))
 
-    ;; (setf (encoders device) (drm:resources-encoders resources))
-    ;; (setf (connectors device) (drm:resources-connectors resources)))
-  )
+    (setf (crtcs device) crtcs)
+    (setf (encoders device) encoders)
+    (loop for connector in connectors
+	  for old-connector = (find-if (lambda (old-connector) (eq (id old-connector) (id connector))) (connectors device))
+	  do (progn
+	       (setf (crtc old-connector) (crtc connector))
+	       (setf (encoder old-connector) (encoder connector))
+	       (setf (encoders old-connector) (encoders connector))
+	       (setf (subpixel-order old-connector) (subpixel-order connector))
+	       (setf (connection old-connector) (connection connector))
+	       (setf (mm-width old-connector) (mm-width connector))
+	       (setf (mm-height old-connector) (mm-height connector))
+	       (setf (modes old-connector) (modes connector))
+	       (setf (properties old-connector) (properties connector))))
+
+    (connectors device)))
 
 (defun add-framebuffer (fd width height depth bpp pitch handle)
   (cffi:with-foreign-objects ((buf-id :uint32 1))
@@ -103,7 +117,7 @@
   "By default uses the first available mode"
   (let ((mode (car (modes connector)))
 	(crtc (crtc connector)))
-    (when mode
+    (when (and mode crtc)
       (setf (mode crtc) mode)
       (let* ((width (hdisplay mode))
 	     (height (vdisplay mode))

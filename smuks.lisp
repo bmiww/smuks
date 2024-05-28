@@ -128,8 +128,24 @@
   (mapcar (lambda (screen) (update-projections screen projection)) (screens tracker)))
 
 (defmethod handle-drm-change ((tracker screen-tracker))
-  (let ((resources (sdrm::recheck-resources (drm tracker))))
-    ))
+  (print "HAPPENING")
+  (let ((connectors (sdrm::recheck-resources (drm tracker))))
+    (loop for connector in connectors
+	  for existing-screen = (find-if (lambda (screen) (eq (id (connector screen)) (id connector))) (screens tracker))
+	  do (if existing-screen
+		 (unless (connected (connector existing-screen))
+		   (cleanup-screen existing-screen)
+		   (remove existing-screen (screens tracker)))
+		 (when (connected connector)
+		   (let ((fb-obj (create-connector-framebuffer (drm tracker) connector)))
+		     (when fb-obj
+		       (let ((screen (make-instance 'screen
+					:connector connector
+					:buffer (framebuffer-buffer fb-obj)
+					:fb (framebuffer-id fb-obj)
+					:drm (drm tracker))))
+			 (start-monitor screen)
+			 (push screen (screens tracker))))))))))
 
 
 ;; TODO: Get rid of this - this is compat during refactoring

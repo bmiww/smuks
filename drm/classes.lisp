@@ -20,6 +20,7 @@
    (connection :initarg :connection :accessor connection)
    (mm-width :initarg :mm-width :accessor mm-width)
    (mm-height :initarg :mm-height :accessor mm-height)
+   (possible-crtcs :initarg :possible-crtcs :accessor possible-crtcs)
    (subpixel-order :initarg :subpixel-order :accessor subpixel-order)
    (modes :initarg :modes :accessor modes)
    (properties :initarg :properties :accessor properties)
@@ -31,26 +32,40 @@
 (defmethod hdisplay ((connector connector)) (hdisplay (crtc connector)))
 (defmethod vdisplay ((connector connector)) (vdisplay (crtc connector)))
 (defmethod vrefresh ((connector connector)) (vrefresh (mode (crtc connector))))
+(defmethod connected ((connector connector)) (connection connector))
 
 ;; TODO: Make it possible to select encoder?
 ;; For now - selecting the first one - since i haven't seen connectors have more than one yet
+;; TODO: Maybe it might be possible to remove the encoder search logic
+;; And instead use the possible-crtcs logic.
+;; Currently encoder crtc is prioritized over possible-crtcs
 (defun init-connector (connector encoders crtcs)
   (let* ((encoder-id (car (drm:connector!-encoders connector)))
-	 (first-encoder (find-if (lambda (encoder) (eq (id encoder) encoder-id)) encoders)))
-  (make-instance 'connector
-     :id (drm:connector!-id connector)
-     :connector-type (drm:connector!-connector-type connector)
-     :connector-type-id (drm:connector!-connector-type-id connector)
-     :connection (drm:connector!-connection connector)
-     :mm-width (drm:connector!-mm-width connector)
-     :mm-height (drm:connector!-mm-height connector)
-     :subpixel-order (drm:connector!-subpixel connector)
-     :modes (loop for mode in (drm:connector!-modes connector)
-		  collect (init-mode mode))
-     :properties (drm:connector!-props connector)
-     :encoders (drm:connector!-encoders connector)
-     :encoder first-encoder
-     :crtc (find-if (lambda (crtc) (eq (id crtc) (crtc-id first-encoder))) crtcs))))
+	 (first-encoder (find-if (lambda (encoder) (eq (id encoder) encoder-id)) encoders))
+	 (possible-crtcs (remove-if
+			  (lambda (crtc)
+			    (not (find-if (lambda (possible-crtc)
+				       (eq (id crtc)
+					   (drm:crtc!-id possible-crtc)))
+				     (drm:connector!-possible-crtcs connector))))
+			  crtcs)))
+    (make-instance 'connector
+       :id (drm:connector!-id connector)
+       :connector-type (drm:connector!-connector-type connector)
+       :connector-type-id (drm:connector!-connector-type-id connector)
+       :connection (drm:connector!-connection connector)
+       :possible-crtcs possible-crtcs
+       :mm-width (drm:connector!-mm-width connector)
+       :mm-height (drm:connector!-mm-height connector)
+       :subpixel-order (drm:connector!-subpixel connector)
+       :modes (loop for mode in (drm:connector!-modes connector)
+		    collect (init-mode mode))
+       :properties (drm:connector!-props connector)
+       :encoders (drm:connector!-encoders connector)
+       :encoder first-encoder
+       :crtc
+       (or (find-if (lambda (crtc) (eq (id crtc) (crtc-id first-encoder))) crtcs)
+	   (first possible-crtcs)))))
 
 
 ;; ┌─┐┬─┐┌┬┐┌─┐

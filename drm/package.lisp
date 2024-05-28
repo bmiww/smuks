@@ -27,6 +27,6 @@
    height width
    vrefresh mode
 
-   connector-type
+   connector-type connected
    id
    hdisplay vdisplay))
