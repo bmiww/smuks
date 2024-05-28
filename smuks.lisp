@@ -332,7 +332,7 @@
 	     ;; TODO: Wasteful - also - didn't really help much at the moment.
 	     ;; Try to bring it back inside the *frame-ready* check
 	     (handler-case
-		 (drm-page-flip *drm* (fb screen) (crtc screen))
+		 (page-flip *drm* (fb screen) (crtc screen))
 	       (error (err) (declare (ignore err)) ()))
 
 	     ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do

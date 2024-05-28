@@ -22,7 +22,7 @@
 
    free-crtc
    create-bo destroy-bo
-   init-drm drm-page-flip
+   init-drm page-flip
 
    height width
    vrefresh mode

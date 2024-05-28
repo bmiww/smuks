@@ -58,6 +58,7 @@
      :mode-valid (drm:crtc!-mode-valid crtc)
      :gamma-size (drm:crtc!-gamma-size crtc)))
 
+
 ;; ┌─┐┌┐┌┌─┐┌─┐┌┬┐┌─┐┬─┐
 ;; ├┤ ││││  │ │ ││├┤ ├┬┘
 ;; └─┘┘└┘└─┘└─┘─┴┘└─┘┴└─
