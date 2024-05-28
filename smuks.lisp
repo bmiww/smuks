@@ -443,11 +443,12 @@
 
 
 (defun set-frame-ready (a b c d crtc-id f)
+  "If a screen is not found - it is assumed to have been disconnected"
   (declare (ignore a b c d f))
   (let ((screen (screen-by-crtc *screen-tracker* crtc-id)))
-    (unless screen (error "No crtc found for id ~A" crtc-id))
-    (setf (frame-ready screen) t)
-    (recursively-render-frame)))
+    (when screen
+      (setf (frame-ready screen) t)
+      (recursively-render-frame))))
 
 (defun process-inotify (path change)
   (declare (ignore change))
