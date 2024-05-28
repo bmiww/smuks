@@ -56,10 +56,8 @@
 (defmethod height ((screen screen)) (vdisplay (crtc screen)))
 (defmethod connector-type ((screen screen)) (connector-type (connector screen)))
 (defmethod start-monitor ((screen screen))
-  (setf (egl-image screen)
-	(create-egl-image *egl* (buffer screen) (width screen) (height screen)))
-  (setf (gl-framebuffer screen)
-	(create-gl-framebuffer (egl-image screen)))
+  (setf (egl-image screen) (create-egl-image *egl* (buffer screen) (width screen) (height screen)))
+  (setf (gl-framebuffer screen) (create-gl-framebuffer (egl-image screen)))
 
   (set-crtc! (fd (drm screen))
 	     (fb screen)
@@ -105,15 +103,11 @@
 	  (loop for connector in connectors
 		for fb-obj = (create-connector-framebuffer drm connector)
 		when fb-obj
-		  collect (let ((mode (framebuffer-mode fb-obj)))
-			    (make-instance 'screen
+		  collect (make-instance 'screen
 			     :connector connector
 			     :buffer (framebuffer-buffer fb-obj)
 			     :fb (framebuffer-id fb-obj)
-			     :mode mode
-			     ;; :width (sdrm:hdisplay mode)
-			     ;; :height (sdrm:vdisplay mode)
-			     :drm drm))))))
+			     :drm drm)))))
 
 (defmethod start-monitors ((tracker screen-tracker))
   (loop for screen in (screens tracker)

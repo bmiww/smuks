@@ -14,9 +14,15 @@
    (subpixel-order :initarg :subpixel-order :accessor subpixel-order)
    (modes :initarg :modes :accessor modes)
    (properties :initarg :properties :accessor properties)
-   (encoders :initarg :encoders :accessor encoders)))
+   (encoders :initarg :encoders :accessor encoders)
+   (encoder :initarg :encoder :accessor encoder)
+   (crtc :initarg :crtc :accessor crtc)))
 
-(defun init-connector (connector)
+;; TODO: Make it possible to select encoder?
+;; For now - selecting the first one - since i haven't seen connectors have more than one yet
+(defun init-connector (connector encoders crtcs)
+  (let* ((encoder-id (car (drm:connector!-encoders connector)))
+	 (first-encoder (find-if (lambda (encoder) (eq (id encoder) encoder-id)) encoders)))
   (make-instance 'connector
      :id (drm:connector!-id connector)
      :connector-type (drm:connector!-connector-type connector)
@@ -28,7 +34,9 @@
      :modes (loop for mode in (drm:connector!-modes connector)
 		  collect (init-mode mode))
      :properties (drm:connector!-props connector)
-     :encoders (drm:connector!-encoders connector)))
+     :encoders (drm:connector!-encoders connector)
+     :encoder first-encoder
+     :crtc (find-if (lambda (crtc) (eq (id crtc) (crtc-id first-encoder))) crtcs))))
 
 
 ;; ┌─┐┬─┐┌┬┐┌─┐

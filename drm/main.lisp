@@ -79,14 +79,6 @@
 ;; ┌─┐┌─┐┬  ┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
 ;; └─┐├┤ │  ├┤ │   │ │ │├┬┘└─┐
 ;; └─┘└─┘┴─┘└─┘└─┘ ┴ └─┘┴└─└─┘
-;; TODO: Make it possible to select encoder?
-;; For now - selecting the first one - since i haven't seen connectors have more than one yet
-(defmethod connector-crtc ((device gbm-device) connector)
-  (let* ((id (car (encoders connector)))
-	 (matched (find-if (lambda (encoder) (eq (id encoder) id)) (encoders device)))
-	 (crtc-id (crtc-id matched)))
-    (find-if (lambda (crtc) (eq (id crtc) crtc-id)) (crtcs device))))
-
 (defmethod connected-connectors ((device gbm-device))
   (loop for connector in (connectors device)
 	when (eq :connected (connection connector)) collect connector))
@@ -95,7 +87,7 @@
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐┌┐ ┬ ┬┌─┐┌─┐┌─┐┬─┐
 ;; ├┤ ├┬┘├─┤│││├┤ ├┴┐│ │├┤ ├┤ ├┤ ├┬┘
 ;; └  ┴└─┴ ┴┴ ┴└─┘└─┘└─┘└  └  └─┘┴└─
-(defstruct framebuffer id buffer mode)
+(defstruct framebuffer id buffer)
 
 (defvar *bo-flags* (logior gbm::BO_USE_SCANOUT gbm::BO_USE_RENDERING))
 
@@ -106,8 +98,10 @@
 ;; TODO: Figure out depth. For now, just hardcoding it
 (defun create-connector-framebuffer (device connector)
   "By default uses the first available mode"
-  (let ((mode (car (modes connector))))
+  (let ((mode (car (modes connector)))
+	(crtc (crtc connector)))
     (when mode
+      (setf (mode crtc) mode)
       (let* ((width (hdisplay mode))
 	     (height (vdisplay mode))
 	     (buffer-object (create-bo! device width height))
@@ -115,8 +109,7 @@
 	(make-framebuffer :id (add-framebuffer (fd device) width height depth bpp
 					       (gbm:bo-get-stride buffer-object)
 					       (gbm:bo-get-handle buffer-object))
-			  :buffer buffer-object
-			  :mode mode)))))
+			  :buffer buffer-object)))))
 
 
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
