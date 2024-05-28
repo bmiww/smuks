@@ -17,7 +17,6 @@
 (defvar *wayland* nil)
 (defvar *iio* nil)
 (defvar *orientation* nil)
-(defvar *shaders* nil)
 (defvar *enable-frame-counter* t)
 (defvar *frame-counter* 0)
 (defvar *frame-counter-thread* nil)
@@ -31,7 +30,7 @@
     *socket* *smuks-exit* *frame-ready*
   *libinput* *seat*
   *egl* *egl-context*
-  *rect-shader* *texture-shader* *cursor*
+  *cursor*
   *client-poller* *wl-poller* *drm-poller* *input-poller* *seat-poller* *device-poller* *accelerometer-poller*
   *udev-poller*
 
@@ -45,16 +44,19 @@
    (egl-image :initform nil :accessor egl-image)
    (mode :initarg :mode :accessor mode)
    (crtc :initarg :crtc :accessor crtc)
+   (width :initarg :width :accessor width)
+   (height :initarg :height :accessor height)
    (drm :initarg :drm :accessor drm)
    (frame-ready :initform t :accessor frame-ready)
-   (gl-framebuffer :initform nil :accessor gl-framebuffer)))
+   (gl-framebuffer :initform nil :accessor gl-framebuffer)
+   (shaders :initform nil :accessor shaders)))
 
 (defmethod width ((screen screen)) (drm:mode-hdisplay (mode screen)))
 (defmethod height ((screen screen)) (drm:mode-vdisplay (mode screen)))
 (defmethod connector-type ((screen screen)) (drm:connector!-connector-type (connector screen)))
 (defmethod start-monitor ((screen screen))
   (let* ((mode (mode screen))
-	 (width (drm:mode-hdisplay mode)) (height (drm:mode-vdisplay mode)))
+	 (width (setf (width screen) (drm:mode-hdisplay mode))) (height (setf (height screen) (drm:mode-vdisplay mode))))
     (setf (egl-image screen)
 	  (create-egl-image *egl* (buffer screen) width height))
     (setf (gl-framebuffer screen)
@@ -65,6 +67,19 @@
 	       (connector screen)
 	       (setf (crtc screen) (connector-crtc (drm screen) (connector screen)))
 	       mode)))
+
+
+(defmethod shader ((screen screen) (type (eql :rect))) (car (shaders screen)))
+(defmethod shader ((screen screen) (type (eql :texture))) (cadr (shaders screen)))
+
+(defmethod prep-shaders ((screen screen))
+  (prep-gl-implementation (fb *first*) (width *drm*) (height *drm*))
+  (setf (shaders screen) `(,(shader-init:create-rect-shader *drm*) ,(shader-init:create-texture-shader *drm*))))
+
+(defmethod update-projections ((screen screen) projection)
+  (loop for shader in (shaders screen)
+	do (shaders:update-projection shader projection)))
+
 
 (defmethod cleanup-screen ((screen screen))
   ;; TODO: Didn't clean up gl framebuffer before - might still be worthwhile to check
@@ -109,10 +124,17 @@
 (defmethod screen-by-crtc ((tracker screen-tracker) crtc-id)
   (find-if (lambda (screen) (eq (drm:crtc!-id (crtc screen)) crtc-id)) (screens tracker)))
 
+(defmethod prep-shaders ((tracker screen-tracker))
+  (loop for screen in (screens tracker)
+	do (prep-shaders screen)))
+
 (defmethod cleanup-screen-tracker ((tracker screen-tracker))
   (loop for screen in (screens tracker)
 	do (cleanup-screen screen)
 	finally (setf (screens tracker) nil)))
+
+(defmethod update-projections ((tracker screen-tracker) projection)
+  (mapcar (lambda (screen) (update-projections screen projection)) (screens tracker)))
 
 
 ;; TODO: Get rid of this - this is compat during refactoring
@@ -160,7 +182,7 @@
   (setf (egl *wayland*) *egl*)
 
   (setf *cursor* (load-cursor-texture))
-  (setf *shaders* (init-shaders))
+  (prep-shaders *screen-tracker*)
 
   (setf *iio* (init-libiio))
   (determine-orientation (enable-accelerometer-scan *iio*))
@@ -219,7 +241,7 @@
 ;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
 ;; So that the main loop can know if it should render the display cursor or not
 ;; TODO: This is almost identical to render-toplevel, with the difference being the coordinates
-(defun render-cursor (surface)
+(defun render-cursor (screen surface)
   (let ((texture (texture surface))
 	(width (flo (width surface)))
 	(height (flo (height surface)))
@@ -230,7 +252,7 @@
     ;; And this use case in general seems wrong (could be improved)
     ;; (if (active-surface (role surface))
     (progn
-      (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height))
+      (shaders.texture:draw (shader screen :texture) texture `(,x ,y ,width ,height))
       (flush-frame-callbacks surface)
       (setf (needs-redraw surface) nil)
       t)
@@ -245,21 +267,21 @@
 	(height (flo (height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (shaders.texture:draw *texture-shader* texture `(,x ,y ,width ,height))
+    (shaders.texture:draw (shader screen :texture) texture `(,x ,y ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)
     nil))
 
-(defun render-surface (surface)
+(defun render-surface (screen surface)
   (typecase surface
-    (cursor (render-cursor surface))
+    (cursor (render-cursor screen surface))
     (t (render-toplevel surface))))
 
-(defun render-clients ()
+(defun render-clients (screen)
   (let* ((clients (wl:all-clients *wayland*))
 	 (compositors (remove-if-not 'identity (mapcar 'compositor clients)))
 	 (surfaces (util:flatten (mapcar 'all-ready-surfaces compositors))))
-    (mapcar (lambda (surface) (render-surface surface)) surfaces)))
+    (mapcar (lambda (surface) (render-surface screen surface)) surfaces)))
 
 (defvar *y-pos* 220.0)
 (defvar y-up t)
@@ -280,19 +302,22 @@
 	  do
 	     (when (frame-ready screen)
 	       (gl:bind-framebuffer :framebuffer (gl-framebuffer screen))
+	       (gl:viewport 0 0 (width screen) (height screen))
 	       (gl:clear :color-buffer-bit)
 
-	       (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
+
+
+	       (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
 							 :x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
 							 :color '(0.2 0.2 0.2 1.0))))
 
-	       (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
+	       (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
 							 :x *red-x* :y *red-y* :w 200.0 :h 50.0
 							 :color '(1.0 0.0 0.0 0.6))))
 
-	       (setf cursor-drawn (some (lambda (val) val) (render-clients)))
+	       (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
 	       (unless cursor-drawn
-		 (shaders.texture:draw *texture-shader* *cursor*
+		 (shaders.texture:draw (shader screen :texture) *cursor*
 				       `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0)))
 	       (gl:flush)
 	       (gl:finish)
@@ -313,6 +338,7 @@
     ;; Based on whether the screen frame was rendered
     (wl:flush-clients *wayland*)))
 
+;; TODO: This whole thing should be screen specific
 (defun determine-orientation (orient)
   (let ((current-orient *orientation*))
     (destructuring-bind (x y z) orient
@@ -326,11 +352,12 @@
 	  ((> x z) (setf *orientation* :portrait-i)))))
     (unless (eq current-orient *orientation*)
       (setf (orientation *wayland*) *orientation*)
+      ;; TODO: Layout needs to be recalculated for each screen that changed its orientation
       (recalculate-layout *wayland*)
       (let ((projection (sglutil:make-projection-matrix
 			 (sdrm:screen-width *drm* *orientation*) (sdrm:screen-height *drm* *orientation*)
 			 (case *orientation* (:landscape -90) (:portrait 0) (:landscape-i 90) (:portrait-i 180)))))
-	(mapcar (lambda (shader) (shaders:update-projection shader projection)) *shaders*)))))
+	(update-projections *screen-tracker* projection)))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │
@@ -535,11 +562,6 @@
 					     :displaced-to data))
     texture))
 
-(defun init-shaders ()
-  (prep-gl-implementation (fb *first*) (width *drm*) (height *drm*))
-  (setf *rect-shader* (shader-init:create-rect-shader *drm*))
-  (setf *texture-shader* (shader-init:create-texture-shader *drm*))
-  `(,*rect-shader* ,*texture-shader*))
 
 (defun cleanup ()
   (disable-frame-counter)
