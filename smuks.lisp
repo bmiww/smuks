@@ -30,8 +30,7 @@
 (defnil
     *socket* *smuks-exit* *frame-ready*
   *libinput* *seat*
-  *egl* *egl-context* *egl-image*
-  *gl-frame-buffer*
+  *egl* *egl-context*
   *rect-shader* *texture-shader* *cursor*
   *client-poller* *wl-poller* *drm-poller* *input-poller* *seat-poller* *device-poller* *accelerometer-poller*
   *udev-poller*
@@ -43,20 +42,44 @@
   ((buffer :initarg :buffer :accessor buffer)
    (fb :initarg :fb :accessor fb)
    (connector :initarg :connector :accessor connector)
-   (egl-image :accessor egl-image)
+   (egl-image :initform nil :accessor egl-image)
    (mode :initarg :mode :accessor mode)
    (crtc :initarg :crtc :accessor crtc)
-   (drm :initarg :drm :accessor drm)))
+   (drm :initarg :drm :accessor drm)
+   (frame-ready :initform t :accessor frame-ready)
+   (gl-framebuffer :initform nil :accessor gl-framebuffer)))
 
 (defmethod width ((screen screen)) (drm:mode-hdisplay (mode screen)))
 (defmethod height ((screen screen)) (drm:mode-vdisplay (mode screen)))
 (defmethod connector-type ((screen screen)) (drm:connector!-connector-type (connector screen)))
 (defmethod start-monitor ((screen screen))
-  (set-crtc! (fd (drm screen))
-	     (fb screen)
-	     (connector screen)
-	     (setf (crtc screen) (connector-crtc (drm screen) (connector screen)))
-	     (mode screen)))
+  (let* ((mode (mode screen))
+	 (width (drm:mode-hdisplay mode)) (height (drm:mode-vdisplay mode)))
+    (setf (egl-image screen)
+	  (create-egl-image *egl* (buffer screen) width height))
+    (setf (gl-framebuffer screen)
+	  (create-gl-framebuffer (egl-image screen)))
+
+    (set-crtc! (fd (drm screen))
+	       (fb screen)
+	       (connector screen)
+	       (setf (crtc screen) (connector-crtc (drm screen) (connector screen)))
+	       mode)))
+
+(defmethod cleanup-screen ((screen screen))
+  ;; TODO: Didn't clean up gl framebuffer before - might still be worthwhile to check
+  ;; (when (gl-framebuffer screen)
+    ;; (delete-gl-framebuffer (gl-framebuffer screen))
+    ;; (setf (gl-framebuffer screen) nil))
+  (when (egl-image screen)
+    (seglutil:destroy-image *egl* (egl-image screen))
+    (setf (egl-image screen) nil))
+  ;; TODO: Wasn't really doing this any more - but might be worth checking some day
+  ;; (when (crtc screen)
+    ;; (set-crtc! (fd (drm screen)) (fb screen) (connector screen) nil nil))
+  (when (fb screen)
+    (sdrm:rm-framebuffer! (drm screen) (fb screen) (buffer screen))
+    (setf (fb screen) nil)))
 
 ;; (defmethod create-egl-image ((screen screen) egl)
   ;; )
@@ -78,6 +101,18 @@
 			   :fb (framebuffer-id fb-obj)
 			   :mode (framebuffer-mode fb-obj)
 			   :drm drm)))))
+
+(defmethod start-monitors ((tracker screen-tracker))
+  (loop for screen in (screens tracker)
+	do (start-monitor screen)))
+
+(defmethod screen-by-crtc ((tracker screen-tracker) crtc-id)
+  (find-if (lambda (screen) (eq (drm:crtc!-id (crtc screen)) crtc-id)) (screens tracker)))
+
+(defmethod cleanup-screen-tracker ((tracker screen-tracker))
+  (loop for screen in (screens tracker)
+	do (cleanup-screen screen)
+	finally (setf (screens tracker) nil)))
 
 
 ;; TODO: Get rid of this - this is compat during refactoring
@@ -124,9 +159,6 @@
   (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
 
-  (setf *egl-image* (create-egl-image *egl* (buffer *first*) (width *first*) (height *first*)))
-
-  (setf *gl-frame-buffer* (create-gl-framebuffer *egl-image*))
   (setf *cursor* (load-cursor-texture))
   (setf *shaders* (init-shaders))
 
@@ -138,7 +170,7 @@
 
   (init-globals *wayland* *drm*)
 
-  (start-monitor *first*)
+  (start-monitors *screen-tracker*)
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
   (cl-async:start-event-loop
@@ -244,38 +276,42 @@
 (defun render-frame ()
   (livesupport:update-repl-link)
   (let ((cursor-drawn nil))
-    (when *frame-ready*
-      (gl:bind-framebuffer :framebuffer *gl-frame-buffer*)
-      (gl:clear :color-buffer-bit)
+    (loop for screen in (screens *screen-tracker*)
+	  do
+	     (when (frame-ready screen)
+	       (gl:bind-framebuffer :framebuffer (gl-framebuffer screen))
+	       (gl:clear :color-buffer-bit)
 
-      (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-						:x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
-						:color '(0.2 0.2 0.2 1.0))))
+	       (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
+							 :x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
+							 :color '(0.2 0.2 0.2 1.0))))
 
-      (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
-						:x *red-x* :y *red-y* :w 200.0 :h 50.0
-						:color '(1.0 0.0 0.0 0.6))))
+	       (shaders.rectangle:draw *rect-shader* `(,(shaders.rectangle::make-rect
+							 :x *red-x* :y *red-y* :w 200.0 :h 50.0
+							 :color '(1.0 0.0 0.0 0.6))))
 
-      (setf cursor-drawn (some (lambda (val) val) (render-clients)))
-      (unless cursor-drawn
-	(shaders.texture:draw *texture-shader* *cursor*
-			      `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0)))
-      (gl:flush)
-      (gl:finish)
+	       (setf cursor-drawn (some (lambda (val) val) (render-clients)))
+	       (unless cursor-drawn
+		 (shaders.texture:draw *texture-shader* *cursor*
+				       `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0)))
+	       (gl:flush)
+	       (gl:finish)
 
-      (setf *frame-ready* nil))
+	       (setf (frame-ready screen) nil))
 
-    ;; TODO: Wasteful - also - didn't really help much at the moment.
-    ;; Try to bring it back inside the *frame-ready* check
-    (handler-case
-	(drm-page-flip *drm* (fb *first*))
-      (error (err) (declare (ignore err)) ()))
+	     ;; TODO: Wasteful - also - didn't really help much at the moment.
+	     ;; Try to bring it back inside the *frame-ready* check
+	     (handler-case
+		 (drm-page-flip *drm* (fb screen))
+	       (error (err) (declare (ignore err)) ()))
 
-    ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
-    ;; Any events or changes that i could instead attach to?
-    ;; Maybe instead use per client flushes - for example when receiving commit from them
-    (wl:flush-clients *wayland*)
-    (when *enable-frame-counter* (incf *frame-counter*))))
+	     ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
+	     ;; Any events or changes that i could instead attach to?
+	     ;; Maybe instead use per client flushes - for example when receiving commit from them
+	     (when *enable-frame-counter* (incf *frame-counter*)))
+    ;; TODO: Also a bit wasteful - clients that are on different screens might want/need different flushes
+    ;; Based on whether the screen frame was rendered
+    (wl:flush-clients *wayland*)))
 
 (defun determine-orientation (orient)
   (let ((current-orient *orientation*))
@@ -371,9 +407,9 @@
 
 (defun set-frame-ready (a b c d crtc-id f)
   (declare (ignore a b c d f))
-  ;; (log! "Arguments: ~A ~A ~A ~A ~A ~A" a b c d crtc-id f)
-  ;; (log! "crtc: ~a" crtc-id)
-  (setf *frame-ready* t))
+  (let ((screen (screen-by-crtc *screen-tracker* crtc-id)))
+    (unless screen(error "No crtc found for id ~A" crtc-id))
+    (setf (frame-ready screen) t)))
 
 (defun process-inotify (path change)
   (declare (ignore change))
@@ -509,10 +545,7 @@
   (disable-frame-counter)
 
   (when *iio* (cleanup-iio *iio*))
-  ;; TODO: Before cleaning up *egl* clean up screen-tracker
-  (when (and *egl* *egl-image*) (seglutil:destroy-image *egl* *egl-image*))
-  ;; TODO: Before cleaning up *drm* clean up screen-tracker
-  (when (and *drm* *first*) (sdrm:rm-framebuffer! *drm* (fb *first*) (buffer *first*)))
+  (when *screen-tracker* (cleanup-screen-tracker *screen-tracker*))
 
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
   (when *drm* (sdrm:close-drm *drm*))
@@ -525,7 +558,7 @@
     (unix-sockets:close-unix-socket *socket*)
     (delete-file +socket-file+))
 
-  (setfnil *egl* *egl-context* *egl-image* *drm* *smuks-exit*
+  (setfnil *egl* *egl-context* *drm* *smuks-exit*
 	   *wayland* *socket* *seat* *cursor* *iio*))
 
 ;; ┬ ┬┌─┐┌─┐┬┌─┌─┐
