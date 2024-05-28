@@ -111,9 +111,9 @@
 	 (fd (open card :direction :io :if-exists :append)))
     (make-instance 'gbm-device :file fd)))
 
-(defun drm-page-flip (drm-dev framebuffer)
+(defun drm-page-flip (drm-dev framebuffer crtc)
   (let* ((result (- (drm::mode-page-flip (fd drm-dev)
-					 (drm::crtc!-id (crtc drm-dev))
+					 (drm::crtc!-id crtc)
 					 framebuffer
 					 :page-flip-event
 					 (cffi:null-pointer))))
