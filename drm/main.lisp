@@ -119,7 +119,6 @@
 			  :mode mode)))))
 
 
-
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘
 ;; └─┘┴─┘└─┘┴ ┴┘└┘└─┘┴
@@ -132,28 +131,3 @@
 (defun rm-framebuffer! (device fb buffer)
   (destroy-bo buffer)
   (check-err (drm::mode-remove-framebuffer (fd device) fb)))
-
-
-;; ┌┬┐┬─┐┌─┐┌─┐┬ ┬
-;;  │ ├┬┘├─┤└─┐├─┤
-;;  ┴ ┴└─┴ ┴└─┘┴ ┴
-;; TODO: Remove these
-;; TODO: Get rid of this. Favor create-connector-framebuffer
-(defun default-framebuffer (device)
-  (let* ((buffer-object (create-bo device))
-	 (width (width device))
-	 (height (height device))
-	 (handle (gbm:bo-get-handle buffer-object))
-	 (stride (gbm:bo-get-stride buffer-object))
-	 (bpp 32) (depth 24))
-    (make-framebuffer :id (add-framebuffer (fd device) width height depth bpp stride handle)
-		      :buffer buffer-object)))
-
-;; TODO: Get rid of this. For now favor rm-framebuffer!. Albeit it also still isn't perfect
-(defun rm-framebuffer (device framebuffer)
-  (destroy-bo (framebuffer-buffer framebuffer))
-  (check-err (drm::mode-remove-framebuffer (fd device) (framebuffer-id framebuffer))))
-
-;; TODO: Get rid of this. Favor create-bo!
-(defun create-bo (device)
-  (gbm:bo-create (gbm-pointer device) (width device) (height device) gbm::FORMAT_XRGB8888 *bo-flags*))

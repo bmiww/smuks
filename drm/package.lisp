@@ -14,14 +14,14 @@
    crtc crtcs
    close-drm
 
-   add-framebuffer rm-framebuffer default-framebuffer
+   add-framebuffer
    framebuffer-id framebuffer-buffer framebuffer-mode rm-framebuffer!
    set-crtc! connector-crtc
 
    create-connector-framebuffer
 
    free-crtc
-   create-bo destroy-bo
+
    init-drm page-flip
 
    height width
