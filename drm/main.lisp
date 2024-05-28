@@ -12,19 +12,11 @@
    (fd-stream :initarg :fd-stream :accessor fd-stream)
    (resources :initarg :resources :accessor resources)
    (gbm-pointer :initarg :gbm-pointer :accessor gbm-pointer)
-   (framebuffers :initarg :framebuffers :accessor framebuffers)
+   (framebuffers :initarg :framebuffers :accessor framebuffers) ;; TODO: Unused for now?
    (crtcs :initarg :crtcs :accessor crtcs)
    (crtc :initarg :crtc :accessor crtc)
    (connectors :initarg :connectors :accessor connectors)
-   (encoders :initarg :encoders :accessor encoders)
-   (width :initarg :width :accessor width)
-   (height :initarg :height :accessor height)
-   (original-crtc :initarg :original-crtc :accessor original-crtc)))
-
-(defmethod screen-width ((device gbm-device) orientation)
-  (case orientation ((:landscape :landscape-i) (height device)) ((:portrait :portrait-i) (width device))))
-(defmethod screen-height ((device gbm-device) orientation)
-  (case orientation ((:landscape :landscape-i) (width device)) ((:portrait :portrait-i) (height device))))
+   (encoders :initarg :encoders :accessor encoders)))
 
 (defmethod initialize-instance :after ((device gbm-device) &key file)
   ;; TODO: SBCL EXCLUSIVE
@@ -33,21 +25,24 @@
     (setf (fd-stream device) file)
     (setf (fd device) fd)
     (setf (gbm-pointer device) (gbm:create-device fd))
-    (let ((resources  (setf (resources device) (drm:get-resources fd))))
-      (unless (setf (crtcs device) (drm:resources-crtcs resources))
+    (let ((resources (setf (resources device) (drm:get-resources fd))))
+      (unless (setf (crtcs device) (loop for crtc in (drm:resources-crtcs resources)
+					 collect (init-crtc crtc)))
 	(error "No CRTCs found"))
-      (unless (setf (encoders device) (drm:resources-encoders resources))
+      (unless (setf (encoders device) (loop for encoder in (drm:resources-encoders resources)
+					    collect (init-encoder encoder)))
 	(error "No connectors found"))
-      (unless (setf (connectors device) (drm:resources-connectors resources))
+      (unless (setf (connectors device) (loop for connector in (drm:resources-connectors resources)
+					      collect (init-connector connector)))
 	(error "No encoders found")))))
 
 ;; TODO: Make it possible to select encoder?
 	 ;; For now - selecting the first one - since i haven't seen connectors have more than one yet
 (defmethod connector-crtc ((device gbm-device) connector)
-  (let* ((id (car (drm:connector!-encoders connector)))
-	 (matched (find-if (lambda (encoder) (eq (drm:encoder!-id encoder) id)) (encoders device)))
-	 (crtc-id (drm:encoder!-crtc-id matched)))
-    (find-if (lambda (crtc) (eq (drm:crtc!-id crtc) crtc-id)) (crtcs device))))
+  (let* ((id (car (encoders connector)))
+	 (matched (find-if (lambda (encoder) (eq (id encoder) id)) (encoders device)))
+	 (crtc-id (crtc-id matched)))
+    (find-if (lambda (crtc) (eq (id crtc) crtc-id)) (crtcs device))))
 
 
 
@@ -67,7 +62,7 @@
 ;; TODO: Free connector is expecting a pointer
 ;; but receiving a full connector structure
 (defmethod close-drm ((device gbm-device))
-  (check-err (drm::free-resources (resources device)))
+  (setf (resources device) nil)
   (check-err (gbm:device-destroy (gbm-pointer device)))
   (check-err (drm::drop-master (fd device)))
   (close (fd-stream device)))
@@ -79,14 +74,14 @@
 
 (defmethod connected-connectors ((device gbm-device))
   (loop for connector in (connectors device)
-	when (eq :connected (drm::connector!-connection connector))
+	when (eq :connected (connection connector))
 	  collect connector))
 
 (defun set-crtc! (fd fb connector crtc mode)
   (let ((result (drm:set-crtc
-		 fd (drm::crtc!-id crtc)
+		 fd (id crtc)
 		 fb 0 0
-		 (list (drm::connector!-id connector)) mode)))
+		 (list (id connector)) (ptr mode))))
     (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))))
 
 ;; TODO: Iterate cards - but actually check their capabilities.
@@ -102,7 +97,7 @@
 
 (defun drm-page-flip (drm-dev framebuffer crtc)
   (let* ((result (- (drm::mode-page-flip (fd drm-dev)
-					 (drm::crtc!-id crtc)
+					 (id crtc)
 					 framebuffer
 					 :page-flip-event
 					 (cffi:null-pointer))))
@@ -124,10 +119,10 @@
 ;; TODO: Figure out depth. For now, just hardcoding it
 (defun create-connector-framebuffer (device connector)
   "By default uses the first available mode"
-  (let ((mode (car (drm::connector!-modes connector))))
+  (let ((mode (car (modes connector))))
     (when mode
-      (let* ((width (drm:mode-hdisplay mode))
-	     (height (drm:mode-vdisplay mode))
+      (let* ((width (hdisplay mode))
+	     (height (vdisplay mode))
 	     (buffer-object (create-bo! device width height))
 	     (bpp 32) (depth 24))
 	(make-framebuffer :id (add-framebuffer (fd device) width height depth bpp

@@ -22,4 +22,11 @@
 
    free-crtc
    create-bo destroy-bo
-   init-drm drm-page-flip))
+   init-drm drm-page-flip
+
+   height width
+   vrefresh mode
+
+   connector-type
+   id
+   hdisplay vdisplay))

@@ -49,9 +49,9 @@
 (defmethod init-output ((display display) crtc)
   (make-instance 'output-global :display display :dispatch-impl 'output
 		    :x 0 :y 0
-		    :width (drm::crtc!-width crtc) :height (drm::crtc!-height crtc)
-		    :real-width (drm::crtc!-width crtc) :real-height (drm::crtc!-height crtc)
-		    :refresh-rate (getf (drm::crtc!-mode crtc) 'drm::vrefresh)
+		    :width (sdrm:width crtc) :height (sdrm:height crtc)
+		    :real-width (sdrm:width crtc) :real-height (sdrm:height crtc)
+		    :refresh-rate (sdrm:vrefresh (sdrm:mode crtc))
 		    :make "TODO: Fill out make" :model "TODO: Fill out model"))
 
 

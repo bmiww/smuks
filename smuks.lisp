@@ -44,16 +44,19 @@
    (egl-image :initform nil :accessor egl-image)
    (mode :initarg :mode :accessor mode)
    (crtc :initarg :crtc :accessor crtc)
-   (width :initarg :width :accessor width)
-   (height :initarg :height :accessor height)
    (drm :initarg :drm :accessor drm)
    (frame-ready :initform t :accessor frame-ready)
    (gl-framebuffer :initform nil :accessor gl-framebuffer)
    (shaders :initform nil :accessor shaders)))
 
-(defmethod width ((screen screen)) (drm:mode-hdisplay (mode screen)))
-(defmethod height ((screen screen)) (drm:mode-vdisplay (mode screen)))
-(defmethod connector-type ((screen screen)) (drm:connector!-connector-type (connector screen)))
+(defmethod screen-width ((screen screen) orientation)
+  (case orientation ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen))))
+(defmethod screen-height ((screen screen) orientation)
+  (case orientation ((:landscape :landscape-i) (width screen)) ((:portrait :portrait-i) (height screen))))
+
+(defmethod width ((screen screen)) (hdisplay (mode screen)))
+(defmethod height ((screen screen)) (vdisplay (mode screen)))
+(defmethod connector-type ((screen screen)) (connector-type (connector screen)))
 (defmethod start-monitor ((screen screen))
   (setf (egl-image screen)
 	(create-egl-image *egl* (buffer screen) (width screen) (height screen)))
@@ -115,8 +118,8 @@
 			     :buffer (framebuffer-buffer fb-obj)
 			     :fb (framebuffer-id fb-obj)
 			     :mode mode
-			     :width (drm:mode-hdisplay mode)
-			     :height (drm:mode-vdisplay mode)
+			     ;; :width (sdrm:hdisplay mode)
+			     ;; :height (sdrm:vdisplay mode)
 			     :drm drm))))))
 
 (defmethod start-monitors ((tracker screen-tracker))
@@ -124,7 +127,7 @@
 	do (start-monitor screen)))
 
 (defmethod screen-by-crtc ((tracker screen-tracker) crtc-id)
-  (find-if (lambda (screen) (eq (drm:crtc!-id (crtc screen)) crtc-id)) (screens tracker)))
+  (find-if (lambda (screen) (eq (sdrm:id (crtc screen)) crtc-id)) (screens tracker)))
 
 (defmethod prep-shaders ((tracker screen-tracker))
   (loop for screen in (screens tracker)
@@ -357,7 +360,7 @@
       ;; TODO: Layout needs to be recalculated for each screen that changed its orientation
       (recalculate-layout *wayland*)
       (let ((projection (sglutil:make-projection-matrix
-			 (sdrm:screen-width *drm* *orientation*) (sdrm:screen-height *drm* *orientation*)
+			 (sdrm:screen-width *first* *orientation*) (sdrm:screen-height *first* *orientation*)
 			 (case *orientation* (:landscape -90) (:portrait 0) (:landscape-i 90) (:portrait-i 180)))))
 	(update-projections *screen-tracker* projection)))))
 

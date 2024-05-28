@@ -56,8 +56,9 @@
 	       #:file-notify)
   :components ((:file "util")
 	       (:module "drm"
-		:components ((:file "package"
-			      :file "main")))
+		:components ((:file "package")
+			     (:file "classes")
+			     (:file "main")))
 	       (:file "shaders")
 	       (:file "gl-util")
 	       (:file "egl-util")
