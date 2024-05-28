@@ -55,26 +55,26 @@
 (defmethod height ((screen screen)) (drm:mode-vdisplay (mode screen)))
 (defmethod connector-type ((screen screen)) (drm:connector!-connector-type (connector screen)))
 (defmethod start-monitor ((screen screen))
-  (let* ((mode (mode screen))
-	 (width (setf (width screen) (drm:mode-hdisplay mode))) (height (setf (height screen) (drm:mode-vdisplay mode))))
-    (setf (egl-image screen)
-	  (create-egl-image *egl* (buffer screen) width height))
-    (setf (gl-framebuffer screen)
-	  (create-gl-framebuffer (egl-image screen)))
+  (setf (egl-image screen)
+	(create-egl-image *egl* (buffer screen) (width screen) (height screen)))
+  (setf (gl-framebuffer screen)
+	(create-gl-framebuffer (egl-image screen)))
 
-    (set-crtc! (fd (drm screen))
-	       (fb screen)
-	       (connector screen)
-	       (setf (crtc screen) (connector-crtc (drm screen) (connector screen)))
-	       mode)))
+  (set-crtc! (fd (drm screen))
+	     (fb screen)
+	     (connector screen)
+	     (setf (crtc screen) (connector-crtc (drm screen) (connector screen)))
+	     (mode screen)))
 
 
 (defmethod shader ((screen screen) (type (eql :rect))) (car (shaders screen)))
 (defmethod shader ((screen screen) (type (eql :texture))) (cadr (shaders screen)))
 
 (defmethod prep-shaders ((screen screen))
-  (prep-gl-implementation (fb *first*) (width *drm*) (height *drm*))
-  (setf (shaders screen) `(,(shader-init:create-rect-shader *drm*) ,(shader-init:create-texture-shader *drm*))))
+  (let ((width (width screen)) (height (height screen)))
+    (prep-gl-implementation (fb screen) width height)
+    (setf (shaders screen) `(,(shader-init:create-rect-shader width height)
+			     ,(shader-init:create-texture-shader width height)))))
 
 (defmethod update-projections ((screen screen) projection)
   (loop for shader in (shaders screen)
@@ -96,8 +96,6 @@
     (sdrm:rm-framebuffer! (drm screen) (fb screen) (buffer screen))
     (setf (fb screen) nil)))
 
-;; (defmethod create-egl-image ((screen screen) egl)
-  ;; )
 
 ;; screen-tracker
 ;; TODO: Maybe this can also have egl in it?
@@ -110,12 +108,16 @@
     (setf (screens tracker)
 	  (loop for connector in connectors
 		for fb-obj = (create-connector-framebuffer drm connector)
-		collect (make-instance 'screen
-			   :connector connector
-			   :buffer (framebuffer-buffer fb-obj)
-			   :fb (framebuffer-id fb-obj)
-			   :mode (framebuffer-mode fb-obj)
-			   :drm drm)))))
+		when fb-obj
+		  collect (let ((mode (framebuffer-mode fb-obj)))
+			    (make-instance 'screen
+			     :connector connector
+			     :buffer (framebuffer-buffer fb-obj)
+			     :fb (framebuffer-id fb-obj)
+			     :mode mode
+			     :width (drm:mode-hdisplay mode)
+			     :height (drm:mode-vdisplay mode)
+			     :drm drm))))))
 
 (defmethod start-monitors ((tracker screen-tracker))
   (loop for screen in (screens tracker)
@@ -135,6 +137,10 @@
 
 (defmethod update-projections ((tracker screen-tracker) projection)
   (mapcar (lambda (screen) (update-projections screen projection)) (screens tracker)))
+
+(defmethod handle-drm-change ((tracker screen-tracker))
+  (let ((resources (sdrm::recheck-resources (drm tracker))))
+    ))
 
 
 ;; TODO: Get rid of this - this is compat during refactoring
@@ -190,9 +196,8 @@
   (setf *udev* (udev:udev-new))
   (setf *udev-monitor* (udev:monitor-udev *udev*))
 
-  (init-globals *wayland* *drm*)
-
   (start-monitors *screen-tracker*)
+  (init-globals *wayland* (screens *screen-tracker*))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
   (cl-async:start-event-loop
@@ -411,14 +416,14 @@
     (loop for dev = (udev:receive-device *udev-monitor*)
 	  while dev
 	  do (progn
-	       (if (and (string= (udev:dev-subsystem dev) "drm")
+	       (when (and (string= (udev:dev-subsystem dev) "drm")
 			(string= (udev:dev-sys-name dev) "card0"))
 		   (progn (sleep 0.5) (handle-drm-device-event dev))
-		   (print dev))))))
+		   )))))
 
 (defun handle-drm-device-event (dev)
   (declare (ignore dev))
-  (sdrm::recheck-resources *drm*))
+  (handle-drm-change *screen-tracker*))
 
 (defun handle-input (event) (input *wayland* (event-type event) event))
 

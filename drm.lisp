@@ -45,19 +45,13 @@
     (setf (fd-stream device) file)
     (setf (fd device) fd)
     (setf (gbm-pointer device) (gbm:create-device fd))
-    (let* ((resources  (setf (resources device) (drm:get-resources fd)))
-	   (crtcs      (setf (crtcs device) (drm:resources-crtcs resources)))
-	   (encoders   (setf (encoders device) (drm:resources-encoders resources)))
-	   (connectors (setf (connectors device) (drm:resources-connectors resources)))
-	   (valid      (find-if (lambda (crtc) (> (drm::crtc!-mode-valid crtc) 0)) crtcs)))
-
-      (unless crtcs      (error "No CRTCs found"))
-      (unless connectors (error "No connectors found"))
-      (unless valid      (error "No valid CRTCs found"))
-
-      (setf (crtc device) valid)
-      (setf (width device) (drm::crtc!-width valid))
-      (setf (height device) (drm::crtc!-height valid)))))
+    (let ((resources  (setf (resources device) (drm:get-resources fd))))
+      (unless (setf (crtcs device) (drm:resources-crtcs resources))
+	(error "No CRTCs found"))
+      (unless (setf (encoders device) (drm:resources-encoders resources))
+	(error "No connectors found"))
+      (unless (setf (connectors device) (drm:resources-connectors resources))
+	(error "No encoders found")))))
 
 ;; TODO: Make it possible to select encoder?
 	 ;; For now - selecting the first one - since i haven't seen connectors have more than one yet
@@ -71,8 +65,15 @@
 
 
 (defmethod recheck-resources ((device gbm-device))
-  ;; (let* ((resources  (setf (resources device) (drm:get-resources (fd device)))))))
-  (drm:get-resources (fd device)))
+  ;; (let* ((resources (setf (resources device) (drm:get-resources (fd device)))))
+    ;; (loop for crtc in (drm:resources-crtcs resources)
+    ;; do )
+
+    ;; (setf (encoders device) (drm:resources-encoders resources))
+    ;; (setf (connectors device) (drm:resources-connectors resources)))
+  )
+
+
 
 
 ;; TODO: Free connector is expecting a pointer
@@ -135,16 +136,17 @@
 ;; TODO: Figure out depth. For now, just hardcoding it
 (defun create-connector-framebuffer (device connector)
   "By default uses the first available mode"
-  (let* ((mode (car (drm::connector!-modes connector)))
-	 (width (drm:mode-hdisplay mode))
-	 (height (drm:mode-vdisplay mode))
-	 (buffer-object (create-bo! device width height))
-	 (bpp 32) (depth 24))
-    (make-framebuffer :id (add-framebuffer (fd device) width height depth bpp
-					   (gbm:bo-get-stride buffer-object)
-					   (gbm:bo-get-handle buffer-object))
-		      :buffer buffer-object
-		      :mode mode)))
+  (let ((mode (car (drm::connector!-modes connector))))
+    (when mode
+      (let* ((width (drm:mode-hdisplay mode))
+	     (height (drm:mode-vdisplay mode))
+	     (buffer-object (create-bo! device width height))
+	     (bpp 32) (depth 24))
+	(make-framebuffer :id (add-framebuffer (fd device) width height depth bpp
+					       (gbm:bo-get-stride buffer-object)
+					       (gbm:bo-get-handle buffer-object))
+			  :buffer buffer-object
+			  :mode mode)))))
 
 (defun rm-framebuffer! (device fb buffer)
   (destroy-bo buffer)

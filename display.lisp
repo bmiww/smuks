@@ -28,7 +28,7 @@
 ;; └─┘└─┘ ┴ └─┘┴
 
 ;; TODO: I don't much like the drm arg here
-(defmethod init-globals ((display display) drm)
+(defmethod init-globals ((display display) screens)
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
   (make-instance 'wl-compositor:global :display display :dispatch-impl 'compositor)
   (make-instance 'wl-subcompositor:global :display display :dispatch-impl 'subcompositor)
@@ -37,21 +37,22 @@
   (make-instance 'wl-data-device-manager:global :display display :dispatch-impl 'dd-manager)
   (make-instance 'xdg-wm-base:global :display display :dispatch-impl 'wm-base)
   (make-instance 'dmabuf-global :display display :dispatch-impl 'dmabuf)
-  (init-output display drm))
+  (loop for screen in screens
+	do (init-output display (crtc screen))))
+
 
 ;; TODO: This is very incomplete.
 ;; Lots of fake stuff here
 ;; Everything is based on the SINGLE crtc that i enable
 ;; Real width/height are just width/height - should be mm of real screen size
 ;; X/Y are just 0,0 - since i'm only handling one screen
-(defmethod init-output ((display display) drm)
-  (let ((crtc (sdrm::crtc drm)))
-    (make-instance 'output-global :display display :dispatch-impl 'output
-		      :x 0 :y 0
-		      :width (drm::crtc!-width crtc) :height (drm::crtc!-height crtc)
-		      :real-width (drm::crtc!-width crtc) :real-height (drm::crtc!-height crtc)
-		      :refresh-rate (getf (drm::crtc!-mode crtc) 'drm::vrefresh)
-		      :make "TODO: Fill out make" :model "TODO: Fill out model")))
+(defmethod init-output ((display display) crtc)
+  (make-instance 'output-global :display display :dispatch-impl 'output
+		    :x 0 :y 0
+		    :width (drm::crtc!-width crtc) :height (drm::crtc!-height crtc)
+		    :real-width (drm::crtc!-width crtc) :real-height (drm::crtc!-height crtc)
+		    :refresh-rate (getf (drm::crtc!-mode crtc) 'drm::vrefresh)
+		    :make "TODO: Fill out make" :model "TODO: Fill out model"))
 
 
 ;; ┬─┐┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
