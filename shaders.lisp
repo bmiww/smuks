@@ -9,7 +9,7 @@
   (:use :cl :smuks-util)
   (:export
    ;; Funcs
-   create-shader array-buffer-data
+   create-shader array-buffer-data allocate-gl-array fill-buffer
    ;; Params
    *instanced-vert* *instanced-texture-vert*
    ;; Shader base
@@ -63,7 +63,13 @@
 
     shader-program))
 
+(defun allocate-gl-array (length) (gl:alloc-gl-array :float length))
+
 ;; TODO: Stupid name. This just fills a buffer with the fancy 4 corner coords
+;; TODO: This one recreates the array every time, and is not very efficient
+;; Prefer fill-buffer with a preallocated array
+;; TODO: Extra considerations for instanced rendering where the length of the array might be variable
+;; And require different handling
 (defun array-buffer-data (vbo verts)
   (gl:bind-buffer :array-buffer vbo)
   (let* ((length (length verts))
@@ -72,6 +78,11 @@
       (setf (gl:glaref arr i) (aref verts i)))
     (gl:buffer-data :array-buffer :static-draw arr)))
 
+(defun fill-buffer (vbo verts arr)
+  (gl:bind-buffer :array-buffer vbo)
+  (dotimes (i (length verts))
+    (setf (gl:glaref arr i) (aref verts i)))
+  (gl:buffer-data :array-buffer :static-draw arr))
 
 ;; ┌─┐┌─┐┌┐┌┌─┐┌┬┐┌─┐
 ;; │  │ ││││└─┐ │ └─┐

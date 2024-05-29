@@ -15,9 +15,9 @@
 
 
 (defclass shader (shaders:shader-base)
-  ((matrix :accessor matrix)
-   (instanced-vbo :accessor instanced-vbo)
+  ((instanced-vbo :accessor instanced-vbo)
    (runtime-vbo :accessor runtime-vbo)
+   (gl-buffer-array :accessor gl-buffer-array)
    (attr-vert)
    (attr-position)
    (attr-color)
@@ -63,23 +63,25 @@ void main() {
 ")
 
 (defmethod initialize-instance :before ((program shader) &key projection)
-  (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position attr-color) program
+  (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position attr-color gl-buffer-array) program
     (setf pointer (shaders:create-shader vertex-shader-rectangle fragment-shader-rectangle))
     (setf instanced-vbo (gl:gen-buffer))
     (setf runtime-vbo (gl:gen-buffer))
     (setf vao (gl:gen-vertex-array))
-    ;; (setf matrix (gl:get-uniform-location pointer "matrix"))
     (setf uni-projection (gl:get-uniform-location pointer "projection"))
     (setf attr-vert (gl:get-attrib-location pointer "vert"))
     (setf attr-position (gl:get-attrib-location pointer "position"))
     (setf attr-color (gl:get-attrib-location pointer "color"))
+    (setf gl-buffer-array (shaders:allocate-gl-array 8))
 
     (shaders:array-buffer-data instanced-vbo shaders:*instanced-vert*)
 
     (when projection (shaders:update-projection program projection))))
 
 (defmethod draw ((program shader) rects)
-  (with-slots (vao pointer instanced-vbo runtime-vbo attr-vert attr-position attr-color) program
+  (with-slots (vao pointer instanced-vbo runtime-vbo
+	       attr-vert attr-position attr-color
+	       gl-buffer-array) program
     (gl:use-program pointer)
     (gl:bind-vertex-array vao)
 
@@ -87,12 +89,19 @@ void main() {
     (gl:enable-vertex-attrib-array attr-vert)
     (gl:vertex-attrib-pointer attr-vert 2 :float nil (* 2 4) (cffi:null-pointer))
 
-    (shaders:array-buffer-data
+    ;; (shaders:array-buffer-data
+     ;; runtime-vbo
+     ;; (concatenate
+      ;; 'simple-vector
+      ;; (util:flatten (loop for rect in rects collect (space-tuple rect)))
+      ;; (util:flatten (loop for rect in rects collect (rect-color rect)))))
+    (shaders:fill-buffer
      runtime-vbo
      (concatenate
       'simple-vector
       (util:flatten (loop for rect in rects collect (space-tuple rect)))
-      (util:flatten (loop for rect in rects collect (rect-color rect)))))
+      (util:flatten (loop for rect in rects collect (rect-color rect))))
+     gl-buffer-array)
 
     (gl:bind-buffer :array-buffer runtime-vbo)
     (gl:enable-vertex-attrib-array attr-position)

@@ -19,6 +19,7 @@
 
    (instanced-vbo :accessor instanced-vbo)
    (runtime-vbo :accessor runtime-vbo)
+   (gl-buffer-array :accessor gl-buffer-array)
    (attr-vert)
    (attr-position)
    (vao)))
@@ -71,7 +72,7 @@ void main() {
 
 (defmethod initialize-instance :before ((program shader) &key projection)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position
-	       uni-matrix uni-texture uni-sampler) program
+	       uni-matrix uni-texture uni-sampler gl-buffer-array) program
     (setf pointer (shaders:create-shader vertex-shader-texture fragment-shader-abgr))
 
     (setf instanced-vbo (gl:gen-buffer))
@@ -85,6 +86,9 @@ void main() {
 
     (setf attr-vert (gl:get-attrib-location pointer "vert"))
     (setf attr-position (gl:get-attrib-location pointer "vert_position"))
+    ;; TODO: This 4 is horrible.
+    ;; Especially since i might at some point allocate more than one vertice
+    (setf gl-buffer-array (shaders:allocate-gl-array 4))
 
     (gl:use-program pointer)
     (gl:uniformi uni-sampler 0)
@@ -104,7 +108,7 @@ void main() {
     (let ((pos-matrix (make-position-matrix (coerce x 'double-float) (coerce y 'double-float)))
 	  (tex-matrix (texture-matrix width height)))
       (with-slots (vao pointer instanced-vbo runtime-vbo attr-vert attr-position
-		   uni-matrix uni-texture) program
+		   uni-matrix uni-texture gl-buffer-array) program
 	(gl:use-program pointer)
 	(gl:bind-vertex-array vao)
 
@@ -122,11 +126,17 @@ void main() {
 	(gl:uniform-matrix-3fv uni-texture tex-matrix nil)
 
 	(gl:bind-buffer :array-buffer runtime-vbo)
-	(shaders:array-buffer-data
+	;; (shaders:array-buffer-data
+	 ;; runtime-vbo
+	 ;; (concatenate
+	  ;; 'simple-vector
+	  ;; (util:flatten (loop for rect in `(,(make-rect :x 0.0 :y 0.0 :w width :h height)) collect (space-tuple rect)))))
+	(shaders:fill-buffer
 	 runtime-vbo
 	 (concatenate
 	  'simple-vector
-	  (util:flatten (loop for rect in `(,(make-rect :x 0.0 :y 0.0 :w width :h height)) collect (space-tuple rect)))))
+	  (util:flatten (loop for rect in `(,(make-rect :x 0.0 :y 0.0 :w width :h height)) collect (space-tuple rect))))
+	 gl-buffer-array)
 	(gl:enable-vertex-attrib-array attr-position)
 	(gl:vertex-attrib-pointer attr-position 4 :float nil (* 4 4) (cffi:null-pointer))
 
