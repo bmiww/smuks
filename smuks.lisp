@@ -244,10 +244,11 @@
 (defun recursively-render-frame ()
   (if *smuks-exit*
       (cl-async:exit-event-loop)
-      (restart-case (render-frame)
-	(skip-frame ()
-	  :report "Skip frame"
-	  (print "Skipping frame")))))
+      (loop for screen in (screens *screen-tracker*)
+	    do (restart-case (render-frame screen)
+		 (skip-frame ()
+		   :report "Skip frame"
+		   (print "Skipping frame"))))))
 
 ;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
 ;; So that the main loop can know if it should render the display cursor or not
@@ -306,48 +307,46 @@
 (defvar *red-x* 50.0)
 (defvar *red-y* 100.0)
 
-(defun render-frame ()
+(defun render-frame (screen)
   (livesupport:update-repl-link)
   (let ((cursor-drawn nil))
-    (loop for screen in (screens *screen-tracker*)
-	  do
-	     (when (frame-ready screen)
-	       (gl:bind-framebuffer :framebuffer (gl-framebuffer screen))
-	       (gl:viewport 0 0 (width screen) (height screen))
-	       (gl:clear :color-buffer-bit)
+    (when (frame-ready screen)
+      (incr (frame-counter screen))
+      (gl:bind-framebuffer :framebuffer (gl-framebuffer screen))
+      (gl:viewport 0 0 (width screen) (height screen))
+      (gl:clear :color-buffer-bit)
 
 
 
-	       (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
-							 :x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
-							 :color '(0.2 0.2 0.2 1.0))))
+      (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
+							:x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
+							:color '(0.2 0.2 0.2 1.0))))
 
-	       (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
-							 :x *red-x* :y *red-y* :w 200.0 :h 50.0
-							 :color '(1.0 0.0 0.0 0.6))))
+      (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
+							:x *red-x* :y *red-y* :w 200.0 :h 50.0
+							:color '(1.0 0.0 0.0 0.6))))
 
-	       (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
-	       (unless cursor-drawn
-		 (shaders.texture:draw (shader screen :texture) *cursor*
-				       `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0)))
-	       (gl:flush)
-	       (gl:finish)
+      (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
+      (unless cursor-drawn
+	(shaders.texture:draw (shader screen :texture) *cursor*
+			      `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0)))
+      (gl:flush)
+      (gl:finish)
 
-	       (setf (frame-ready screen) nil))
+      (setf (frame-ready screen) nil)
 
-	     ;; TODO: Wasteful - also - didn't really help much at the moment.
-	     ;; Try to bring it back inside the *frame-ready* check
-	     (handler-case
-		 (page-flip *drm* (fb screen) (connector screen))
-	       (error (err) (declare (ignore err)) ()))
+      ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
+      ;; Any events or changes that i could instead attach to?
+      ;; Maybe instead use per client flushes - for example when receiving commit from them
+      ;; TODO: Also a bit wasteful - clients that are on different screens might want/need different flushes
+      ;; Based on whether the screen frame was rendered
+      (wl:flush-clients *wayland*))
 
-	     ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
-	     ;; Any events or changes that i could instead attach to?
-	     ;; Maybe instead use per client flushes - for example when receiving commit from them
-	     (incr (frame-counter screen)))
-    ;; TODO: Also a bit wasteful - clients that are on different screens might want/need different flushes
-    ;; Based on whether the screen frame was rendered
-    (wl:flush-clients *wayland*)))
+    ;; TODO: Wasteful - also - didn't really help much at the moment.
+    ;; Try to bring it back inside the *frame-ready* check
+    (handler-case
+	(page-flip *drm* (fb screen) (connector screen))
+      (error (err) (declare (ignore err)) ()))))
 
 ;; TODO: This whole thing should be screen specific
 (defun determine-orientation (orient)
@@ -451,7 +450,7 @@
   (let ((screen (screen-by-crtc *screen-tracker* crtc-id)))
     (when screen
       (setf (frame-ready screen) t)
-      (recursively-render-frame))))
+      (render-frame screen))))
 
 (defun process-added-device (dev)
   (when (str:contains? "event" (udev:dev-sys-name dev))
