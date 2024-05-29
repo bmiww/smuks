@@ -39,7 +39,6 @@
    (connector :initarg :connector :accessor connector)
    (egl-image :initform nil :accessor egl-image)
    (drm :initarg :drm :accessor drm)
-   (frame-ready :initform t :accessor frame-ready)
    (gl-framebuffer :initform nil :accessor gl-framebuffer)
    (shaders :initform nil :accessor shaders)
    (frame-counter :initform (make-instance 'frame-counter) :accessor frame-counter)))
@@ -156,6 +155,10 @@
 			   (push screen (screens tracker))
 			   (render-frame screen))))))))))
 
+
+(defmethod kickstart-frame-render-for-all ((tracker screen-tracker))
+  (loop for screen in (screens tracker)
+	do (render-frame screen)))
 
 ;; TODO: Get rid of this - this is compat during refactoring
 (defmethod testie ((tracker screen-tracker)) (first (screens tracker)))
@@ -309,45 +312,44 @@
 (defvar *red-y* 100.0)
 
 (defun render-frame (screen)
+  ;; (print "What")
   (livesupport:update-repl-link)
   (let ((cursor-drawn nil))
-    (when (frame-ready screen)
-      (incr (frame-counter screen))
-      (gl:bind-framebuffer :framebuffer (gl-framebuffer screen))
-      (gl:viewport 0 0 (width screen) (height screen))
-      (gl:clear :color-buffer-bit)
+    (incr (frame-counter screen))
+    (gl:bind-framebuffer :framebuffer (gl-framebuffer screen))
+    (gl:viewport 0 0 (width screen) (height screen))
+    (gl:clear :color-buffer-bit)
 
 
 
-      (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
-							:x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
-							:color '(0.2 0.2 0.2 1.0))))
+    (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
+						      :x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
+						      :color '(0.2 0.2 0.2 1.0))))
 
-      (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
-							:x *red-x* :y *red-y* :w 200.0 :h 50.0
-							:color '(1.0 0.0 0.0 0.6))))
+    (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
+						      :x *red-x* :y *red-y* :w 200.0 :h 50.0
+						      :color '(1.0 0.0 0.0 0.6))))
 
-      (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
-      (unless cursor-drawn
-	(shaders.texture:draw (shader screen :texture) *cursor*
-			      `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0)))
-      (gl:flush)
-      (gl:finish)
+    (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
+    (unless cursor-drawn
+      (shaders.texture:draw (shader screen :texture) *cursor*
+			    `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0)))
+    (gl:flush)
+    (gl:finish)
 
-      (setf (frame-ready screen) nil)
 
-      ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
-      ;; Any events or changes that i could instead attach to?
-      ;; Maybe instead use per client flushes - for example when receiving commit from them
-      ;; TODO: Also a bit wasteful - clients that are on different screens might want/need different flushes
-      ;; Based on whether the screen frame was rendered
-      (wl:flush-clients *wayland*))
+    ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
+    ;; Any events or changes that i could instead attach to?
+    ;; Maybe instead use per client flushes - for example when receiving commit from them
+    ;; TODO: Also a bit wasteful - clients that are on different screens might want/need different flushes
+    ;; Based on whether the screen frame was rendered
+    (wl:flush-clients *wayland*))
 
-    ;; TODO: Wasteful - also - didn't really help much at the moment.
-    ;; Try to bring it back inside the *frame-ready* check
-    (handler-case
-	(page-flip *drm* (fb screen) (connector screen))
-      (error (err) (declare (ignore err)) ()))))
+  ;; TODO: Wasteful - also - didn't really help much at the moment.
+  ;; Try to bring it back inside the *frame-ready* check
+  (handler-case
+      (page-flip *drm* (fb screen) (connector screen))
+    (error (err) (declare (ignore err)) ())))
 
 ;; TODO: This whole thing should be screen specific
 (defun determine-orientation (orient)
@@ -447,7 +449,6 @@
   (declare (ignore a b c d f))
   (let ((screen (screen-by-crtc *screen-tracker* crtc-id)))
     (when screen
-      (setf (frame-ready screen) t)
       (render-frame screen))))
 
 (defun process-added-device (dev)
