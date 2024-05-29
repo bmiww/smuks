@@ -8,6 +8,9 @@
 ;; TODO: Getting warnings about
 ;; "Computing just-done stamp in plan NIL for action"
 ;; Don't know yet what it means completely - happened after introducing the custom cl-drm package
+;; NOTE: Disable cl-opengl error checking to shave off some runtime
+(pushnew :cl-opengl-no-check-error *features*)
+
 (asdf:defsystem #:smuks
   :serial t
   :description "A window manager"
@@ -19,7 +22,6 @@
   :entry-point "smuks::main"
   :around-compile (lambda (next)
 		    (when (uiop/os:getenv "DEBUG_SMUKS")
-		      (format t "~%DEBUG_SMUKS is set~%")
 		      (proclaim '(optimize
                                   (safety 3)
                                   (debug 3)

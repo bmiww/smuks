@@ -48,6 +48,10 @@
 
       (values display context))))
 
+;; TODO: For some reason make-current and terminate here are hanging
+;; Don't know when i introduced this bug
+;; And don't know why it's happening
+;; Doesn't happen always though. Maybe multiscreen stuff?
 (defun cleanup-egl (egl wl context)
   (egl:unbind-wl-display egl wl)
   (egl:make-current egl (cffi:null-pointer) (cffi:null-pointer) (cffi:null-pointer))

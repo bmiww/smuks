@@ -7,6 +7,8 @@
 ;;  ╚═════╝ ╚══════╝  ╚═════╝    ╚═╝   ╚═╝╚══════╝
 (defpackage :smuks-gl-util
   (:use :cl :sdrm :smuks-util)
+  (:local-nicknames
+   (:math #:org.shirakumo.fraf.math))
   (:nicknames :sglutil)
   (:export
    check-gl-error
@@ -17,6 +19,9 @@
    make-projection-matrix
    make-position-matrix
    matrix->array
+
+   translation-matrix
+   scaling-matrix
 
    ;; damage
    make-damage
@@ -162,6 +167,9 @@
 
     (setf projection (clem:m* projection (make-rot-matrix rotation)))
     (matrix->array projection)))
+
+(defun translation-matrix (x y) (math:marr3 (math:mtranslation (math:vec (flo x) (flo y)))))
+(defun scaling-matrix (width height) (math:marr3 (math:mscaling (math:vec (flo (/ 1 width)) (flo (/ 1 height))))))
 
 (defun make-position-matrix (x y)
   (let* ((ident (clem:identity-matrix 3))
