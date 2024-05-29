@@ -77,8 +77,17 @@
    (width :initarg :width :accessor width)
    (height :initarg :height :accessor height)
    (pixel-format :initarg :format :accessor pixel-format)
-   (flags :initarg :flags :accessor flags)))
+   (flags :initarg :flags :accessor flags)
+   (image :initarg :image :accessor image)))
 
+(defmethod initialize-instance :after ((buffer dma-buffer) &key)
+  (let ((plane (gethash 0 (planes buffer))))
+    (setf (image buffer)
+	  (seglutil:create-egl-image-from-buffer
+	   (egl (wl:get-display buffer))
+	   (width buffer) (height buffer)
+	   (pixel-format buffer)
+	   (fd plane) (offset plane) (stride plane)))))
 
 
 ;; ┌┐ ┬ ┬┌┬┐┌─┐  ┬─┐┌─┐┌─┐┌┬┐

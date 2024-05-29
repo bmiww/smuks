@@ -20,7 +20,6 @@
    (pending-damage :initform nil :accessor pending-damage)
    (damage :initform nil :accessor damage)
    (pending-frame-callbacks :initform nil :accessor pending-frame-callbacks)
-   (egl-image :initform nil :accessor egl-image)
    (frame-callbacks :initform nil :accessor frame-callbacks)))
 
 ;; ┌─┐┌─┐┌┬┐┌┬┐┬┌┬┐
@@ -151,19 +150,9 @@ Or some such."
 ;; TODO: Can we destroy the image once the texture has been created?
 (defmethod commit-dma-buffer ((surface surface))
   (commit-buffer surface
-    (let* ((buffer (pending-buffer surface))
-	   (plane (gethash 0 (planes buffer))))
-      (let ((image
-	      (if (or new-dimensions? (not (egl-image surface)))
-		  (setf (egl-image surface)
-			(seglutil:create-egl-image-from-buffer
-			 (egl (wl:get-display surface))
-			 (width buffer) (height buffer)
-			 (pixel-format buffer)
-			 (fd plane) (offset plane) (stride plane)))
-		  (egl-image surface))))
-	(setf (texture surface) (sglutil:create-image-texture image texture))
-	(setf (texture-type surface) :dma)))))
+    (let* ((buffer (pending-buffer surface)))
+      (setf (texture surface) (sglutil:create-image-texture (image buffer) texture))
+      (setf (texture-type surface) :dma))))
 
 
 (defmethod commit-shm-buffer ((surface surface))

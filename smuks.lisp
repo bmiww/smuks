@@ -312,7 +312,6 @@
 (defvar *red-y* 100.0)
 
 (defun render-frame (screen)
-  ;; (print "What")
   (livesupport:update-repl-link)
   (let ((cursor-drawn nil))
     (incr (frame-counter screen))
