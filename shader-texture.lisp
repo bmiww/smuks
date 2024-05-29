@@ -5,8 +5,6 @@
 ;;    ██║   ██╔══╝   ██╔██╗    ██║   ██║   ██║██╔══██╗██╔══╝
 ;;    ██║   ███████╗██╔╝ ██╗   ██║   ╚██████╔╝██║  ██║███████╗
 ;;    ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝
-(declaim (optimize (speed 0) (safety 0) (debug 3) (compilation-speed 0)))
-
 (defpackage :shaders.texture
   (:use :cl :sglutil :shaders)
   (:export shader update-matrix draw))
