@@ -153,7 +153,8 @@
 					  :drm (drm tracker))))
 			   (prep-shaders screen)
 			   (start-monitor screen)
-			   (push screen (screens tracker)))))))))))
+			   (push screen (screens tracker))
+			   (render-frame screen))))))))))
 
 
 ;; TODO: Get rid of this - this is compat during refactoring
@@ -222,7 +223,7 @@
      (setf *wl-poller* (wayland-listener))
      (log! "Starting input event poller. Waiting for user inputs...")
      (setf *input-poller* (input-listener))
-     (log! "Starting the umpeenth poller. Now for seat events...")
+     (log! "Starting the umpteenth poller. Now for seat events...")
      (setf *seat-poller* (seat-listener))
      (log! "Starting the accelerometer poller. Waiting for accelerometer events...")
      (setf *accelerometer-poller* (accelerometer-listener))
@@ -396,9 +397,6 @@
 (defun seat-listener () (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable)))
 (defun accelerometer-listener () (cl-async:poll (accelerometer-fd *iio*) 'accelerometer-callback :poll-for '(:readable)))
 (defun udev-listener ()
-  ;; (udev:monitor-add-match-subsystem *udev* "drm")
-  ;; (udev:monitor-add-match-subsystem *udev* "input")
-  ;; (udev:monitor-add-match-subsystem *udev* "iio")
   (udev::%monitor-enable-receiving *udev-monitor*)
   (cl-async:poll (udev:get-fd *udev-monitor*) 'udev-callback :poll-for '(:readable)))
 
