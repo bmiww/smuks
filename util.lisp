@@ -15,7 +15,8 @@
 	   flatten get-ms
 	   with-xdg-mem-file
 	   flo
-	   make-mmap-pool mmap-pool-fd mmap-pool-size mmap-pool-ptr munmap))
+	   make-mmap-pool mmap-pool-fd mmap-pool-size mmap-pool-ptr munmap
+	   frame-counter incr run stop enabled))
 (in-package :smuks-util)
 
 (defun heading ()
@@ -197,3 +198,31 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 						    :size (file-length stream) :mmap '(:private))
 
 	(make-mmap-pool :ptr ptr :fd fd :size size :file stream)))))
+
+
+;; ┌─┐┬─┐┌─┐┌┬┐┌─┐  ┌─┐┌─┐┬ ┬┌┐┌┌┬┐┌─┐┬─┐
+;; ├┤ ├┬┘├─┤│││├┤   │  │ ││ ││││ │ ├┤ ├┬┘
+;; └  ┴└─┴ ┴┴ ┴└─┘  └─┘└─┘└─┘┘└┘ ┴ └─┘┴└─
+(defclass frame-counter ()
+  ((enabled :initform nil :accessor enabled)
+   (frames :initform 0 :accessor frames)
+   (thread :initform nil :accessor thread)))
+
+(defmethod incr ((counter frame-counter)) (when (enabled counter) (incf (frames counter))))
+(defmethod run ((counter frame-counter) &optional (message "FPS: "))
+  (setf (enabled counter) t)
+  (setf (frames counter) 0)
+  (setf (thread counter)
+	(bt:make-thread (lambda ()
+		       (loop while (enabled counter)
+			     do (sleep 1)
+			     do (log! "~a~a" message (frames counter))
+			     do (setf (frames counter) 0))))))
+
+(defmethod stop ((counter frame-counter))
+  (when (thread counter)
+    (bt:destroy-thread (thread counter))
+    (setf
+     (enabled counter) nil
+     (frames counter) 0
+     (thread counter) nil)))

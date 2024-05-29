@@ -17,9 +17,6 @@
 (defvar *wayland* nil)
 (defvar *iio* nil)
 (defvar *orientation* nil)
-(defvar *enable-frame-counter* t)
-(defvar *frame-counter* 0)
-(defvar *frame-counter-thread* nil)
 (defvar *udev* nil)
 (defvar *udev-monitor* nil)
 (defvar *screen-tracker* nil)
@@ -44,7 +41,8 @@
    (drm :initarg :drm :accessor drm)
    (frame-ready :initform t :accessor frame-ready)
    (gl-framebuffer :initform nil :accessor gl-framebuffer)
-   (shaders :initform nil :accessor shaders)))
+   (shaders :initform nil :accessor shaders)
+   (frame-counter :initform (make-instance 'frame-counter) :accessor frame-counter)))
 
 (defmethod screen-width ((screen screen) orientation)
   (case orientation ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen))))
@@ -108,6 +106,13 @@
 			     :fb (framebuffer-id fb-obj)
 			     :drm drm)))))
 
+(defmethod stop-measuring-fps ((tracker screen-tracker))
+  (loop for screen in (screens tracker) do (stop (frame-counter screen))))
+
+(defmethod measure-fps ((tracker screen-tracker))
+  (loop for screen in (screens tracker)
+	do (run (frame-counter screen) (format nil "FPS:ScreenFB:~a: " (fb screen)))))
+
 (defmethod start-monitors ((tracker screen-tracker))
   (loop for screen in (screens tracker)
 	do (start-monitor screen)))
@@ -120,6 +125,7 @@
 	do (prep-shaders screen)))
 
 (defmethod cleanup-screen-tracker ((tracker screen-tracker))
+  (stop-measuring-fps tracker)
   (loop for screen in (screens tracker)
 	do (cleanup-screen screen)
 	finally (setf (screens tracker) nil)))
@@ -341,7 +347,7 @@
 	     ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
 	     ;; Any events or changes that i could instead attach to?
 	     ;; Maybe instead use per client flushes - for example when receiving commit from them
-	     (when *enable-frame-counter* (incf *frame-counter*)))
+	     (incr (frame-counter screen)))
     ;; TODO: Also a bit wasteful - clients that are on different screens might want/need different flushes
     ;; Based on whether the screen frame was rendered
     (wl:flush-clients *wayland*)))
@@ -535,25 +541,6 @@
 ;; Can be called from repl to stop the compositor
 (defun shutdown () (setf *smuks-exit* t))
 
-(defun disable-frame-counter ()
-  (when *frame-counter-thread*
-    (bt:destroy-thread *frame-counter-thread*)
-    (setf
-     *enable-frame-counter* nil
-     *frame-counter* 0
-     *frame-counter-thread* nil)))
-
-(defun enable-frame-counter ()
-  (setf *enable-frame-counter* t)
-  (setf *frame-counter* 0)
-  (setf *frame-counter-thread*
-	(bt:make-thread
-	 (lambda ()
-	   (loop do (sleep 1)
-		 do (log! (format nil "Frames: ~a" *frame-counter*))
-		 do (setf *frame-counter* 0))))))
-
-
 ;; ┬ ┬┌┐┌┌─┐┌─┐┬─┐┌┬┐┌─┐┌┬┐
 ;; │ ││││└─┐│ │├┬┘ │ ├┤  ││
 ;; └─┘┘└┘└─┘└─┘┴└─ ┴ └─┘─┴┘
@@ -574,8 +561,6 @@
 
 
 (defun cleanup ()
-  (disable-frame-counter)
-
   (when *iio* (cleanup-iio *iio*))
   (when *screen-tracker* (cleanup-screen-tracker *screen-tracker*))
 
