@@ -22,12 +22,12 @@
 (defvar *screen-tracker* nil)
 ;; TODO: Only for refactoring - remove when handling multiple screens
 (defvar *first* nil)
+(defvar *libinput* nil)
 
 (defnil
     *socket* *smuks-exit*
-  *libinput* *seat*
+  *seat* *cursor*
   *egl* *egl-context*
-  *cursor*
   *client-poller* *wl-poller* *drm-poller* *input-poller*
   *seat-poller* *device-poller* *accelerometer-poller*
   *udev-poller*)
@@ -427,17 +427,25 @@
   (when (ready ev)
     (loop for dev = (udev:receive-device *udev-monitor*)
 	  while dev
-	  do (progn
-	       (when (and (string= (udev:dev-subsystem dev) "drm")
-			(string= (udev:dev-sys-name dev) "card0"))
-		   (progn (sleep 0.5) (handle-drm-device-event dev))
-		   )))))
+	  do (cond
+	       ((string= (udev:dev-subsystem dev) "drm")
+		(when (string= (udev:dev-sys-name dev) "card0") (sleep 0.5) (handle-drm-device-event dev)))
+	       ((string= (udev:dev-subsystem dev) "input")
+		(when (string= (udev:dev-action dev) "add")
+		  (process-added-device dev)))))))
 
 (defun handle-drm-device-event (dev)
   (declare (ignore dev))
   (handle-drm-change *screen-tracker*))
 
-(defun handle-input (event) (input *wayland* (event-type event) event))
+
+(defun handle-input (event)
+  (if (eq (event-type event) :device-removed)
+      (rem-abandoned-device
+       *libinput*
+       (merge-pathnames (format nil "/dev/input/~a"
+				(device-removed@-sys-name event))))
+      (input *wayland* (event-type event) event)))
 
 ;; Unorganized handlers
 (defun handle-wayland-event ()
@@ -461,11 +469,17 @@
       ;; ((str:contains? "/event" stringy-path) (process-device-change path change)))))
       ((str:contains? "/event" stringy-path) (log! "You disabled device change processing. Because you are a coward.")))))
 
+(defun process-added-device (dev)
+  (when (str:contains? "event" (udev:dev-sys-name dev))
+    (add-device
+     *libinput*
+     (merge-pathnames (format nil "/dev/input/~a" (udev:dev-sys-name dev))))))
+
 (defun process-device-change (path change)
   (case change
-	(:create (add-device *libinput* path))
-	(:delete (rem-device *libinput* path))
-	(t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change))))
+    (:create (add-device *libinput* path))
+    (:delete (rem-device *libinput* path))
+    (t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change))))
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │

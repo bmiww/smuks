@@ -30,6 +30,11 @@
       (log! "Device already exists: ~a... Ignoring." path)
       (setf (gethash path (devices track)) (make-instance 'dev :path path :dev-track track))))
 
+(defmethod rem-abandoned-device ((track dev-track) path)
+  (let ((dev (gethash path (devices track))))
+    (when dev
+      (remhash path (devices track)))))
+
 (defmethod rem-device ((track dev-track) path)
   (let ((dev (gethash path (devices track))))
     (if dev
