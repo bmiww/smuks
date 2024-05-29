@@ -29,7 +29,7 @@
   *seat* *cursor*
   *egl* *egl-context*
   *client-poller* *wl-poller* *drm-poller* *input-poller*
-  *seat-poller* *device-poller* *accelerometer-poller*
+  *seat-poller* *accelerometer-poller*
   *udev-poller*)
 
 ;; screen
@@ -220,9 +220,6 @@
      (setf *client-poller* (client-listener))
      (log! "Starting wayland event loop listener. Waiting for events...")
      (setf *wl-poller* (wayland-listener))
-     ;; TODO: Might be replacable with the udev-poller/listener
-     ;; (log! "Starting event node watch poller. Waiting for device changes...")
-     ;; (setf *device-poller* (notify-listener))
      (log! "Starting input event poller. Waiting for user inputs...")
      (setf *input-poller* (input-listener))
      (log! "Starting the umpeenth poller. Now for seat events...")
@@ -399,11 +396,6 @@
 (defun input-listener () (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable)))
 (defun seat-listener () (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable)))
 (defun accelerometer-listener () (cl-async:poll (accelerometer-fd *iio*) 'accelerometer-callback :poll-for '(:readable)))
-;; TODO: Depending on what you figure out in the udev monitor - might be able to get rid of inotify here
-(defun notify-listener ()
-  (notify::init)
-  (notify:watch "/dev/input/" :events '(:create :delete))
-  (cl-async:poll notify::*fd* 'notify-callback :poll-for '(:readable)))
 (defun udev-listener ()
   ;; (udev:monitor-add-match-subsystem *udev* "drm")
   ;; (udev:monitor-add-match-subsystem *udev* "input")
@@ -415,7 +407,6 @@
 (defun ready (ev) (member :readable ev))
 (defun wayland-callback (ev) (when (ready ev) (handle-wayland-event)))
 (defun input-callback (ev) (when (ready ev) (smuks::dispatch *libinput* 'handle-input)))
-(defun notify-callback (ev) (when (ready ev) (notify::process 'process-inotify)))
 (defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm*) :page-flip2 'set-frame-ready)))
 (defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
 (defun accelerometer-callback (ev) (when (ready ev) (determine-orientation (read-accelerometer *iio*))))
@@ -462,24 +453,11 @@
       (setf (frame-ready screen) t)
       (recursively-render-frame))))
 
-(defun process-inotify (path change)
-  (declare (ignore change))
-  (let ((stringy-path (namestring path)))
-    (cond
-      ;; ((str:contains? "/event" stringy-path) (process-device-change path change)))))
-      ((str:contains? "/event" stringy-path) (log! "You disabled device change processing. Because you are a coward.")))))
-
 (defun process-added-device (dev)
   (when (str:contains? "event" (udev:dev-sys-name dev))
     (add-device
      *libinput*
      (merge-pathnames (format nil "/dev/input/~a" (udev:dev-sys-name dev))))))
-
-(defun process-device-change (path change)
-  (case change
-    (:create (add-device *libinput* path))
-    (:delete (rem-device *libinput* path))
-    (t (error "Unknown notify change. You seem to be watching more than this can handle: ~A" change))))
 
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
@@ -608,8 +586,4 @@
     ((cffi:pointer-eq (cl-async::poller-c *input-poller*) handle) (cl-async:free-poller *input-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *accelerometer-poller*) handle) (cl-async:free-poller *accelerometer-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *udev-poller*) handle) (cl-async:free-poller *udev-poller*))
-
-    ((cffi:pointer-eq (cl-async::poller-c *device-poller*) handle)
-     (notify:shutdown)
-     (cl-async:free-poller *device-poller*))
     (t (error "Unknown poller handle"))))
