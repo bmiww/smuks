@@ -9,7 +9,9 @@
 ;; "Computing just-done stamp in plan NIL for action"
 ;; Don't know yet what it means completely - happened after introducing the custom cl-drm package
 ;; NOTE: Disable cl-opengl error checking to shave off some runtime
-(pushnew :cl-opengl-no-check-error *features*)
+
+(defvar *DEBUG_MODE* (uiop/os:getenv "DEBUG_SMUKS"))
+(when *DEBUG_MODE* (pushnew :cl-opengl-no-check-error *features*))
 
 (asdf:defsystem #:smuks
   :serial t
@@ -21,7 +23,7 @@
   :build-pathname "smuks"
   :entry-point "smuks::main"
   :around-compile (lambda (next)
-		    (when (uiop/os:getenv "DEBUG_SMUKS")
+		    (when *DEBUG_MODE*
 		      (proclaim '(optimize
                                   (safety 3)
                                   (debug 3)
