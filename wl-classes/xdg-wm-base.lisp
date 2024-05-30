@@ -32,7 +32,9 @@
     (wl:up-if 'toplevel xdg id)
     (new-toplevel display xdg)
 
-      ;; TODO: One for maximized - get the enum stuff in order
+    ;; TODO: the last argument - the state - is actually not an enum
+    ;; It's an array. So i can't really use the enum logic here
+    ;; The xml also doesn't define that the array here would be filled with enum values
     (xdg-toplevel:send-configure xdg (width xdg) (height xdg) '(1))
     (xdg-surface:send-configure xdg (incf (configure-serial xdg)))))
 
@@ -147,18 +149,11 @@ Supposed to answer with a configure event showing the new size."
 	a-width width
 	a-height height)))
 
-;; TODO: Finally do the enum stuff in cl-wl
 (defmethod xdg-positioner:set-anchor ((positioner positioner) anchor)
-  (setf (anchor positioner) (case anchor
-    (0 :none) (1 :top) (2 :bottom)
-    (3 :left) (4 :right) (5 :top-left)
-    (6 :top-right) (7 :bottom-left) (8 :bottom-right))))
+  (setf (anchor positioner) anchor))
 
 (defmethod xdg-positioner:set-gravity ((positioner positioner) gravity)
-  (setf (gravity positioner) (case gravity
-    (0 :none) (1 :top) (2 :bottom)
-    (3 :left) (4 :right) (5 :top-left)
-    (6 :top-right) (7 :bottom-left) (8 :bottom-right))))
+  (setf (gravity positioner) gravity))
 
 (defmethod xdg-positioner:set-constraint-adjustment ((positioner positioner) constraint)
   (log! "xdg-positioner:set-constraint-adjustment: Not implemented"))

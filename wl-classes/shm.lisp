@@ -16,9 +16,8 @@
 (defmethod wl-shm:dispatch-bind :after ((global wl-shm:global) client data version id)
   (declare (ignore global data version))
   (let* ((interface (wl:iface client id)))
-    ;; TODO: replace the hardcoded numbers with actual parsed enumy values
-    (wl-shm:send-format interface 0)
-    (wl-shm:send-format interface 1)))
+    (wl-shm:send-format interface :argb8888)
+    (wl-shm:send-format interface :xrgb8888)))
 
 ;; ┌─┐┬ ┬┌┬┐
 ;; └─┐├─┤│││

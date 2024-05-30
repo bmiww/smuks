@@ -30,8 +30,7 @@
 (defmethod wl-seat:dispatch-bind :after ((global seat-global) client data version id)
   (declare (ignore data version))
   (let* ((interface (wl:iface client id))
-	 ;; TODO: you would first check libinput for device capabilities
-	 (capabilities (logior *touch* *pointer* *keyboard*)))
+	 (capabilities '(:pointer :keyboard :touch)))
     ;; TODO: Somehow some of the weston examples don't like the seat name event
     ;; Since it's not of high importance - for now disabling.
     ;; Might be a version mismatch i guess
@@ -143,8 +142,7 @@
   (let* ((seat-mouse (seat-mouse seat))
 	 (surface (active-surface seat)))
     (unless surface (error "No active surface for pointer button"))
-    (wl-pointer:send-button seat-mouse (next-serial seat) (get-ms) button
-			    (case state (:pressed 1) (:released 0)))
+    (wl-pointer:send-button seat-mouse (next-serial seat) (get-ms) button state)
     (pointer-frame seat)))
 
 (defmethod pointer-scroll-stop ((seat seat) axis)
@@ -160,23 +158,20 @@
     (when surface
       (if dx
 	  (progn
-	    (wl-pointer:send-axis-source seat-mouse 1)
-	    (wl-pointer:send-axis seat-mouse (get-ms) 0 dx))
+	    (wl-pointer:send-axis-source seat-mouse :finger)
+	    (wl-pointer:send-axis seat-mouse (get-ms) :vertical-scroll dx))
 	  (progn
-	    (wl-pointer:send-axis-source seat-mouse 1)
-	    (pointer-scroll-stop seat 0)))
-
+	    (wl-pointer:send-axis-source seat-mouse :finger)
+	    (pointer-scroll-stop seat :vertical-scroll)))
 
       (if dy
 	  (progn
-	    (wl-pointer:send-axis-source seat-mouse 1)
-	    (wl-pointer:send-axis seat-mouse (get-ms) 1 dy))
+	    (wl-pointer:send-axis-source seat-mouse :finger)
+	    (wl-pointer:send-axis seat-mouse (get-ms) :horizontal-scroll dy))
 	  (progn
-	    (wl-pointer:send-axis-source seat-mouse 1)
-	    (pointer-scroll-stop seat 1)))
+	    (wl-pointer:send-axis-source seat-mouse :finger)
+	    (pointer-scroll-stop seat :horizontal-scroll)))
 
-      ;; TODO: One stands for finger
-      ;; Do the damn enums for wl
       (wl-pointer:send-frame seat-mouse))))
 
 
@@ -218,9 +213,8 @@
 (defmethod initialize-instance :after ((keyboard keyboard) &key)
   (let* ((seat (seat keyboard))
 	 (keymap-mmap (keymap-mmap seat)))
-    ;; TODO: 1 stands for xkb-keymap. Enumerate this properly
     ;; TODO: Explore how many clients actually WANT xkb - i would prefer to roll with no_keymap
-    (wl-keyboard:send-keymap keyboard 1 (mmap-pool-fd keymap-mmap) (mmap-pool-size keymap-mmap))
+    (wl-keyboard:send-keymap keyboard :xkb-v1 (mmap-pool-fd keymap-mmap) (mmap-pool-size keymap-mmap))
     ;; TODO: Not a big fan of key repeats in general - but not going to block clients on this
     ;; Adjust on feel when trying out clients
     ;; Values of 0 could be used to disable repeat behaviour also

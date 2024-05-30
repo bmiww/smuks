@@ -121,7 +121,7 @@ It is mentally a bit simpler than the regular create as seen in this protocol"
   (zwp-linux-dmabuf-feedback-v1:send-tranche-formats feedback formats)
   ;; TODO: I still don't know which nodes are scanouts and which are renders
   ;; There should be some way to identify in DRM level
-  (when scanout (zwp-linux-dmabuf-feedback-v1:send-tranche-flags feedback 1))
+  (when scanout (zwp-linux-dmabuf-feedback-v1:send-tranche-flags feedback :scanout))
   (zwp-linux-dmabuf-feedback-v1:send-tranche-done feedback))
 
 

@@ -147,7 +147,6 @@ Or some such."
 
 
 ;; TODO: For now only supporting a single plane
-;; TODO: Can we destroy the image once the texture has been created?
 (defmethod commit-dma-buffer ((surface surface))
   (commit-buffer surface
     (let* ((buffer (pending-buffer surface)))
@@ -187,7 +186,6 @@ Or some such."
    (parent :initarg :parent)
    (sync-mode :initarg :sync-mode :accessor sync-mode)))
 
-;; TODO:
 (defmethod wl-subsurface:set-position ((sub subsurface) x y)
   "Position the subsurface relative to the parent surface top-left corner
 Could be a negative value.

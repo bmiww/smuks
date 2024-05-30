@@ -10,22 +10,6 @@
 ;; TODO: Add method to change the mode (width/height/framerate) of an output
 (in-package :smuks)
 
-(defvar *subpixel-unknown* 0)
-(defvar *subpixel-none* 1)
-(defvar *subpixel-horizontal-rgb* 2)
-(defvar *subpixel-horizontal-bgr* 3)
-(defvar *subpixel-vertical-rgb* 4)
-(defvar *subpixel-vertical-bgr* 5)
-
-(defvar *transform-normal* 0)
-(defvar *transform-90* 1)
-(defvar *transform-180* 2)
-(defvar *transform-270* 3)
-(defvar *transform-flipped* 4)
-(defvar *transform-flipped-90* 5)
-(defvar *transform-flipped-180* 6)
-(defvar *transform-flipped-270* 7)
-
 ;; ┌─┐┬  ┌─┐┌┐ ┌─┐┬
 ;; │ ┬│  │ │├┴┐├─┤│
 ;; └─┘┴─┘└─┘└─┘┴ ┴┴─┘
@@ -39,10 +23,10 @@
    (width :initarg :width :accessor output-width)
    (height :initarg :height :accessor output-height)
    (refresh-rate :initarg :refresh-rate :accessor output-refresh-rate)
-   (subpixel-orientation :initarg :subpixel-orientation :initform *subpixel-unknown* :accessor output-subpixel-orientation)
+   (subpixel-orientation :initarg :subpixel-orientation :initform :unknown :accessor output-subpixel-orientation)
    (make :initarg :make :accessor output-make)
    (model :initarg :model :accessor output-model)
-   (transform :initarg :transform :initform *transform-normal* :accessor output-transform))
+   (transform :initarg :transform :initform :normal :accessor output-transform))
   (:documentation "Defines a lot of details regarding a physical output.
 A physical output will mostly be a monitor/screen.
 Most slots should be self-explanatory, so i'll keep it short:
@@ -83,7 +67,7 @@ transform - is the screen rotated? is the screen flipped?
     ;; The "1" should identify that this mode is the current output mode
     ;; Sending non-current modes (separate event) is possible but deprecated.
     (wl-output:send-mode output
-			 1
+			 '(:current)
 			 (output-width global)
 			 (output-height global)
 			 (output-refresh-rate global))

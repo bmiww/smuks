@@ -59,6 +59,5 @@ Icon is the surface that provides the icon for the drag. Can be null."
 (defmethod wl-data-source:offer ((source data-source) mime)
   (push mime (mimes source)))
 
-;; TODO: This should be a list made from the bitfield bits via cl-wl
 (defmethod wl-data-source:set-actions ((source data-source) actions)
   (setf (actions source) actions))
