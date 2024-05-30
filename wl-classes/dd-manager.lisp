@@ -11,36 +11,19 @@
 ;; ┌┬┐┌─┐┌┐┌┌─┐┌─┐┌─┐┬─┐
 ;; │││├─┤│││├─┤│ ┬├┤ ├┬┘
 ;; ┴ ┴┴ ┴┘└┘┴ ┴└─┘└─┘┴└─
-(defclass dd-manager (wl-dd-mgr:dispatch)
-  ((devices :initform (make-hash-table) :accessor devices)
-   (sources :initform (make-hash-table) :accessor sources)))
+(defclass dd-manager (wl-dd-mgr:dispatch) ())
 
 (defmethod wl-dd-mgr:create-data-source ((mgr dd-manager) id)
-  (setf (gethash id (sources mgr)) (wl:mk-if 'data-source mgr id)))
+  (wl:mk-if 'data-source mgr id))
 
 (defmethod wl-dd-mgr:get-data-device ((mgr dd-manager) id seat)
-  (setf (gethash id (devices mgr)) (wl:mk-if 'data-device mgr id :seat seat)))
-
-(defmethod cancel-drag-events ((mgr dd-manager))
-  (loop for device being the hash-values of (devices mgr)
-	do (progn
-	     (when (drag-event device)
-	       (wl-data-source:send-cancelled (drag-event device))
-	       (setf (drag-event device) nil)))))
-
-(defmethod active-drag-events ((mgr dd-manager))
-  (loop for device being the hash-values of (devices mgr)
-	when (drag-event device) collect device))
+  (wl:up-if 'data-device seat id))
 
 ;; ┌┬┐┌─┐┬  ┬┬┌─┐┌─┐
 ;;  ││├┤ └┐┌┘││  ├┤
 ;; ─┴┘└─┘ └┘ ┴└─┘└─┘
-;; TODO: Maybe this can be connected with the seat somehow
-;; In which case it would be easier to perform motion/enter/leave events since they primarily match
-;; the seat events
-(defclass data-device (wl-data-device:dispatch)
-  ((seat :initarg :seat :accessor seat)
-   (drag-event :initform nil :accessor drag-event)))
+(defclass data-device (wl-data-device:dispatch seat)
+  ((drag-event :initform nil :accessor drag-event)))
 
 ;; TODO: If source is nil - the drag event should not produce drop/hover notify events on other client surfaces
 ;; TODO: If source is destroyed - this whole event should be cancelled
@@ -51,14 +34,25 @@ Origin is the surface where the drag started.
 Icon is the surface that provides the icon for the drag. Can be null."
   (change-class icon 'drag-surface)
   (setf (drag-event dev) source)
-  (log! "Not implemented wl-data-device:start-drag"))
+  (wl-data-device:send-enter dev (next-serial dev) origin (pointer-x dev) (pointer-y dev) nil))
 
-(defmethod motion ((dev data-device) x y)
+(defmethod pointer-motion :after ((dev data-device) x y)
+  (when (drag-event dev)
+    (wl-data-device:send-motion dev (get-ms) x y)))
 
-  ;; (wl-data-device:send-motion dev (get-ms) x y)
-  )
+;; TODO: The nil in send-enter is the data-offer id.
+;; Currently the weston-dnd example does not seem to provide a data-offer id.
+(defmethod pointer-enter :after ((dev data-device) surface x y)
+  (when (drag-event dev)
+    (wl-data-device:send-enter dev (next-serial dev) surface x y nil)))
+
+(defvar *left-pointer-button* 272)
+(defmethod pointer-button :after ((dev data-device) (button (eql *left-pointer-button*)) (state (eql :released)))
+  (when (drag-event dev) (wl-data-device:send-drop dev)))
 
 
+;; An empty class to identify a surface that is used as a drag icon
+;; NOTE: Currently being handled very much like a cursor
 (defclass drag-surface (surface)
   ())
 

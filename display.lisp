@@ -196,6 +196,7 @@ and then clean the list out"
 
 ;; TODO: This is a bit shit in case if 2 windows are overlapping or next to each other
 ;; If a pointer focus switches from one surface to another - then hell breaks loose
+;; TODO: Might be that leave should be called before enter
 (defmethod input ((display display) (type (eql :pointer-motion)) event)
   (let* ((new-x (add-dx display (flo (pointer-motion@-dx event))))
 	 (new-y (add-dy display (flo (pointer-motion@-dy event))))
@@ -222,18 +223,12 @@ and then clean the list out"
 	    (pointer-leave seat)
 	    (setf (pointer-focus display) nil))))))
 
-(defvar *left-pointer-button* 272)
-
 ;; NOTE: Additionally - sets display keyboard focus to the surface
 (defmethod input ((display display) (type (eql :pointer-button)) event)
   (let* ((button (pointer-button@-button event))
 	 (state (pointer-button@-state event))
 	 (surface (surface-at-coords display (cursor-x display) (cursor-y display)))
 	 (client (and surface (wl:client surface))))
-
-    ;; (when (and client (eq *left-pointer-button* button) (eq :released state))
-      ;; (drop-the-drag (dd-manager client)))
-      ;; (cancel-drag-events (dd-manager client)))
 
     (when surface
       (let* ((seat (seat client)))
