@@ -206,6 +206,7 @@ and then clean the list out"
 	      (pointer-motion seat new-x new-y)
 	      (when seat-mouse
 		(pointer-enter seat surface new-x new-y)
+		;; TODO: perfrom pointer-laeve on the old (pointer-focus display)
 		(setf (pointer-focus display) surface))))
 	(when (pointer-focus display)
 	  (let* ((client (wl:client (pointer-focus display))) (seat (seat client)))
