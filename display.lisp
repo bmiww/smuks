@@ -22,6 +22,10 @@
    (orientation :initarg :orientation :initform :landscape :accessor orientation)
    (windows :initform nil :accessor windows)))
 
+(defmethod wl:rem-client :before ((display display) client)
+  (with-slots (keyboard-focus pointer-focus) display
+    (when (and pointer-focus (eq (wl:client pointer-focus) client)) (setf (pointer-focus display) nil))
+    (when (and keyboard-focus (eq (wl:client keyboard-focus) client)) (setf (keyboard-focus display) nil))))
 
 ;; ┌─┐┌─┐┌┬┐┬ ┬┌─┐
 ;; └─┐├┤  │ │ │├─┘
@@ -207,8 +211,6 @@ and then clean the list out"
 	  (let* ((client (wl:client (pointer-focus display))) (seat (seat client)))
 	    (pointer-leave seat)
 	    (setf (pointer-focus display) nil))))))
-
-
 
 
 ;; NOTE: Additionally - sets display keyboard focus to the surface
