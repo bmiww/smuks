@@ -46,7 +46,6 @@
   (setf (height xdg) height)
   (setf (new-dimensions? xdg) t))
 
-
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
 ;; The configuration sequence. Applying pending state or whatnot. Not sure
 (defmethod xdg-surface:ack-configure ((xdg xdg-surface) serial)

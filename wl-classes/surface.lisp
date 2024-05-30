@@ -13,7 +13,7 @@
    (needs-redraw :initform nil :accessor needs-redraw)
    (texture :initform nil :accessor texture)
    (texture-type :initform nil :accessor texture-type)
-   (new-dimensions? :initform nil :accessor new-dimensions?)
+   (new-dimensions? :initform t :accessor new-dimensions?)
    (width :initform -1 :accessor width)
    (height :initform -1 :accessor height)
    (x :initform -1 :accessor x)
@@ -31,7 +31,6 @@
   (typecase surface
     (toplevel (commit-toplevel surface))
     (cursor (commit-toplevel surface))
-    ;; (xdg-surface (commit-toplevel surface)) ;; Don't think this is a thing
     (t (format nil "Unsupported surface role: ~a" (type-of surface)))))
 
 (defmethod commit-toplevel ((surface surface))
@@ -127,6 +126,16 @@ Or some such."
 ;; └─┘└─┘└  └  └─┘┴└─
 (defmacro commit-buffer (surface &body body)
   `(let ((new-dimensions? (new-dimensions? ,surface)))
+     ;; TODO: These are still needed since i don't know where to find the
+     ;; width height for pointer surface for example
+     (unless (eq (width (pending-buffer ,surface)) (width ,surface))
+       (setf (width ,surface) (width (pending-buffer ,surface)))
+       (setf new-dimensions? t))
+
+     (unless (eq (height (pending-buffer ,surface)) (height ,surface))
+       (setf (height ,surface) (height (pending-buffer ,surface)))
+       (setf new-dimensions? t))
+
      (when (and new-dimensions? (texture ,surface)) (gl:delete-texture (sglutil:tex-id (texture ,surface))))
 
      ;; TODO: the texture here is implied and a bit annoying
