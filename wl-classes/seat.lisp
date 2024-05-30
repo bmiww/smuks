@@ -16,10 +16,6 @@
 ;; Then make that possible by getting rid of this static thing
 (defvar *static-one-seat-name* "seat0")
 
-(defvar *pointer* 1)
-(defvar *keyboard* 2)
-(defvar *touch* 4)
-
 (defmethod initialize-instance :after ((seat seat-global) &key)
   (let* ((xkb-context (xkb:xkb-context-new :no-flags))
 	 (xkb-keymap (xkb:new-keymap-from-names xkb-context "" "" "" "" ""))
@@ -48,6 +44,8 @@
    ;; TODO: Rename active surface to identify it as a mouse pointer active surface
    (active-surface :initform nil :accessor active-surface)
    (pointer :initform nil :accessor seat-mouse)
+   (pointer-x :initform 0 :accessor pointer-x)
+   (pointer-y :initform 0 :accessor pointer-y)
    (keyboard :initform nil :accessor seat-keyboard)
    (touch :initform nil :accessor seat-touch)))
 
@@ -117,11 +115,11 @@
 (defmethod wl-seat:get-pointer ((seat seat) id)
   (setf (seat-mouse seat) (wl:mk-if 'pointer seat id :seat seat)))
 
+;; TODO: Should the x and y coordinates also set the seat pointer coords
 (defmethod pointer-enter ((seat seat) surface x y)
   (let ((seat-mouse (seat-mouse seat)))
     (setf (active-surface seat) surface)
-    (wl-pointer:send-enter seat-mouse (next-serial seat) surface
-			   (- x (x surface)) (- y (y surface)))
+    (wl-pointer:send-enter seat-mouse (next-serial seat) surface x y)
     (pointer-frame seat)))
 
 (defmethod pointer-leave ((seat seat))
@@ -135,7 +133,9 @@
   (let* ((seat-mouse (seat-mouse seat))
 	 (surface (active-surface seat)))
     (unless surface (error "No active surface for pointer motion"))
-    (wl-pointer:send-motion seat-mouse (get-ms) (- x (x surface)) (- y (y surface)))
+    (wl-pointer:send-motion seat-mouse (get-ms)
+			    (setf (pointer-x seat) x)
+			    (setf (pointer-y seat) y))
     (pointer-frame seat)))
 
 (defmethod pointer-button ((seat seat) button state)

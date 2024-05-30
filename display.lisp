@@ -204,15 +204,17 @@ and then clean the list out"
 	(let* ((client (wl:client surface))
 	       (seat (seat client))
 	       (seat-mouse (seat-mouse seat))
-	       (dd-manager (dd-manager client))
-	       (drag-events (active-drag-events dd-manager)))
+	       ;; (dd-manager (dd-manager client))
+	       ;; (drag-events (active-drag-events dd-manager))
+	       (surf-x (- new-x (x surface))) (surf-y (- new-y (y surface))))
 	  (if (and seat-mouse (active-surface seat))
 	      (progn
-		(pointer-motion seat new-x new-y)
-		(when drag-events (loop for event in drag-events
-					do (motion event new-x new-y))))
+		(pointer-motion seat surf-x surf-y)
+		;; (when drag-events (loop for event in drag-events
+					;; do (motion event new-x new-y)))
+		)
 	      (when seat-mouse
-		(pointer-enter seat surface new-x new-y)
+		(pointer-enter seat surface surf-x surf-y)
 		;; TODO: perfrom pointer-laeve on the old (pointer-focus display)
 		(setf (pointer-focus display) surface))))
 	(when (pointer-focus display)
@@ -229,8 +231,9 @@ and then clean the list out"
 	 (surface (surface-at-coords display (cursor-x display) (cursor-y display)))
 	 (client (and surface (wl:client surface))))
 
-    (when (and client (eq *left-pointer-button* button) (eq :released state))
-      (cancel-drag-events (dd-manager client)))
+    ;; (when (and client (eq *left-pointer-button* button) (eq :released state))
+      ;; (drop-the-drag (dd-manager client)))
+      ;; (cancel-drag-events (dd-manager client)))
 
     (when surface
       (let* ((seat (seat client)))
@@ -262,6 +265,7 @@ and then clean the list out"
 	 (seat-keyboard (and seat (seat-keyboard seat))))
     (when seat-keyboard
       ;; tODO: Key needs to be translated to the XKB keycode
+      ;; NOTE: Although - i don't know - this seems to be working perfectly fine
       (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key state))
     ;; Probably F12
     (when (and (eq state :pressed) (eq key 88))
