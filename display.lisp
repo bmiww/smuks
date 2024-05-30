@@ -262,8 +262,7 @@ and then clean the list out"
 	 (seat-keyboard (and seat (seat-keyboard seat))))
     (when seat-keyboard
       ;; tODO: Key needs to be translated to the XKB keycode
-      (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key
-			    (case state (:pressed 1) (:released 0))))
+      (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key state))
     ;; Probably F12
     (when (and (eq state :pressed) (eq key 88))
       (shutdown))))
