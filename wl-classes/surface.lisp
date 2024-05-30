@@ -21,6 +21,7 @@
    (pending-damage :initform nil :accessor pending-damage)
    (damage :initform nil :accessor damage)
    (pending-frame-callbacks :initform nil :accessor pending-frame-callbacks)
+   (compositor :initform nil :initarg :compositor :accessor compositor)
    (frame-callbacks :initform nil :accessor frame-callbacks)))
 
 ;; ┌─┐┌─┐┌┬┐┌┬┐┬┌┬┐
@@ -106,6 +107,9 @@ Or some such."
   "Sets the offset of the surface."
   (log! "UNIMPLEMENTED: Set offset"))
 
+;; TODO: Destroy any connected textures and other resources
+(defmethod cl-wl:destroy ((surface surface))
+  (rem-surface (compositor surface) surface))
 
 
 (defmethod in-bounds ((surface surface) x y)

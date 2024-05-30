@@ -20,7 +20,7 @@
     ready))
 
 (defmethod wl-compositor:create-surface ((compositor compositor) id)
-  (let ((surface (wl:mk-if 'surface compositor id)))
+  (let ((surface (wl:mk-if 'surface compositor id :compositor compositor)))
     (setf (gethash id (surfaces compositor)) surface)
     surface))
 
@@ -31,6 +31,9 @@
   (loop for value being the hash-values of (surfaces compositor)
 	when (typep value 'toplevel)
 	return value))
+
+(defmethod rem-surface ((compositor compositor) surface)
+  (remhash (wl-surface::wl_surface-id surface) (surfaces compositor)))
 
 ;; ┬─┐┌─┐┌─┐┬┌─┐┌┐┌
 ;; ├┬┘├┤ │ ┬││ ││││
