@@ -201,9 +201,16 @@ and then clean the list out"
 	 (new-y (add-dy display (flo (pointer-motion@-dy event))))
 	 (surface (surface-at-coords display new-x new-y)))
     (if surface
-	(let* ((client (wl:client surface)) (seat (seat client)) (seat-mouse (seat-mouse seat)))
+	(let* ((client (wl:client surface))
+	       (seat (seat client))
+	       (seat-mouse (seat-mouse seat))
+	       (dd-manager (dd-manager client))
+	       (drag-events (active-drag-events dd-manager)))
 	  (if (and seat-mouse (active-surface seat))
-	      (pointer-motion seat new-x new-y)
+	      (progn
+		(pointer-motion seat new-x new-y)
+		(when drag-events (loop for event in drag-events
+					do (motion event new-x new-y))))
 	      (when seat-mouse
 		(pointer-enter seat surface new-x new-y)
 		;; TODO: perfrom pointer-laeve on the old (pointer-focus display)
@@ -213,14 +220,20 @@ and then clean the list out"
 	    (pointer-leave seat)
 	    (setf (pointer-focus display) nil))))))
 
+(defvar *left-pointer-button* 272)
 
 ;; NOTE: Additionally - sets display keyboard focus to the surface
 (defmethod input ((display display) (type (eql :pointer-button)) event)
   (let* ((button (pointer-button@-button event))
 	 (state (pointer-button@-state event))
-	 (surface (surface-at-coords display (cursor-x display) (cursor-y display))))
+	 (surface (surface-at-coords display (cursor-x display) (cursor-y display)))
+	 (client (and surface (wl:client surface))))
+
+    (when (and client (eq *left-pointer-button* button) (eq :released state))
+      (cancel-drag-events (dd-manager client)))
+
     (when surface
-      (let* ((client (wl:client surface)) (seat (seat client)))
+      (let* ((seat (seat client)))
 	(setf (keyboard-focus display) surface)
 	(pointer-button seat button state)))))
 

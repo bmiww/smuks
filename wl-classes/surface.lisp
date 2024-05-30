@@ -31,6 +31,7 @@
   (typecase surface
     (toplevel (commit-toplevel surface))
     (cursor (commit-toplevel surface))
+    (drag-surface (commit-toplevel surface))
     (t (format nil "Unsupported surface role: ~a" (type-of surface)))))
 
 (defmethod commit-toplevel ((surface surface))

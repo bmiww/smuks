@@ -291,6 +291,8 @@
 (defun render-surface (screen surface)
   (typecase surface
     (cursor (render-cursor screen surface))
+    ;; NOTE: For now - the display logic for a drag surface should be more or less the same as a cursors
+    (drag-surface (render-cursor screen surface))
     (t (render-toplevel screen surface))))
 
 (defun render-clients (screen)
@@ -376,7 +378,8 @@
 ;; └─┘┴─┘┴└─┘┘└┘ ┴
 (defclass client (wl:client)
   ((compositor :initform nil :accessor compositor)
-   (seat :initform nil :accessor seat)))
+   (seat :initform nil :accessor seat)
+   (dd-manager :initform nil :accessor dd-manager)))
 
 (defmethod (setf wl::iface) :after ((iface compositor) (client client) id)
   (declare (ignore id))
@@ -385,6 +388,10 @@
 (defmethod (setf wl::iface) :after ((iface seat) (client client) id)
   (declare (ignore id))
   (setf (seat client) iface))
+
+(defmethod (setf wl::iface) :after ((iface dd-manager) (client client) id)
+  (declare (ignore id))
+  (setf (dd-manager client) iface))
 
 
 ;; ┌─┐┌─┐┬  ┬  ┬┌┐┌┌─┐
