@@ -13,6 +13,7 @@
    (needs-redraw :initform nil :accessor needs-redraw)
    (texture :initform nil :accessor texture)
    (texture-type :initform nil :accessor texture-type)
+   (new-dimensions? :initform nil :accessor new-dimensions?)
    (width :initform -1 :accessor width)
    (height :initform -1 :accessor height)
    (x :initform -1 :accessor x)
@@ -125,15 +126,7 @@ Or some such."
 ;; ├┴┐│ │├┤ ├┤ ├┤ ├┬┘
 ;; └─┘└─┘└  └  └─┘┴└─
 (defmacro commit-buffer (surface &body body)
-  `(let ((new-dimensions? nil))
-     (unless (eq (width (pending-buffer ,surface)) (width ,surface))
-       (setf (width ,surface) (width (pending-buffer ,surface)))
-       (setf new-dimensions? t))
-
-     (unless (eq (height (pending-buffer ,surface)) (height ,surface))
-       (setf (height ,surface) (height (pending-buffer ,surface)))
-       (setf new-dimensions? t))
-
+  `(let ((new-dimensions? (new-dimensions? ,surface)))
      (when (and new-dimensions? (texture ,surface)) (gl:delete-texture (sglutil:tex-id (texture ,surface))))
 
      ;; TODO: the texture here is implied and a bit annoying
@@ -141,6 +134,7 @@ Or some such."
      (let ((texture (unless new-dimensions? (texture ,surface))))
        ,@body)
 
+     (setf (new-dimensions? ,surface) nil)
      (wl-buffer:send-release (pending-buffer surface))
      (setf (pending-buffer ,surface) nil)
      (setf (needs-redraw ,surface) t)))

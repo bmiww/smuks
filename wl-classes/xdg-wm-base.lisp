@@ -43,7 +43,8 @@
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (setf (width xdg) width)
-  (setf (height xdg) height))
+  (setf (height xdg) height)
+  (setf (new-dimensions? xdg) t))
 
 
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
