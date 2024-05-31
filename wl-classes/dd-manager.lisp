@@ -23,7 +23,8 @@
 ;;  ││├┤ └┐┌┘││  ├┤
 ;; ─┴┘└─┘ └┘ ┴└─┘└─┘
 (defclass data-device (wl-data-device:dispatch seat)
-  ((drag-event :initform nil :accessor drag-event)))
+  ((drag-event :initform nil :accessor drag-event)
+   (data-offer :initform nil :accessor data-offer)))
 
 ;; TODO: If source is nil - the drag event should not produce drop/hover notify events on other client surfaces
 ;; TODO: If source is destroyed - this whole event should be cancelled
@@ -34,21 +35,25 @@ Origin is the surface where the drag started.
 Icon is the surface that provides the icon for the drag. Can be null."
   (change-class icon 'drag-surface)
   (setf (drag-event dev) source)
-  (wl-data-device:send-enter dev (next-serial dev) origin (pointer-x dev) (pointer-y dev) nil))
+  (setf (data-offer dev) (wl:mk-if 'data-offer dev nil :source source))
+  (wl-data-device:send-data-offer dev (data-offer dev))
+  (announce-offer (data-offer dev))
+  (wl-data-device:send-enter dev (next-serial dev) origin (pointer-x dev) (pointer-y dev) (data-offer dev)))
 
 (defmethod pointer-motion :after ((dev data-device) x y)
-  (when (drag-event dev)
-    (wl-data-device:send-motion dev (get-ms) x y)))
+  (when (drag-event dev) (wl-data-device:send-motion dev (get-ms) x y)))
 
-;; TODO: The nil in send-enter is the data-offer id.
-;; Currently the weston-dnd example does not seem to provide a data-offer id.
 (defmethod pointer-enter :after ((dev data-device) surface x y)
   (when (drag-event dev)
-    (wl-data-device:send-enter dev (next-serial dev) surface x y nil)))
+    (wl-data-device:send-enter dev (next-serial dev) surface x y (data-offer dev))
+    (announce-offer (data-offer dev))))
 
 (defvar *left-pointer-button* 272)
 (defmethod pointer-button :after ((dev data-device) (button (eql *left-pointer-button*)) (state (eql :released)))
-  (when (drag-event dev) (wl-data-device:send-drop dev)))
+  (when (drag-event dev)
+    (wl-data-device:send-drop dev)
+    ;; (setf (drag-event dev) nil)
+    ))
 
 
 ;; An empty class to identify a surface that is used as a drag icon
@@ -69,3 +74,31 @@ Icon is the surface that provides the icon for the drag. Can be null."
 
 (defmethod wl-data-source:set-actions ((source data-source) actions)
   (setf (actions source) actions))
+
+
+
+;; ┌┬┐┌─┐┌┬┐┌─┐  ┌─┐┌─┐┌─┐┌─┐┬─┐
+;;  ││├─┤ │ ├─┤  │ │├┤ ├┤ ├┤ ├┬┘
+;; ─┴┘┴ ┴ ┴ ┴ ┴  └─┘└  └  └─┘┴└─
+(defclass data-offer (wl-data-offer:dispatch)
+  ((source :initarg :source :accessor source)
+   (dest-supports :initform nil :accessor dest-supports)
+   (dest-prefers :initform nil :accessor dest-prefers)
+   (dest-mimes :initform nil :accessor dest-mimes)))
+
+(defmethod announce-offer ((offer data-offer))
+  (loop for mime in (mimes (source offer))
+	do (wl-data-offer:send-offer offer mime))
+  ;; TODO: Seems this happens at a different time
+  ;; (wl-data-offer:send-source-actions offer (actions (source offer)))
+  )
+
+(defmethod wl-data-offer:set-actions ((offer data-offer) supported preferred)
+  (setf (dest-supports offer) supported)
+  (setf (dest-prefers offer) preferred))
+
+(defmethod wl-data-offer:accept ((offer data-offer) serial mime)
+  (when mime (setf (dest-mimes offer) (pushnew mime (dest-mimes offer)))))
+
+(defmethod wl-data-offer:receive ((offer data-offer) mime fd)
+  (wl-data-source:send-send (source offer) mime fd))
