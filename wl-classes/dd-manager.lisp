@@ -36,7 +36,7 @@ Origin is the surface where the drag started.
 Icon is the surface that provides the icon for the drag. Can be null."
   (change-class icon 'drag-surface)
   (setf (drag-event dev) source)
-  (setf (data-offer dev) (wl:mk-if 'data-offer dev nil :source source))
+  (setf (data-offer dev) (wl:mk-if 'data-offer dev nil :source source :data-dev dev))
   (wl-data-device:send-data-offer dev (data-offer dev))
   (announce-offer (data-offer dev))
   (wl-data-device:send-enter dev (next-serial dev) origin (pointer-x dev) (pointer-y dev) (data-offer dev)))
@@ -49,12 +49,15 @@ Icon is the surface that provides the icon for the drag. Can be null."
     (wl-data-device:send-enter dev (next-serial dev) surface x y (data-offer dev))
     (announce-offer (data-offer dev))))
 
+(defmethod pointer-leave :before ((dev data-device))
+  (let ((active-surface (active-surface dev)))
+    (when (and (drag-event dev) active-surface)
+      (wl-data-device:send-leave dev))))
+
+
 (defvar *left-pointer-button* 272)
 (defmethod pointer-button :after ((dev data-device) (button (eql *left-pointer-button*)) (state (eql :released)))
-  (when (drag-event dev)
-    (wl-data-device:send-drop dev)
-    ;; (setf (drag-event dev) nil)
-    ))
+  (when (drag-event dev) (wl-data-device:send-drop dev)))
 
 
 ;; An empty class to identify a surface that is used as a drag icon
@@ -77,12 +80,12 @@ Icon is the surface that provides the icon for the drag. Can be null."
   (setf (actions source) actions))
 
 
-
 ;; ┌┬┐┌─┐┌┬┐┌─┐  ┌─┐┌─┐┌─┐┌─┐┬─┐
 ;;  ││├─┤ │ ├─┤  │ │├┤ ├┤ ├┤ ├┬┘
 ;; ─┴┘┴ ┴ ┴ ┴ ┴  └─┘└  └  └─┘┴└─
 (defclass data-offer (wl-data-offer:dispatch)
   ((source :initarg :source :accessor source)
+   (data-dev :initarg :data-dev :accessor data-dev)
    (dest-supports :initform nil :accessor dest-supports)
    (dest-prefers :initform nil :accessor dest-prefers)
    (dest-mimes :initform nil :accessor dest-mimes)))
@@ -104,4 +107,6 @@ Icon is the surface that provides the icon for the drag. Can be null."
 (defmethod wl-data-offer:receive ((offer data-offer) mime fd)
   (wl-data-source:send-send (source offer) mime fd)
   (wl-data-source:send-dnd-finished (source offer))
-  (setf (source offer) nil))
+  (setf (source offer) nil)
+  (setf (data-offer (data-dev offer)) nil)
+  (setf (drag-event (data-dev offer)) nil))
