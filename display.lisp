@@ -19,13 +19,15 @@
    (display-serial :initform 0 :accessor display-serial)
    (keyboard-focus :initform nil)
    (pointer-focus :initform nil :accessor pointer-focus)
+   (pending-drag :initform nil :accessor pending-drag)
    (orientation :initarg :orientation :initform :landscape :accessor orientation)
    (windows :initform nil :accessor windows)))
 
 (defmethod wl:rem-client :before ((display display) client)
-  (with-slots (keyboard-focus pointer-focus) display
+  (with-slots (keyboard-focus pointer-focus pending-drag) display
     (when (and pointer-focus (eq (wl:client pointer-focus) client)) (setf (pointer-focus display) nil))
-    (when (and keyboard-focus (eq (wl:client keyboard-focus) client)) (setf (keyboard-focus display) nil))))
+    (when (and keyboard-focus (eq (wl:client keyboard-focus) client)) (setf (keyboard-focus display) nil))
+    (when (and pending-drag (eq (wl:client pending-drag) client)) (setf (pending-drag display) nil))))
 
 ;; ┌─┐┌─┐┌┬┐┬ ┬┌─┐
 ;; └─┐├┤  │ │ │├─┘
@@ -209,13 +211,13 @@ and then clean the list out"
 	      (progn
 		(pointer-motion seat surf-x surf-y))
 	      (progn
-		(pointer-leave seat)
+		(when (pointer-focus display)
+		  (pointer-leave (seat (wl:client (pointer-focus display)))))
 		(pointer-enter seat surface surf-x surf-y)
 		(setf (pointer-focus display) surface))))
 	(when (pointer-focus display)
-	  (let* ((client (wl:client (pointer-focus display))) (seat (seat client)))
-	    (pointer-leave seat)
-	    (setf (pointer-focus display) nil))))))
+	  (pointer-leave (seat (wl:client (pointer-focus display))))
+	  (setf (pointer-focus display) nil)))))
 
 ;; NOTE: Additionally - sets display keyboard focus to the surface
 (defmethod input ((display display) (type (eql :pointer-button)) event)
