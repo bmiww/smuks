@@ -25,6 +25,8 @@
 (defclass shm (wl-shm:dispatch)
   ((pools :initform (make-hash-table :test 'equal) :accessor pools)))
 
+(defmethod wl:destroy ((shm shm))
+  (clrhash (pools shm)))
 
 (defmethod wl-shm:create-pool ((shm shm) id fd size)
   (let ((pool (wl:mk-if 'pool shm id :fd fd :size size)))
@@ -39,6 +41,10 @@
    (size :initarg :size :accessor size)
    (fd :initarg :fd :accessor fd)
    (mmap-pool :initform nil :accessor mmap-pool)))
+
+(defmethod wl:destroy ((pool pool))
+  (clrhash (buffers pool))
+  (when (mmap-pool pool) (munmap (mmap-pool pool))))
 
 (defmethod initialize-instance :after ((pool pool) &key)
   (multiple-value-bind (ptr fd size) (mmap:mmap (fd pool) :size (size pool) :mmap '(:shared))
