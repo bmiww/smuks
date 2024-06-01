@@ -80,5 +80,6 @@
 			     (:file "seat")
 			     (:file "dd-manager")
 			     (:file "dmabuf")))
+	       (:file "screens")
 	       (:file "display")
 	       (:file "smuks")))
