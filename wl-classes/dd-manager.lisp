@@ -102,7 +102,7 @@ Icon is the surface that provides the icon for the drag. Can be null."
   (setf (dest-prefers offer) preferred))
 
 (defmethod wl-data-offer:accept ((offer data-offer) serial mime)
-  (when mime (setf (dest-mimes offer) (pushnew mime (dest-mimes offer)))))
+  (when mime (setf (dest-mimes offer) (pushnew mime (dest-mimes offer) :test #'string=))))
 
 (defmethod wl-data-offer:receive ((offer data-offer) mime fd)
   (wl-data-source:send-send (source offer) mime fd)
