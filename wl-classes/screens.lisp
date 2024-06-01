@@ -83,6 +83,9 @@
 
 (defmethod initialize-instance :after ((tracker screen-tracker) &key drm)
   (let ((connectors (connectors drm)))
+    (setf connectors (sort connectors (lambda (a b)
+					(declare (ignore b))
+					(if (eq (connector-type a) :dsi) t nil))))
     (setf (screens tracker)
 	  (loop for connector in connectors
 		for index from 0
