@@ -124,10 +124,12 @@
 
 (defmethod pointer-leave ((seat seat))
   (let ((seat-mouse (seat-mouse seat)))
-    (unless (active-surface seat) (error "No active surface for pointer leave"))
-    (wl-pointer:send-leave seat-mouse (next-serial seat) (active-surface seat))
-    (setf (active-surface seat) nil)
-    (pointer-frame seat)))
+    (if (active-surface seat)
+	(progn
+	  (wl-pointer:send-leave seat-mouse (next-serial seat) (active-surface seat))
+	  (setf (active-surface seat) nil)
+	  (pointer-frame seat))
+	(log! "No active surface for pointer leave"))))
 
 (defmethod pointer-motion ((seat seat) x y)
   (let* ((seat-mouse (seat-mouse seat))
