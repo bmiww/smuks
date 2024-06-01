@@ -22,6 +22,7 @@
 ;; ┌┬┐┌─┐┬  ┬┬┌─┐┌─┐
 ;;  ││├┤ └┐┌┘││  ├┤
 ;; ─┴┘└─┘ └┘ ┴└─┘└─┘
+;; TODO: Need to somehow clear out the data-offer
 (defclass data-device (wl-data-device:dispatch seat)
   ((drag-event :initform nil :accessor drag-event)
    (data-offer :initform nil :accessor data-offer)))
@@ -101,4 +102,6 @@ Icon is the surface that provides the icon for the drag. Can be null."
   (when mime (setf (dest-mimes offer) (pushnew mime (dest-mimes offer)))))
 
 (defmethod wl-data-offer:receive ((offer data-offer) mime fd)
-  (wl-data-source:send-send (source offer) mime fd))
+  (wl-data-source:send-send (source offer) mime fd)
+  (wl-data-source:send-dnd-finished (source offer))
+  (setf (source offer) nil))
