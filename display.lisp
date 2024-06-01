@@ -204,12 +204,11 @@ and then clean the list out"
     (if surface
 	(let* ((client (wl:client surface))
 	       (seat (seat client))
-	       (seat-mouse (seat-mouse seat))
 	       (surf-x (- new-x (x surface))) (surf-y (- new-y (y surface))))
-	  (if (and seat-mouse (active-surface seat))
+	  (if (and (active-surface seat) (eq (pointer-focus display) surface))
 	      (progn
 		(pointer-motion seat surf-x surf-y))
-	      (when seat-mouse
+	      (progn
 		(pointer-leave seat)
 		(pointer-enter seat surface surf-x surf-y)
 		(setf (pointer-focus display) surface))))

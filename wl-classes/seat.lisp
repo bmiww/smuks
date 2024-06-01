@@ -118,67 +118,74 @@
 ;; TODO: Should the x and y coordinates also set the seat pointer coords
 (defmethod pointer-enter ((seat seat) surface x y)
   (let ((seat-mouse (seat-mouse seat)))
-    (setf (active-surface seat) surface)
-    (wl-pointer:send-enter seat-mouse (next-serial seat) surface x y)
-    (pointer-frame seat)))
+    (when seat-mouse
+      (setf (active-surface seat) surface)
+      (wl-pointer:send-enter seat-mouse (next-serial seat) surface x y)
+      (pointer-frame seat))))
 
 (defmethod pointer-leave ((seat seat))
   (let ((seat-mouse (seat-mouse seat)))
-    (if (active-surface seat)
-	(progn
-	  (wl-pointer:send-leave seat-mouse (next-serial seat) (active-surface seat))
-	  (setf (active-surface seat) nil)
-	  (pointer-frame seat))
-	(log! "No active surface for pointer leave"))))
+    (when seat-mouse
+      (if (active-surface seat)
+	  (progn
+	    (wl-pointer:send-leave seat-mouse (next-serial seat) (active-surface seat))
+	    (setf (active-surface seat) nil)
+	    (pointer-frame seat))
+	  (log! "No active surface for pointer leave")))))
 
 (defmethod pointer-motion ((seat seat) x y)
   (let* ((seat-mouse (seat-mouse seat))
 	 (surface (active-surface seat)))
-    (unless surface (error "No active surface for pointer motion"))
-    (wl-pointer:send-motion seat-mouse (get-ms)
-			    (setf (pointer-x seat) x)
-			    (setf (pointer-y seat) y))
-    (pointer-frame seat)))
+    (when seat-mouse
+      (unless surface (error "No active surface for pointer motion"))
+      (wl-pointer:send-motion seat-mouse (get-ms)
+			      (setf (pointer-x seat) x)
+			      (setf (pointer-y seat) y))
+      (pointer-frame seat))))
 
 (defmethod pointer-button ((seat seat) button state)
   (let* ((seat-mouse (seat-mouse seat))
 	 (surface (active-surface seat)))
-    (unless surface (error "No active surface for pointer button"))
-    (wl-pointer:send-button seat-mouse (next-serial seat) (get-ms) button state)
-    (pointer-frame seat)))
+    (when seat-mouse
+      (unless surface (error "No active surface for pointer button"))
+      (wl-pointer:send-button seat-mouse (next-serial seat) (get-ms) button state)
+      (pointer-frame seat))))
 
 (defmethod pointer-scroll-stop ((seat seat) axis)
   (let* ((seat-mouse (seat-mouse seat))
 	 (surface (active-surface seat)))
-    (unless surface (error "No active surface for pointer scroll stop"))
-    (wl-pointer:send-axis-stop seat-mouse (get-ms) axis)
-    (pointer-frame seat)))
+    (when seat-mouse
+      (unless surface (error "No active surface for pointer scroll stop"))
+      (wl-pointer:send-axis-stop seat-mouse (get-ms) axis)
+      (pointer-frame seat))))
 
 (defmethod pointer-scroll-finger ((seat seat) dx dy)
   (let* ((seat-mouse (seat-mouse seat))
 	 (surface (active-surface seat)))
-    (when surface
-      (if dx
-	  (progn
-	    (wl-pointer:send-axis-source seat-mouse :finger)
-	    (wl-pointer:send-axis seat-mouse (get-ms) :vertical-scroll dx))
-	  (progn
-	    (wl-pointer:send-axis-source seat-mouse :finger)
-	    (pointer-scroll-stop seat :vertical-scroll)))
+    (when seat-mouse
+      (when surface
+	(if dx
+	    (progn
+	      (wl-pointer:send-axis-source seat-mouse :finger)
+	      (wl-pointer:send-axis seat-mouse (get-ms) :vertical-scroll dx))
+	    (progn
+	      (wl-pointer:send-axis-source seat-mouse :finger)
+	      (pointer-scroll-stop seat :vertical-scroll)))
 
-      (if dy
-	  (progn
-	    (wl-pointer:send-axis-source seat-mouse :finger)
-	    (wl-pointer:send-axis seat-mouse (get-ms) :horizontal-scroll dy))
-	  (progn
-	    (wl-pointer:send-axis-source seat-mouse :finger)
-	    (pointer-scroll-stop seat :horizontal-scroll)))
+	(if dy
+	    (progn
+	      (wl-pointer:send-axis-source seat-mouse :finger)
+	      (wl-pointer:send-axis seat-mouse (get-ms) :horizontal-scroll dy))
+	    (progn
+	      (wl-pointer:send-axis-source seat-mouse :finger)
+	      (pointer-scroll-stop seat :horizontal-scroll)))
 
-      (wl-pointer:send-frame seat-mouse))))
+	(wl-pointer:send-frame seat-mouse)))))
 
 
 (defmethod pointer-frame ((seat seat))
-  (wl-pointer:send-frame (seat-mouse seat)))
+  (when (seat-mouse seat)
+    (wl-pointer:send-frame (seat-mouse seat))))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤   │││└─┐├─┘├─┤ │ │  ├─┤
