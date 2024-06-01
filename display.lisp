@@ -205,18 +205,13 @@ and then clean the list out"
 	(let* ((client (wl:client surface))
 	       (seat (seat client))
 	       (seat-mouse (seat-mouse seat))
-	       ;; (dd-manager (dd-manager client))
-	       ;; (drag-events (active-drag-events dd-manager))
 	       (surf-x (- new-x (x surface))) (surf-y (- new-y (y surface))))
 	  (if (and seat-mouse (active-surface seat))
 	      (progn
-		(pointer-motion seat surf-x surf-y)
-		;; (when drag-events (loop for event in drag-events
-					;; do (motion event new-x new-y)))
-		)
+		(pointer-motion seat surf-x surf-y))
 	      (when seat-mouse
+		(pointer-leave seat)
 		(pointer-enter seat surface surf-x surf-y)
-		;; TODO: perfrom pointer-laeve on the old (pointer-focus display)
 		(setf (pointer-focus display) surface))))
 	(when (pointer-focus display)
 	  (let* ((client (wl:client (pointer-focus display))) (seat (seat client)))
