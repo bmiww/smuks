@@ -100,9 +100,6 @@ Icon is the surface that provides the icon for the drag. Can be null."
   (loop for mime in (mimes (source offer))
 	do (wl-data-offer:send-offer offer mime)))
 
-(defmethod wl:destroy ((offer data-offer))
-  (log! "Destroying data-offer"))
-
 (defmethod wl-data-offer:finish ((offer data-offer))
   (wl-data-source:send-dnd-finished (source offer)))
 
