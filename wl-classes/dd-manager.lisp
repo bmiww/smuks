@@ -103,6 +103,9 @@ Icon is the surface that provides the icon for the drag. Can be null."
 (defmethod wl:destroy ((offer data-offer))
   (log! "Destroying data-offer"))
 
+(defmethod wl-data-offer:finish ((offer data-offer))
+  (wl-data-source:send-dnd-finished (source offer)))
+
 (defmethod wl-data-offer:set-actions ((offer data-offer) supported preferred)
   (setf (dest-supports offer) supported)
   (setf (dest-prefers offer) preferred))
@@ -111,7 +114,7 @@ Icon is the surface that provides the icon for the drag. Can be null."
   (when mime (setf (dest-mimes offer) (pushnew mime (dest-mimes offer) :test #'string=))))
 
 (defmethod wl-data-offer:receive ((offer data-offer) mime fd)
-  (wl-data-source:send-send (source offer) mime fd)
-  (wl-data-source:send-dnd-finished (source offer))
-  (setf (source offer) nil)
-  (setf (pending-drag (wl:get-display offer)) nil))
+    (wl-data-source:send-send (source offer) mime fd)
+    ;; TODO: SBCL EXCLUSIVE
+    (sb-unix:unix-close fd)
+    (setf (pending-drag (wl:get-display offer)) nil))

@@ -42,13 +42,13 @@
    (fd :initarg :fd :accessor fd)
    (mmap-pool :initform nil :accessor mmap-pool)))
 
-(defmethod wl:destroy ((pool pool))
-  (clrhash (buffers pool))
-  (when (mmap-pool pool) (munmap (mmap-pool pool))))
-
 (defmethod initialize-instance :after ((pool pool) &key)
   (multiple-value-bind (ptr fd size) (mmap:mmap (fd pool) :size (size pool) :mmap '(:shared))
     (setf (mmap-pool pool) (make-mmap-pool :ptr ptr :fd fd :size size))))
+
+(defmethod wl:destroy ((pool pool))
+  (clrhash (buffers pool))
+  (when (mmap-pool pool) (munmap (mmap-pool pool))))
 
 (defmethod wl-shm-pool:resize ((pool pool) size)
   ;; TODO: Dunno if i really needed the munmap in the end.
