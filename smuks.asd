@@ -67,6 +67,7 @@
 	       (:file "egl-util")
 	       (:file "shader-rect")
 	       (:file "shader-texture")
+	       (:file "shader-capsule")
 	       (:file "shader-init")
 	       (:file "package")
 	       (:file "dev-track")

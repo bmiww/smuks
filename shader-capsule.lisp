@@ -1,20 +1,19 @@
 
-;; ██████╗ ███████╗ ██████╗████████╗ █████╗ ███╗   ██╗ ██████╗ ██╗     ███████╗
-;; ██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔══██╗████╗  ██║██╔════╝ ██║     ██╔════╝
-;; ██████╔╝█████╗  ██║        ██║   ███████║██╔██╗ ██║██║  ███╗██║     █████╗
-;; ██╔══██╗██╔══╝  ██║        ██║   ██╔══██║██║╚██╗██║██║   ██║██║     ██╔══╝
-;; ██║  ██║███████╗╚██████╗   ██║   ██║  ██║██║ ╚████║╚██████╔╝███████╗███████╗
-;; ╚═╝  ╚═╝╚══════╝ ╚═════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝╚══════╝
-(defpackage :shaders.rectangle
+;;  ██████╗ █████╗ ██████╗ ███████╗██╗   ██╗██╗     ███████╗
+;; ██╔════╝██╔══██╗██╔══██╗██╔════╝██║   ██║██║     ██╔════╝
+;; ██║     ███████║██████╔╝███████╗██║   ██║██║     █████╗
+;; ██║     ██╔══██║██╔═══╝ ╚════██║██║   ██║██║     ██╔══╝
+;; ╚██████╗██║  ██║██║     ███████║╚██████╔╝███████╗███████╗
+;;  ╚═════╝╚═╝  ╚═╝╚═╝     ╚══════╝ ╚═════╝ ╚══════╝╚══════╝
+(defpackage :shaders.capsule
   (:use :cl :shaders)
   (:export shader update-matrix draw))
-(in-package :shaders.rectangle)
+(in-package :shaders.capsule)
 
 ;; TODO Rect - move/remove/improve
 (defstruct rect x y w h color)
 (defmethod space-tuple ((rect rect))
   (list (rect-x rect) (rect-y rect) (rect-w rect) (rect-h rect)))
-
 
 (defclass shader (shaders:shader-base)
   ((instanced-vbo :accessor instanced-vbo)
@@ -25,7 +24,11 @@
    (attr-color)
    (vao)))
 
-(defparameter vertex-shader-rectangle "
+(defmacro defshaderparam (name &body body)
+  `(defparameter ,name ,@body))
+
+
+(defshaderparam vertex-shader "
 #version 310 es
 
 uniform mat3 projection;
@@ -52,7 +55,34 @@ void main() {
 }
 ")
 
-(defparameter fragment-shader-rectangle "
+(defparameter vertex-shader-capsule "
+#version 310 es
+
+uniform mat3 projection;
+
+in vec2 vert;
+in vec4 position;
+in vec4 color;
+out vec4 incolor;
+
+mat2 scale(vec2 scale_vec){
+    return mat2(
+        scale_vec.x, 0.0,
+        0.0, scale_vec.y
+    );
+}
+
+void main() {
+    vec2 transform_translation = position.xy;
+    vec2 transform_scale = position.zw;
+    vec3 position = vec3(vert * scale(transform_scale) + transform_translation, 1.0);
+
+    incolor = color;
+    gl_Position = vec4(projection * position, 1.0);
+}
+")
+
+(defparameter fragment-shader-capsule "
 #version 310 es
 
 precision mediump float;
@@ -60,13 +90,21 @@ in vec4 incolor;
 out vec4 color;
 
 void main() {
-    color = incolor;
+    float x = gl_FragCoord.x;
+    float alpha = 1.0;
+    if (x == 1.0 || x == 5.0 || x == 6.0) {
+        alpha = 0.0;
+    } else {
+        alpha = 1.0;
+    }
+    vec4 new_color = vec4(incolor.xyz, alpha);
+    color = vec4(new_color.xyz, 0.5);
 }
 ")
 
 (defmethod initialize-instance :before ((program shader) &key projection)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position attr-color gl-buffer-array) program
-    (setf pointer (shaders:create-shader vertex-shader-rectangle fragment-shader-rectangle))
+    (setf pointer (shaders:create-shader vertex-shader-capsule fragment-shader-capsule))
     (setf instanced-vbo (gl:gen-buffer))
     (setf runtime-vbo (gl:gen-buffer))
     (setf vao (gl:gen-vertex-array))

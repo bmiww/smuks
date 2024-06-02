@@ -124,11 +124,7 @@ void main() {
 	(gl:uniform-matrix-3fv uni-texture-scaling tex-scaling-matrix t)
 
 	(gl:bind-buffer :array-buffer runtime-vbo)
-	;; (shaders:array-buffer-data
-	 ;; runtime-vbo
-	 ;; (concatenate
-	  ;; 'simple-vector
-	  ;; (util:flatten (loop for rect in `(,(make-rect :x 0.0 :y 0.0 :w width :h height)) collect (space-tuple rect)))))
+
 	(shaders:fill-buffer
 	 runtime-vbo
 	 (concatenate
