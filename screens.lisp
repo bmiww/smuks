@@ -45,12 +45,15 @@
 
 (defmethod shader ((screen screen) (type (eql :rect))) (car (shaders screen)))
 (defmethod shader ((screen screen) (type (eql :texture))) (cadr (shaders screen)))
+(defmethod shader ((screen screen) (type (eql :capsule))) (nth 2 (shaders screen)))
 
 (defmethod prep-shaders ((screen screen))
   (let ((width (width screen)) (height (height screen)))
     (prep-gl-implementation (fb screen) width height)
     (setf (shaders screen) `(,(shader-init:create-rect-shader width height)
-			     ,(shader-init:create-texture-shader width height)))))
+			     ,(shader-init:create-texture-shader width height)
+			     ,(restart-case (shader-init:create-capsule-shader width height)
+				(ignore nil))))))
 
 (defmethod update-projections ((screen screen) projection)
   (loop for shader in (shaders screen)
@@ -198,6 +201,9 @@
 (defun scene-2 (screen)
   (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
 						    :x 500.0 :y (next-y-2-pos) :w 200.0 :h 150.0
-						    :color '(0.2 0.2 0.2 1.0)))) )
+						    :color '(0.2 0.2 0.2 1.0))))
+  (shaders.capsule:draw (shader screen :capsule) `(,(shaders.capsule::make-rect
+						    :x 800.0 :y 600.0 :w 200.0 :h 150.0
+						    :color '(0.2 0.2 0.2 1.0)))))
 
-(defvar *scenes* (list #'scene-1 #'scene-2))
+(defvar *scenes* (list 'scene-1 'scene-2))
