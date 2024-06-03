@@ -53,13 +53,14 @@
     (setf (shaders screen) `(,(shader-init:create-rect-shader width height)
 			     ,(shader-init:create-texture-shader width height)
 			     ,(restart-case (shader-init:create-capsule-shader width height)
-				(ignore nil))))))
+				(ignore () (nth 3 (shaders screen))))))))
 
 (defmethod update-projections ((screen screen) projection)
   (loop for shader in (shaders screen)
 	do (shaders:update-projection shader projection)))
 
 (defmethod render-scene ((screen screen)) (funcall (scene screen) screen))
+(defmethod set-scene ((screen screen) scene) (setf (scene screen) scene))
 
 
 
@@ -188,7 +189,7 @@
 						    :x *red-x* :y *red-y* :w 200.0 :h 50.0
 						    :color '(1.0 0.0 0.0 0.6))))
   (shaders.capsule:draw (shader screen :capsule) `(,(shaders.capsule::make-rect
-						    :x 800.0 :y 600.0 :w 200.0 :h 150.0
+						    :x 400.0 :y 600.0 :w 200.0 :h 200.0
 						    :color '(0.2 0.2 0.2 1.0)))))
 
 (defvar *y-2-pos* 220.0)
@@ -209,4 +210,39 @@
 						    :x 800.0 :y 600.0 :w 200.0 :h 150.0
 						    :color '(0.2 0.2 0.2 1.0)))))
 
+;; NOTE: Accidentally managed to draw like a laying down exclamation mark with this
+(defun scene-nothing-yet (screen)
+  (let* ((size 100.0) (width (flo (width screen))) (height (flo (height screen))) (half (/ size 2)))
+    (flet ((draw-rect (x y)
+	     (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
+							       :x x :y y :w size :h size
+							       :color '(0.2 0.2 0.2 1.0))))))
+      (draw-rect (- width size (/ width 9) 0.0) (- (/ height 2) half))
+      (draw-rect (- width size (/ width 6) 50.0) (- (/ height 2) half))
+      (draw-rect (- width size (/ width 3) 50.0) (- (/ height 2) half)))))
+
+
 (defvar *scenes* (list 'scene-1 'scene-2))
+
+
+(defun click-locations (screen size)
+  (let ((width (flo (width screen))) (height (flo (height screen))))
+    (list `(0.0 0.0)
+	  `(,(- (/ width 2) (/ size 2)) 0.0)
+	  `(,(- width size) 0.0)
+	  `(0.0 ,(- (/ height 2) (/ size 2)))
+	  `(,(- (/ width 2) (/ size 2)) ,(- (/ height 2) (/ size 2)))
+	  `(,(- width size) ,(- (/ height 2) (/ size 2)))
+	  `(0.0 ,(- height size))
+	  `(,(- (/ width 2) (/ size 2)) ,(- height size))
+	  `(,(- width size) ,(- height size)))))
+
+
+(defun scene-select-screen-pos (screen)
+  (let ((size 150.0))
+    (flet ((draw-capsule (x y)
+	     (shaders.capsule:draw (shader screen :capsule) `(,(shaders.capsule::make-rect
+								:x x :y y :w size :h size
+								:color '(0.2 0.2 0.2 1.0))))))
+      (dolist (pos (click-locations screen size))
+	(draw-capsule (first pos) (second pos))))))

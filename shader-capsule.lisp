@@ -53,7 +53,27 @@ void main() {
 }
 ")
 
-(defshader shader capsule-frag "
+;; (defshader shader capsule-frag "
+;; #version 310 es
+
+;; precision mediump float;
+;; in vec4 incolor;
+;; out vec4 color;
+
+;; void main() {
+    ;; float x = gl_FragCoord.x;
+    ;; float alpha = 1.0;
+    ;; if (x == 1.0 || x == 5.0 || x == 6.0) {
+        ;; alpha = 0.0;
+    ;; } else {
+        ;; alpha = 1.0;
+    ;; }
+    ;; vec4 new_color = vec4(incolor.xyz, alpha);
+    ;; vec4 what_color = vec4(incolor.x + 1.0, incolor.y + 1.0, incolor.z, 0.1);
+    ;; color = vec4(new_color.xyz, 0.0);
+;; }
+;; ")
+(defvar capsule-frag "
 #version 310 es
 
 precision mediump float;
@@ -61,15 +81,18 @@ in vec4 incolor;
 out vec4 color;
 
 void main() {
-    float x = gl_FragCoord.x;
-    float alpha = 1.0;
-    if (x == 1.0 || x == 5.0 || x == 6.0) {
-        alpha = 0.0;
-    } else {
-        alpha = 1.0;
-    }
-    vec4 new_color = vec4(incolor.xyz, alpha);
-    color = vec4(new_color.xyz, 0.9);
+    vec2 point = gl_PointCoord.xy;
+
+    vec2 pos = vec2(0.5, 0.5) - point;
+
+    float r = length(pos) * 2.0;
+    float a = atan(pos.y, pos.x);
+
+    float f = cos(a * 4.0);
+    f = f + 1.2;
+    f = sin(f);
+
+    color = vec4(incolor.xyz, 1. -smoothstep(f, f, r));
 }
 ")
 
