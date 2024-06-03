@@ -150,6 +150,11 @@
 					  :drm (drm tracker))))
 			   (prep-shaders screen)
 			   (start-monitor screen)
+
+			   (when (> (length (screens tracker)) 0)
+			     (set-scene screen 'scene-nothing-yet)
+			     (set-scene (nth 0 (screens tracker)) 'scene-select-screen-pos))
+
 			   (push screen (screens tracker))
 			   (render-frame screen))))))))))
 
