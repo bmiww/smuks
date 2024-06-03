@@ -13,12 +13,17 @@
    ;; Params
    *instanced-vert* *instanced-texture-vert*
    ;; Shader base
-   shader-base update-projection pointer projection uni-projection))
+   shader-base update-projection pointer projection uni-projection
+
+   defshader update-shaders-of-name))
 
 (in-package :shaders)
 
+;; TODO: Make previous optional for debugging
+;; NOTE: Previous is meant to track previous versions of the shader (pointers)
 (defclass shader-base ()
-  ((pointer :accessor pointer)
+  ((previous :initform nil :accessor previous)
+   (pointer :accessor pointer)
    (projection :accessor projection)
    (uni-projection :accessor uni-projection)))
 
@@ -90,3 +95,42 @@
 
 (defparameter *instanced-vert* #(1.0 0.0  0.0 0.0  1.0 1.0  0.0 1.0))
 (defparameter *instanced-texture-vert* #(1.0 0.0  0.0 0.0  1.0 1.0  0.0 1.0))
+
+
+;; ┌─┐┬ ┬┌─┐┌┬┐┌─┐┬─┐  ┬  ┬┌─┐┬─┐┌─┐┬┌─┐┌┐┌┌─┐
+;; └─┐├─┤├─┤ ││├┤ ├┬┘  └┐┌┘├┤ ├┬┘└─┐││ ││││└─┐
+;; └─┘┴ ┴┴ ┴─┴┘└─┘┴└─   └┘ └─┘┴└─└─┘┴└─┘┘└┘└─┘
+;; TODO: Do not use - eval does not run on the GL thread
+;; Would either:
+;; Need to attach to swank somehow
+;; Or have a poller that picks up the please compile message
+;; For now got lazy and abandoned the idea
+
+(defvar *shader-tracker* (make-hash-table :test 'equalp))
+;; NOTE: this variable should be transient and mostly stay nil.
+;; Any calling code should set it to nil after using it.
+(defvar *enable-shader-versioning* nil)
+
+;; TODO: Maybe check if the calling package already has this var
+;; In order to save the form from the first time this was invoked
+(defmacro defshader (class name &body body)
+  (let ((form `(defvar ,name ,@body))
+	(existing (gethash class *shader-tracker*)))
+    (unless existing (setf (gethash class *shader-tracker*) (list)))
+    ;; (when (and *enable-shader-versioning* existing) (rebuild-shader class form))
+    form))
+
+(defun rebuild-shader (class form)
+  (eval form)
+  (print "Rebuild shader is broken, please don't call it")
+  (let* ((versions (gethash class *shader-tracker*)))
+    (dolist (shader versions)
+      (with-slots (projection) shader
+	(make-instance class :projection projection)))))
+
+(defmethod initialize-instance :after ((shader shader-base) &key)
+  (let ((list (or (gethash (type-of shader) *shader-tracker*)
+		  (setf (gethash (type-of shader) *shader-tracker*) (list)))))
+    (declare (ignore list))
+    ;; (setf (gethash (type-of shader) *shader-tracker*) (cons shader list))))
+    ))

@@ -186,7 +186,10 @@
 
   (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
 						    :x *red-x* :y *red-y* :w 200.0 :h 50.0
-						    :color '(1.0 0.0 0.0 0.6)))))
+						    :color '(1.0 0.0 0.0 0.6))))
+  (shaders.capsule:draw (shader screen :capsule) `(,(shaders.capsule::make-rect
+						    :x 800.0 :y 600.0 :w 200.0 :h 150.0
+						    :color '(0.2 0.2 0.2 1.0)))))
 
 (defvar *y-2-pos* 220.0)
 (defvar y-2-up t)
