@@ -97,45 +97,15 @@
 
 (defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))
 
+
+;; ┬┌┐┌┌─┐┬ ┬┌┬┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┬┌┐┌┌─┐
+;; ││││├─┘│ │ │   ├─┤├─┤│││ │││  │││││ ┬
+;; ┴┘└┘┴  └─┘ ┴   ┴ ┴┴ ┴┘└┘─┴┘┴─┘┴┘└┘└─┘
 (defmethod input ((display display) type event)
-  (log! "No handler for input event: ~a" (event-type event)))
-
-;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
-;;  │ │ ││ ││  ├─┤  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
-;;  ┴ └─┘└─┘└─┘┴ ┴  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
-(defmethod input ((display display) (type (eql :touch-down)) event)
-  (process display type :passthrough event))
-
-(defmethod input ((display display) (type (eql :touch-up)) event)
-  (process display type :passthrough event))
-
-(defmethod input ((display display) (type (eql :touch-motion)) event)
-  (process display type :passthrough event))
-
-(defmethod input ((display display) (type (eql :touch-frame)) event)
-  (process display type :passthrough event))
-
-
-;; ┌─┐┌─┐┬┌┐┌┌┬┐┌─┐┬─┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
-;; ├─┘│ │││││ │ ├┤ ├┬┘  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
-;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
-(defmethod input ((display display) (type (eql :pointer-motion)) event)
-  (process display type :passthrough event))
-
-(defmethod input ((display display) (type (eql :pointer-button)) event)
-  (process display type :passthrough event))
-
-(defmethod input ((display display) (type (eql :pointer-scroll-finger)) event)
   (process display type :passthrough event))
 
 (defmethod input ((display display) (type (eql :pointer-axis)) event)
   "This is deprecated in libinput >1.19. Therefore ignorable.")
-
-;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐
-;; ├┴┐├┤ └┬┘├┴┐│ │├─┤├┬┘ ││
-;; ┴ ┴└─┘ ┴ └─┘└─┘┴ ┴┴└──┴┘
-(defmethod input ((display display) (type (eql :keyboard-key)) event)
-  (process display type :passthrough event))
 
 
 ;; ┬ ┬┬┌┐┌┌┬┐┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┬┌┐┌┌─┐
