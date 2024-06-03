@@ -21,7 +21,8 @@
    (pointer-focus :initform nil :accessor pointer-focus)
    (pending-drag :initform nil :accessor pending-drag)
    (orientation :initarg :orientation :initform :landscape :accessor orientation)
-   (windows :initform nil :accessor windows)))
+   (windows :initform nil :accessor windows)
+   (screens :initform nil :accessor screens)))
 
 (defmethod wl:rem-client :before ((display display) client)
   (with-slots (keyboard-focus pointer-focus pending-drag) display

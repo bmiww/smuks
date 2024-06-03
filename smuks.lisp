@@ -60,7 +60,8 @@
 		     ;; It could also be interesting to have more than one dev-t.
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
 			      :display-width (width *first*)
-			      :display-height (height *first*)))
+			      :display-height (height *first*)
+			      :screen-tracker *screen-tracker*))
 
 
   (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
