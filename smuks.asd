@@ -83,4 +83,5 @@
 			     (:file "dmabuf")))
 	       (:file "screens")
 	       (:file "display")
+	       (:file "display-inputs")
 	       (:file "smuks")))

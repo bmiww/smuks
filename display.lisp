@@ -24,6 +24,9 @@
    (windows :initform nil :accessor windows)
    (screens :initform nil :accessor screens)))
 
+(defgeneric input (display type event))
+(defgeneric process (display type usecase event))
+
 (defmethod wl:rem-client :before ((display display) client)
   (with-slots (keyboard-focus pointer-focus pending-drag) display
     (when (and pointer-focus (eq (wl:client pointer-focus) client)) (setf (pointer-focus display) nil))
@@ -100,168 +103,39 @@
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;;  │ │ ││ ││  ├─┤  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;;  ┴ └─┘└─┘└─┘┴ ┴  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
-(defmethod orient-point ((display display) x y)
-  (case (orientation display)
-    (:landscape (values y (- (display-height display) x)))
-    (:portrait (- (display-width display) x))))
-
-
 (defmethod input ((display display) (type (eql :touch-down)) event)
-  "Notify a client that a touch event has occured.
-Save the client as interested in the slot for later reference."
-  (let* ((x (flo (touch@-x event)))
-	 (y (flo (touch@-y event)))
-	 (slot (touch@-seat-slot event)))
-
-    (setf (values x y) (orient-point display x y))
-    (let ((surface (surface-at-coords display x y)))
-      (when surface
-	(let* ((client (wl:client surface))
-	       (seat (seat client)))
-	  (when (seat-touch seat)
-	    (pushnew client (aref (touch-slot-interesses display) slot))
-	    (touch-down seat surface slot x y)))))))
+  (process display type :passthrough event))
 
 (defmethod input ((display display) (type (eql :touch-up)) event)
-  "Notify all clients interested in the specific touch slot
-and then clean the list out"
-  (let* ((slot (touch-up@-seat-slot event))
-	 (clients (aref (touch-slot-interesses display) slot)))
-    (dolist (client clients)
-      (when (seat-touch (seat client))
-	(touch-up (seat client) slot)))
-    (setf (aref (touch-slot-interesses display) slot) nil)))
+  (process display type :passthrough event))
 
 (defmethod input ((display display) (type (eql :touch-motion)) event)
-  "Notify all clients interested in the specific touch slot of the motion event"
-  (let* ((x (flo (touch@-x event)))
-	 (y (flo (touch@-y event)))
-	 (slot (touch@-seat-slot event))
-	 (clients (aref (touch-slot-interesses display) slot))
-	 (motiond? nil))
+  (process display type :passthrough event))
 
-    (setf (values x y) (orient-point display x y))
-    (dolist (client clients)
-      (when (seat-touch (seat client))
-	(setf motiond? t)
-	(touch-motion (seat client) slot x y)))
-    motiond?))
-
-;; TODO: Not sure if it would be possible or even make sense to keep a list
-;; of interested clients instead of broadcasting to all
 (defmethod input ((display display) (type (eql :touch-frame)) event)
-  "Notify all clients that a touch frame event has occured"
-  (declare (ignore event))
-  (dolist (client (wl:all-clients display))
-    (when (seat-touch (seat client))
-      (touch-frame (seat client)))))
+  (process display type :passthrough event))
 
 
 ;; ┌─┐┌─┐┬┌┐┌┌┬┐┌─┐┬─┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;; ├─┘│ │││││ │ ├┤ ├┬┘  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
-(defmethod add-dx ((display display) dx)
-  (let ((width (display-width display))
-	(height (display-height display)))
-    (case (orientation display)
-      (:landscape-i (setf dx (- dx)))
-      (:portrait-i (setf dx (- dx))))
-    (case (orientation display)
-      ((:landscape :landscape-i)
-       (incf (cursor-x display) dx)
-       (when (>= (cursor-x display) width) (setf (cursor-x display) width))
-       (when (< (cursor-x display) 0) (setf (cursor-x display) 0))
-       (cursor-x display))
-      ((:portrait :portrait-i)
-       (incf (cursor-y display) dx)
-       (when (>= (cursor-y display) height) (setf (cursor-y display) height))
-       (when (< (cursor-y display) 0) (setf (cursor-y display) 0))
-       (cursor-y display)))))
-
-(defmethod add-dy ((display display) dy)
-  (let ((width (display-width display))
-	(height (display-height display)))
-    (case (orientation display)
-      (:portrait (setf dy (- dy)))
-      (:landscape-i (setf dy (- dy))))
-    (case (orientation display)
-      ((:landscape :landscape-i)
-       (incf (cursor-y display) dy)
-       (when (>= (cursor-y display) height) (setf (cursor-y display) height))
-       (when (< (cursor-y display) 0) (setf (cursor-y display) 0))
-       (cursor-y display))
-      ((:portrait :portrait-i)
-       (incf (cursor-x display) dy)
-       (when (>= (cursor-x display) width) (setf (cursor-x display) width))
-       (when (< (cursor-x display) 0) (setf (cursor-x display) 0))
-       (cursor-x display)))))
-
-
-;; TODO: This is a bit shit in case if 2 windows are overlapping or next to each other
-;; If a pointer focus switches from one surface to another - then hell breaks loose
-;; TODO: Might be that leave should be called before enter
 (defmethod input ((display display) (type (eql :pointer-motion)) event)
-  (let* ((new-x (add-dx display (flo (pointer-motion@-dx event))))
-	 (new-y (add-dy display (flo (pointer-motion@-dy event))))
-	 (surface (surface-at-coords display new-x new-y)))
-    (if surface
-	(let* ((client (wl:client surface))
-	       (seat (seat client))
-	       (surf-x (- new-x (x surface))) (surf-y (- new-y (y surface))))
-	  (if (and (active-surface seat) (eq (pointer-focus display) surface))
-	      (progn
-		(pointer-motion seat surf-x surf-y))
-	      (progn
-		(when (pointer-focus display)
-		  (pointer-leave (seat (wl:client (pointer-focus display)))))
-		(pointer-enter seat surface surf-x surf-y)
-		(setf (pointer-focus display) surface))))
-	(when (pointer-focus display)
-	  (pointer-leave (seat (wl:client (pointer-focus display))))
-	  (setf (pointer-focus display) nil)))))
+  (process display type :passthrough event))
 
-;; NOTE: Additionally - sets display keyboard focus to the surface
 (defmethod input ((display display) (type (eql :pointer-button)) event)
-  (let* ((button (pointer-button@-button event))
-	 (state (pointer-button@-state event))
-	 (surface (surface-at-coords display (cursor-x display) (cursor-y display)))
-	 (client (and surface (wl:client surface))))
+  (process display type :passthrough event))
 
-    (when surface
-      (let* ((seat (seat client)))
-	(setf (keyboard-focus display) surface)
-	(pointer-button seat button state)))))
-
+(defmethod input ((display display) (type (eql :pointer-scroll-finger)) event)
+  (process display type :passthrough event))
 
 (defmethod input ((display display) (type (eql :pointer-axis)) event)
   "This is deprecated in libinput >1.19. Therefore ignorable.")
 
-(defmethod input ((display display) (type (eql :pointer-scroll-finger)) event)
-  (let* ((surface (surface-at-coords display (cursor-x display) (cursor-y display))))
-    (when surface
-      (let* ((client (wl:client surface)) (seat (seat client)))
-	(pointer-scroll-finger seat (pointer-scroll-finger@-dy event) (pointer-scroll-finger@-dx event))))))
-
-
 ;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐
 ;; ├┴┐├┤ └┬┘├┴┐│ │├─┤├┬┘ ││
 ;; ┴ ┴└─┘ ┴ └─┘└─┘┴ ┴┴└──┴┘
-;; TODO: Very annoyed by the nil checks here
-;; TODO: This does not clean up the keyboard-focus property when a client is gone.
 (defmethod input ((display display) (type (eql :keyboard-key)) event)
-  (let* ((key (keyboard@-key event))
-	 (state (keyboard@-state event))
-	 (surface (keyboard-focus display))
-	 (client (and surface (wl:client surface)))
-	 (seat (and client (seat client)))
-	 (seat-keyboard (and seat (seat-keyboard seat))))
-    (when seat-keyboard
-      ;; tODO: Key needs to be translated to the XKB keycode
-      ;; NOTE: Although - i don't know - this seems to be working perfectly fine
-      (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key state))
-    ;; Probably F12
-    (when (and (eq state :pressed) (eq key 88))
-      (shutdown))))
+  (process display type :passthrough event))
 
 
 ;; ┬ ┬┬┌┐┌┌┬┐┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┬┌┐┌┌─┐
@@ -314,3 +188,44 @@ and then clean the list out"
 				  return surface)
 	  when candidate
 	  return candidate)))
+
+(defmethod add-dx ((display display) dx)
+  (let ((width (display-width display))
+	(height (display-height display)))
+    (case (orientation display)
+      (:landscape-i (setf dx (- dx)))
+      (:portrait-i (setf dx (- dx))))
+    (case (orientation display)
+      ((:landscape :landscape-i)
+       (incf (cursor-x display) dx)
+       (when (>= (cursor-x display) width) (setf (cursor-x display) width))
+       (when (< (cursor-x display) 0) (setf (cursor-x display) 0))
+       (cursor-x display))
+      ((:portrait :portrait-i)
+       (incf (cursor-y display) dx)
+       (when (>= (cursor-y display) height) (setf (cursor-y display) height))
+       (when (< (cursor-y display) 0) (setf (cursor-y display) 0))
+       (cursor-y display)))))
+
+(defmethod add-dy ((display display) dy)
+  (let ((width (display-width display))
+	(height (display-height display)))
+    (case (orientation display)
+      (:portrait (setf dy (- dy)))
+      (:landscape-i (setf dy (- dy))))
+    (case (orientation display)
+      ((:landscape :landscape-i)
+       (incf (cursor-y display) dy)
+       (when (>= (cursor-y display) height) (setf (cursor-y display) height))
+       (when (< (cursor-y display) 0) (setf (cursor-y display) 0))
+       (cursor-y display))
+      ((:portrait :portrait-i)
+       (incf (cursor-x display) dy)
+       (when (>= (cursor-x display) width) (setf (cursor-x display) width))
+       (when (< (cursor-x display) 0) (setf (cursor-x display) 0))
+       (cursor-x display)))))
+
+(defmethod orient-point ((display display) x y)
+  (case (orientation display)
+    (:landscape (values y (- (display-height display) x)))
+    (:portrait (- (display-width display) x))))
