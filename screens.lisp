@@ -78,9 +78,13 @@
     (setf (fb screen) nil)))
 
 
-;; ┌┬┐┬─┐┌─┐┌─┐┬┌─┌─┐┬─┐
-;;  │ ├┬┘├─┤│  ├┴┐├┤ ├┬┘
-;;  ┴ ┴└─┴ ┴└─┘┴ ┴└─┘┴└─
+
+;; ████████╗██████╗  █████╗  ██████╗██╗  ██╗███████╗██████╗
+;; ╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗
+;;    ██║   ██████╔╝███████║██║     █████╔╝ █████╗  ██████╔╝
+;;    ██║   ██╔══██╗██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗
+;;    ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║
+;;    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
 ;; TODO: Maybe this can also have egl in it?
 (defclass screen-tracker ()
   ((drm :initarg :drm :accessor drm)
@@ -162,6 +166,10 @@
 			   (push screen (screens tracker))
 			   (render-frame screen))))))))))
 
+;; TODO: Suboptimal. Since this is used to check if inputs should be handled differently,
+;; This is a nasty amount of extra work that needs to be done
+(defmethod configuring-neighbors? ((tracker screen-tracker))
+  (some (lambda (screen) (configuring-neighbors screen)) (screens tracker)))
 
 (defmethod kickstart-frame-render-for-all ((tracker screen-tracker))
   (loop for screen in (screens tracker)
@@ -172,6 +180,18 @@
 
 ;; NOTE: I'll maybe use this to identify my tablet screen for the sake of associating touch or accelerometer events with it.
 (defmethod dsi-screen ((tracker screen-tracker)) (find-if (lambda (screen) (eq (connector-type screen) :dsi)) (screens tracker)))
+
+(defmethod is-in-click-location? ((tracker screen-tracker) x y)
+  (let ((locations (click-locations (testie tracker) *stupid-size*))
+	(result nil))
+    (dolist (location locations)
+      (let ((x-rect (first location)) (y-rect (second location)))
+	(when (and (<= x-rect x (+ x-rect *stupid-size*))
+		   (<= y-rect y (+ y-rect *stupid-size*)))
+	  (setf result (third location)))))
+    result))
+
+
 
 
 ;; ┌┬┐┌─┐┌─┐┌┬┐┬┌┐┌┌─┐  ┌─┐┌┬┐┬ ┬┌─┐┌─┐
@@ -232,23 +252,23 @@
 
 
 (defvar *scenes* (list 'scene-1 'scene-2))
-
+(defvar *stupid-size* 150.0)
 
 (defun click-locations (screen size)
   (let ((width (flo (width screen))) (height (flo (height screen))))
-    (list `(0.0 0.0)
-	  `(,(- (/ width 2) (/ size 2)) 0.0)
-	  `(,(- width size) 0.0)
-	  `(0.0 ,(- (/ height 2) (/ size 2)))
-	  `(,(- (/ width 2) (/ size 2)) ,(- (/ height 2) (/ size 2)))
-	  `(,(- width size) ,(- (/ height 2) (/ size 2)))
-	  `(0.0 ,(- height size))
-	  `(,(- (/ width 2) (/ size 2)) ,(- height size))
-	  `(,(- width size) ,(- height size)))))
+    (list `(0.0 0.0 :top-left)
+	  `(,(- (/ width 2) (/ size 2)) 0.0 :top-center)
+	  `(,(- width size) 0.0 :top-right)
+	  `(0.0 ,(- (/ height 2) (/ size 2)) :center-left)
+	  `(,(- (/ width 2) (/ size 2)) ,(- (/ height 2) (/ size 2)) :center-center)
+	  `(,(- width size) ,(- (/ height 2) (/ size 2)) :center-right)
+	  `(0.0 ,(- height size) :bottom-left)
+	  `(,(- (/ width 2) (/ size 2)) ,(- height size) :bottom-center)
+	  `(,(- width size) ,(- height size) :bottom-right))))
 
 
 (defun scene-select-screen-pos (screen)
-  (let ((size 150.0))
+  (let ((size *stupid-size*))
     (flet ((draw-capsule (x y)
 	     (shaders.capsule:draw (shader screen :capsule) `(,(shaders.capsule::make-rect
 								:x x :y y :w size :h size

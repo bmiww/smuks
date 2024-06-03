@@ -22,7 +22,7 @@
    (pending-drag :initform nil :accessor pending-drag)
    (orientation :initarg :orientation :initform :landscape :accessor orientation)
    (windows :initform nil :accessor windows)
-   (screens :initform nil :accessor screens)))
+   (screens :initarg :screen-tracker :initform nil :accessor screens)))
 
 (defgeneric input (display type event))
 (defgeneric process (display type usecase event))
@@ -102,7 +102,9 @@
 ;; ││││├─┘│ │ │   ├─┤├─┤│││ │││  │││││ ┬
 ;; ┴┘└┘┴  └─┘ ┴   ┴ ┴┴ ┴┘└┘─┴┘┴─┘┴┘└┘└─┘
 (defmethod input ((display display) type event)
-  (process display type :passthrough event))
+  (cond
+    ((configuring-neighbors? (screens display)) (process display type :screen-setup event))
+    (t (process display type :passthrough event))))
 
 (defmethod input ((display display) (type (eql :pointer-axis)) event)
   "This is deprecated in libinput >1.19. Therefore ignorable.")

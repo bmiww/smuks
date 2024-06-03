@@ -84,4 +84,5 @@
 	       (:file "screens")
 	       (:file "display")
 	       (:file "display-inputs")
+	       (:file "display-inputs-screen-setup")
 	       (:file "smuks")))
