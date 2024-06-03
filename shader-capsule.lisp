@@ -89,7 +89,7 @@ void main() {
     float a = atan(pos.y, pos.x);
 
     float f = cos(a * 4.0);
-    f = f + 1.2;
+    f = f + 2.2;
     f = sin(f);
 
     color = vec4(incolor.xyz, 1. -smoothstep(f, f, r));
