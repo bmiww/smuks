@@ -24,7 +24,8 @@
    (gl-framebuffer :initform nil :accessor gl-framebuffer)
    (shaders :initform nil :accessor shaders)
    (frame-counter :initform (make-instance 'frame-counter) :accessor frame-counter)
-   (scene :initarg :scene :initform nil :accessor scene)))
+   (scene :initarg :scene :initform nil :accessor scene)
+   (configuring-neighbors :initform nil :accessor configuring-neighbors)))
 
 (defmethod screen-width ((screen screen) orientation)
   (case orientation ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen))))
@@ -152,8 +153,11 @@
 			   (start-monitor screen)
 
 			   (when (> (length (screens tracker)) 0)
-			     (set-scene screen 'scene-nothing-yet)
-			     (set-scene (nth 0 (screens tracker)) 'scene-select-screen-pos))
+			     ;; TODO: This shouldn't be the first screen, there can be more than two screens overall
+			     (let ((first (nth 0 (screens tracker))))
+			       (set-scene screen 'scene-nothing-yet)
+			       (set-scene first 'scene-select-screen-pos)
+			       (setf (configuring-neighbors first) t)))
 
 			   (push screen (screens tracker))
 			   (render-frame screen))))))))))
