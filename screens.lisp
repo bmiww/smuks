@@ -13,7 +13,8 @@
 ;; └─┐│  ├┬┘├┤ ├┤ │││
 ;; └─┘└─┘┴└─└─┘└─┘┘└┘
 (defclass screen ()
-  ((buffer :initarg :buffer :accessor buffer)
+  ((tracker :initarg :tracker :accessor tracker)
+   (buffer :initarg :buffer :accessor buffer)
    (fb :initarg :fb :accessor fb)
    (connector :initarg :connector :accessor connector)
    (egl-image :initform nil :accessor egl-image)
@@ -23,7 +24,12 @@
    (frame-counter :initform (make-instance 'frame-counter) :accessor frame-counter)
    (scene :initarg :scene :initform nil :accessor scene)
    (configuring-neighbors :initform nil :accessor configuring-neighbors)
-   (orientation :initform :landscape :initarg :orientation :accessor orientation)))
+   (orientation :initform :landscape :initarg :orientation :reader orientation)))
+
+(defmethod (setf orientation) (orientation (screen screen))
+  (setf (slot-value screen 'orientation) orientation)
+  (recalculate-dimensions (tracker screen)))
+
 
 (defmethod screen-width ((screen screen))
   (case (orientation screen) ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen))))
@@ -64,7 +70,6 @@
 
 (defmethod render-scene ((screen screen)) (funcall (scene screen) screen))
 (defmethod set-scene ((screen screen) scene) (setf (scene screen) scene))
-
 
 
 (defmethod cleanup-screen ((screen screen))
@@ -109,6 +114,7 @@
 				(width (incf (max-width tracker) (hdisplay connector))))
 			    (make-instance 'screen
 			       :connector connector
+			       :tracker tracker
 			       :orientation (guess-orientation width height)
 			       :buffer (framebuffer-buffer fb-obj)
 			       :fb (framebuffer-id fb-obj)
@@ -173,6 +179,17 @@
 
 			   (push screen (screens tracker))
 			   (render-frame screen))))))))))
+
+;; TODO: This also needs to take into account screen positions
+;; And overall bounds when screens are skewed from each other
+(defmethod recalculate-dimensions ((tracker screen-tracker))
+  (setf (max-width tracker) 0)
+  (setf (max-height tracker) 0)
+  (loop for screen in (screens tracker)
+	do (progn
+	     (incf (max-height tracker) (screen-height screen))
+	     (incf (max-width tracker) (screen-width screen)))))
+
 
 (defmethod bounds-check ((tracker screen-tracker) x y)
   (with-slots (max-width max-height) tracker
