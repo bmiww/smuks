@@ -24,7 +24,8 @@
    (frame-counter :initform (make-instance 'frame-counter) :accessor frame-counter)
    (scene :initarg :scene :initform nil :accessor scene)
    (configuring-neighbors :initform nil :accessor configuring-neighbors)
-   (orientation :initform :landscape :initarg :orientation :reader orientation)))
+   (orientation :initform :landscape :initarg :orientation :reader orientation)
+   (related-screens :initform nil :accessor related-screens)))
 
 (defmethod (setf orientation) (orientation (screen screen))
   (setf (slot-value screen 'orientation) orientation)
@@ -53,10 +54,10 @@
 (defmethod shader ((screen screen) (type (eql :capsule))) (nth 2 (shaders screen)))
 
 (defmethod shader-rot-val ((screen screen))
-  (case (orientation screen) (:landscape -90) (:portrait 0) (:landscape-i 90) (:portrait-i 180)))
+  (case (orientation screen) (:landscape 0) (:portrait 0) (:landscape-i 180) (:portrait-i 180)))
 
 (defmethod prep-shaders ((screen screen))
-  (let ((width (screen-width screen)) (height (screen-height screen)) (rot (shader-rot-val screen)))
+  (let ((width (width screen)) (height (height screen)) (rot (shader-rot-val screen)))
     (prep-gl-implementation (fb screen) width height)
     (setf (shaders screen) `(,(shader-init:create-rect-shader width height rot)
 			     ,(shader-init:create-texture-shader width height rot)
@@ -110,8 +111,8 @@
 		for index from 0
 		for fb-obj = (create-connector-framebuffer drm connector)
 		when fb-obj
-		  collect (let ((height (incf (max-height tracker) (vdisplay connector)))
-				(width (incf (max-width tracker) (hdisplay connector))))
+		  collect (let ((height (vdisplay connector))
+				(width (hdisplay connector)))
 			    (make-instance 'screen
 			       :connector connector
 			       :tracker tracker
@@ -119,7 +120,29 @@
 			       :buffer (framebuffer-buffer fb-obj)
 			       :fb (framebuffer-id fb-obj)
 			       :scene (nth index *scenes*)
-			       :drm drm))))))
+			       :drm drm))))
+
+    ;; TODO: This should be rewritten to support different screen positions
+    ;; For now - assuming all screens are vertically stacked
+    (loop for i from 0 below (length (screens tracker))
+	  for first = (nth i (screens tracker))
+	  for second = (nth (1+ i) (screens tracker))
+	  for third = (nth (+ i 2) (screens tracker))
+	  do (progn
+	       (when (and first second)
+		 (setf (related-screens first) (append (related-screens first) (list second)))
+		 (setf (related-screens second) (append (related-screens second) (list first))))
+	       (when (and second third)
+		 (setf (related-screens second) (append (related-screens second) (list third)))
+		 (setf (related-screens third) (append (related-screens third) (list second))))))
+
+    (let ((widest (loop for screen in (screens tracker) maximize (screen-width screen))))
+      (setf (max-width tracker) widest))
+    (setf (max-height tracker)
+	  (loop for screen in (screens tracker)
+		for size = 0
+		do (incf size (screen-height screen))
+		finally (return size)))))
 
 (defmethod stop-measuring-fps ((tracker screen-tracker))
   (loop for screen in (screens tracker) do (stop (frame-counter screen))))
@@ -180,9 +203,11 @@
 			   (push screen (screens tracker))
 			   (render-frame screen))))))))))
 
+
 ;; TODO: This also needs to take into account screen positions
 ;; And overall bounds when screens are skewed from each other
 (defmethod recalculate-dimensions ((tracker screen-tracker))
+  (error "This won't work as intended for now. See todo")
   (setf (max-width tracker) 0)
   (setf (max-height tracker) 0)
   (loop for screen in (screens tracker)
@@ -190,7 +215,7 @@
 	     (incf (max-height tracker) (screen-height screen))
 	     (incf (max-width tracker) (screen-width screen)))))
 
-
+;; TODO; For now going to force screens to be stacked vertically based on the order that they were connected
 (defmethod bounds-check ((tracker screen-tracker) x y)
   (with-slots (max-width max-height) tracker
     (values (min (1- max-width) (max 0 x))
@@ -227,7 +252,7 @@
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
 (defun guess-orientation (width height)
-  (if (> width height) :landscape :portrait))
+  (if (>= width height) :landscape :portrait))
 
 
 
