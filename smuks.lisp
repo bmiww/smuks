@@ -201,16 +201,17 @@
     (destructuring-bind (x y z) orient
       (declare (ignore y))
       (let* ((z-neg (<= z 0)) (x-neg (<= x 0))
-	     (x (abs x)) (z (abs z)))
-	(setf (orientation dsi-screen)
-	      (cond
-		((and z-neg (> z x)) :landscape)
-		((> z x) :landscape-i)
-		((and x-neg (> x z)) :portrait)
-		((> x z) :portrait-i)))))
-    (unless (eq current-orient (orientation dsi-screen))
-      (recalculate-layout *wayland*)
-      (prep-shaders dsi-screen))))
+	     (x (abs x)) (z (abs z))
+	     (new-orient
+	       (cond
+		 ((and z-neg (> z x)) :landscape)
+		 ((> z x) :landscape-i)
+		 ((and x-neg (> x z)) :portrait)
+		 ((> x z) :portrait-i))))
+	(unless (eq current-orient new-orient)
+	  (setf (orientation dsi-screen) new-orient)
+	  (recalculate-layout *wayland*)
+	  (prep-shaders dsi-screen))))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │
