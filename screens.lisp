@@ -25,8 +25,8 @@
    (scene :initarg :scene :initform nil :accessor scene)
    (configuring-neighbors :initform nil :accessor configuring-neighbors)
    (orientation :initform :landscape :initarg :orientation :reader orientation)
-   (screen-x :initform 0 :accessor screen-x)
-   (screen-y :initform 0 :accessor screen-y)))
+   (screen-x :initarg :screen-x :initform 0 :accessor screen-x)
+   (screen-y :initarg :screen-y :initform 0 :accessor screen-y)))
 
 (defmethod (setf orientation) (orientation (screen screen))
   (setf (slot-value screen 'orientation) orientation)
@@ -110,24 +110,25 @@
 					(if (eq (connector-type a) :dsi) t nil))))
 
     ;; TODO: For now stacking screens vertically only
-    (setf (screens tracker)
-	  (loop for connector in connectors
-		for index from 0
-		for screen-y = 0
-		for fb-obj = (create-connector-framebuffer drm connector)
-		when fb-obj
-		  collect (let ((height (vdisplay connector))
-				(width (hdisplay connector)))
-			    (make-instance 'screen
-			       :connector connector
-			       :tracker tracker
-			       :orientation (guess-orientation width height)
-			       :buffer (framebuffer-buffer fb-obj)
-			       :fb (framebuffer-id fb-obj)
-			       :scene (nth index *scenes*)
-			       :screen-y screen-y
-			       :drm drm)
-			    (incf screen-y height))))))
+    (let ((screen-y 0))
+      (setf (screens tracker)
+	    (loop for connector in connectors
+		  for index from 0
+		  for fb-obj = (create-connector-framebuffer drm connector)
+		  when fb-obj
+		    collect (let ((height (vdisplay connector))
+				  (width (hdisplay connector)))
+			      (prog1
+				  (make-instance 'screen
+				     :connector connector
+				     :tracker tracker
+				     :orientation (guess-orientation width height)
+				     :buffer (framebuffer-buffer fb-obj)
+				     :fb (framebuffer-id fb-obj)
+				     :scene (nth index *scenes*)
+				     :screen-y screen-y
+				     :drm drm)
+				(incf screen-y height))))))))
 
 (defmethod stop-measuring-fps ((tracker screen-tracker))
   (loop for screen in (screens tracker) do (stop (frame-counter screen))))
@@ -202,14 +203,14 @@
 
 ;; TODO; For now going to force screens to be stacked vertically based on the order that they were connected
 (defmethod bounds-check ((tracker screen-tracker) x y)
-  (let ((likely-screen (loop for screen in (screens tracker)
-			     for likely-screen = screen
-			     ;; TODO: Weird skip of the first item
-			     unless (eq likely-screen screen)
-			       when (or (>= x (screen-x screen))
-					(>= y (screen-y screen)))
-				 do (setf likely-screen screen)
-			     finally (return likely-screen))))
+  (let* ((likely-screen (car (screens tracker))))
+    (loop for screen in (screens tracker)
+	     ;; TODO: Weird skip of the first item
+	  unless (eq likely-screen screen)
+	    when (or (> x (screen-x screen) (screen-x likely-screen))
+		     (> y (screen-y screen) (screen-y likely-screen)))
+	      do (setf likely-screen screen))
+
     (let ((width (screen-width likely-screen))
 	  (height (screen-height likely-screen)))
       (values (min (max x (screen-x likely-screen)) (+ (screen-x likely-screen) width))
