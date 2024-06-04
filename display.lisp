@@ -150,7 +150,7 @@
 (defmethod update-cursor ((display display) dx dy)
   (let ((new-x (+ (cursor-x display) dx))
 	(new-y (+ (cursor-y display) dy)))
-    (setf (values (cursor-x display) (cursor-y display)) (bounds-check display new-x new-y))))
+    (setf (values (cursor-x display) (cursor-y display)) (bounds-check (screens display) new-x new-y))))
 
 (defmethod orient-point ((display display) x y)
   (error "While working on multi-screen support, you broke most of the touchscreen stuff")
