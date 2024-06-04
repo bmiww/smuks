@@ -76,8 +76,8 @@ and then clean the list out"
 ;; TODO: Might be that leave should be called before enter
 (defmethod process ((display display) (type (eql :pointer-motion)) (usecase (eql :passthrough)) event)
   (declare (ignore usecase))
-  (let* ((new-x (add-dx display (flo (pointer-motion@-dx event))))
-	 (new-y (add-dy display (flo (pointer-motion@-dy event))))
+  (update-cursor display (flo (pointer-motion@-dx event)) (flo (pointer-motion@-dy event)))
+  (let* ((new-x (cursor-x display)) (new-y (cursor-y display))
 	 (surface (surface-at-coords display new-x new-y)))
     (if surface
 	(let* ((client (wl:client surface))

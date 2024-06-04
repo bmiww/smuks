@@ -17,8 +17,8 @@
 
 (defmethod process ((display display) (type (eql :pointer-motion)) (usecase (eql :screen-setup)) event)
   (declare (ignore usecase))
-  (let* ((new-x (add-dx display (flo (pointer-motion@-dx event))))
-	 (new-y (add-dy display (flo (pointer-motion@-dy event)))))
+  (update-cursor display (flo (pointer-motion@-dx event)) (flo (pointer-motion@-dy event)))
+  (let* ((new-x (cursor-x display)) (new-y (cursor-y display)))
     (is-in-click-location? (screens display) new-x new-y)))
 
 

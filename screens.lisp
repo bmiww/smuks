@@ -174,6 +174,12 @@
 			   (push screen (screens tracker))
 			   (render-frame screen))))))))))
 
+(defmethod bounds-check ((tracker screen-tracker) x y)
+  (with-slots (max-width max-height) tracker
+    (values (min (1- max-width) (max 0 x))
+	    (min (1- max-height) (max 0 y)))))
+
+
 ;; TODO: Suboptimal. Since this is used to check if inputs should be handled differently,
 ;; This is a nasty amount of extra work that needs to be done
 (defmethod configuring-neighbors? ((tracker screen-tracker))
