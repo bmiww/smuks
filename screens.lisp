@@ -25,7 +25,8 @@
    (scene :initarg :scene :initform nil :accessor scene)
    (configuring-neighbors :initform nil :accessor configuring-neighbors)
    (orientation :initform :landscape :initarg :orientation :reader orientation)
-   (related-screens :initform nil :accessor related-screens)))
+   (screen-x :initform 0 :accessor screen-x)
+   (screen-y :initform 0 :accessor screen-y)))
 
 (defmethod (setf orientation) (orientation (screen screen))
   (setf (slot-value screen 'orientation) orientation)
@@ -53,6 +54,7 @@
 (defmethod shader ((screen screen) (type (eql :texture))) (cadr (shaders screen)))
 (defmethod shader ((screen screen) (type (eql :capsule))) (nth 2 (shaders screen)))
 
+;; TODO: This actually probably also should rely on width height proportion
 (defmethod shader-rot-val ((screen screen))
   (case (orientation screen) (:landscape 0) (:portrait 0) (:landscape-i 180) (:portrait-i 180)))
 
@@ -106,9 +108,12 @@
     (setf connectors (sort connectors (lambda (a b)
 					(declare (ignore b))
 					(if (eq (connector-type a) :dsi) t nil))))
+
+    ;; TODO: For now stacking screens vertically only
     (setf (screens tracker)
 	  (loop for connector in connectors
 		for index from 0
+		for screen-y = 0
 		for fb-obj = (create-connector-framebuffer drm connector)
 		when fb-obj
 		  collect (let ((height (vdisplay connector))
@@ -120,29 +125,9 @@
 			       :buffer (framebuffer-buffer fb-obj)
 			       :fb (framebuffer-id fb-obj)
 			       :scene (nth index *scenes*)
-			       :drm drm))))
-
-    ;; TODO: This should be rewritten to support different screen positions
-    ;; For now - assuming all screens are vertically stacked
-    (loop for i from 0 below (length (screens tracker))
-	  for first = (nth i (screens tracker))
-	  for second = (nth (1+ i) (screens tracker))
-	  for third = (nth (+ i 2) (screens tracker))
-	  do (progn
-	       (when (and first second)
-		 (setf (related-screens first) (append (related-screens first) (list second)))
-		 (setf (related-screens second) (append (related-screens second) (list first))))
-	       (when (and second third)
-		 (setf (related-screens second) (append (related-screens second) (list third)))
-		 (setf (related-screens third) (append (related-screens third) (list second))))))
-
-    (let ((widest (loop for screen in (screens tracker) maximize (screen-width screen))))
-      (setf (max-width tracker) widest))
-    (setf (max-height tracker)
-	  (loop for screen in (screens tracker)
-		for size = 0
-		do (incf size (screen-height screen))
-		finally (return size)))))
+			       :screen-y screen-y
+			       :drm drm)
+			    (incf screen-y height))))))
 
 (defmethod stop-measuring-fps ((tracker screen-tracker))
   (loop for screen in (screens tracker) do (stop (frame-counter screen))))
@@ -217,9 +202,18 @@
 
 ;; TODO; For now going to force screens to be stacked vertically based on the order that they were connected
 (defmethod bounds-check ((tracker screen-tracker) x y)
-  (with-slots (max-width max-height) tracker
-    (values (min (1- max-width) (max 0 x))
-	    (min (1- max-height) (max 0 y)))))
+  (let ((likely-screen (loop for screen in (screens tracker)
+			     for likely-screen = screen
+			     ;; TODO: Weird skip of the first item
+			     unless (eq likely-screen screen)
+			       when (or (>= x (screen-x screen))
+					(>= y (screen-y screen)))
+				 do (setf likely-screen screen)
+			     finally (return likely-screen))))
+    (let ((width (screen-width likely-screen))
+	  (height (screen-height likely-screen)))
+      (values (min (max x (screen-x likely-screen)) (+ (screen-x likely-screen) width))
+	      (min (max y (screen-y likely-screen)) (+ (screen-y likely-screen) height))))))
 
 
 ;; TODO: Suboptimal. Since this is used to check if inputs should be handled differently,
