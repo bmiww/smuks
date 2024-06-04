@@ -280,7 +280,8 @@
        *libinput*
        (merge-pathnames (format nil "/dev/input/~a"
 				(device-removed@-sys-name event))))
-      (input *wayland* (event-type event) event)))
+      (restart-case (input *wayland* (event-type event) event)
+	(abandon-event () :report "Abandoning event"))))
 
 ;; Unorganized handlers
 (defun handle-wayland-event ()
