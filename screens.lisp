@@ -34,16 +34,20 @@
   (prep-shaders screen))
 
 (defmethod shader-rot-val ((screen screen))
+  "Returns the screen shader rotation based on orientation and screen 'physical' proportions"
   (if (> (height screen) (width screen))
-      (case (orientation screen) (:landscape -90) (:portrait 0) (:landscape-i 180) (:portrait-i 180))
-      (case (orientation screen) (:landscape 0) (:portrait 0) (:landscape-i 180) (:portrait-i 180))))
+      (case (orientation screen) (:landscape -90) (:portrait 0) (:landscape-i 90) (:portrait-i 180))
+      ;; TODO: These are very likely wrong
+      (case (orientation screen) (:landscape 0) (:portrait 90) (:landscape-i 180) (:portrait-i 270))))
 
 (defmethod screen-width ((screen screen))
+  "Returns the screen width based on orientation and screen 'physical' proportions"
   (if (> (height screen) (width screen))
       (case (orientation screen) ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen)))
       (case (orientation screen) ((:landscape :landscape-i) (width screen)) ((:portrait :portrait-i) (height screen)))))
 
 (defmethod screen-height ((screen screen))
+  "Returns the screen height based on orientation and screen 'physical' proportions"
   (if (> (height screen) (width screen))
       (case (orientation screen) ((:landscape :landscape-i) (width screen)) ((:portrait :portrait-i) (height screen)))
       (case (orientation screen) ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen)))))
@@ -204,7 +208,7 @@
 	  do (setf (screen-y screen) screen-y)
 	     (incf screen-y (screen-height screen)))))
 
-;; TODO: This one is quite suboptimal, since it has to go through the whole list on every pointer motion event
+;; TODO: Suboptimal. Since it has to go through the whole list on every pointer motion event
 (defmethod bounds-check ((tracker screen-tracker) x y)
   (let* ((likely-screen (car (screens tracker))))
     (loop for screen in (screens tracker)
