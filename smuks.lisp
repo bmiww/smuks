@@ -177,7 +177,9 @@
     (when (eq screen (cursor-screen *wayland*))
       (unless cursor-drawn
 	(shaders.texture:draw (shader screen :texture) *cursor*
-			      `(,(cursor-x *wayland*) ,(cursor-y *wayland*) 36.0 36.0))))
+			      `(,(- (cursor-x *wayland*) (screen-x screen))
+				,(- (cursor-y *wayland*) (screen-y screen))
+				36.0 36.0))))
     (gl:flush)
     (gl:finish)
 
