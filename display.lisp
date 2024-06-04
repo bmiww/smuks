@@ -13,14 +13,11 @@
    (cursor-x :initform 0 :accessor cursor-x)
    (cursor-y :initform 0 :accessor cursor-y)
    ;; TODO: Both of these are dumb - these should be per CRTC/monitor/whatever
-   (display-width :initarg :display-width)
-   (display-height :initarg :display-height)
    (dev-t :initarg :dev-t :accessor dev-t)
    (display-serial :initform 0 :accessor display-serial)
    (keyboard-focus :initform nil)
    (pointer-focus :initform nil :accessor pointer-focus)
    (pending-drag :initform nil :accessor pending-drag)
-   (orientation :initarg :orientation :initform :landscape :accessor orientation)
    (windows :initform nil :accessor windows)
    (screens :initarg :screen-tracker :initform nil :accessor screens)))
 
@@ -64,19 +61,6 @@
 		    :make "TODO: Fill out make" :model "TODO: Fill out model"))
 
 
-;; ┬─┐┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
-;; ├┬┘├┤ ├─┤ ││├┤ ├┬┘└─┐
-;; ┴└─└─┘┴ ┴─┴┘└─┘┴└─└─┘
-(defmethod display-width ((display display))
-  (case (orientation display)
-    ((:landscape :landscape-i) (slot-value display 'display-height))
-    ((:portrait :portrait-i) (slot-value display 'display-width))))
-
-(defmethod display-height ((display display))
-  (case (orientation display)
-    ((:landscape :landscape-i) (slot-value display 'display-width))
-    ((:portrait :portrait-i) (slot-value display 'display-height))))
-
 ;; ┌┬┐┌─┐┌─┐┬  ┌─┐
 ;;  │ │ ││ ││  └─┐
 ;;  ┴ └─┘└─┘┴─┘└─┘
@@ -115,7 +99,7 @@
 ;; └┴┘┴┘└┘─┴┘└─┘└┴┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘┴┘└┘└─┘
 (defmethod recalculate-layout ((display display))
   (when (windows display)
-    (let* ((d-width (display-width display)) (d-height (display-height display))
+    (let* ((d-width (display-width display)) (d-height (screen-height *first*))
 	   (amount (length (windows display)))
 	   (width-per (floor (/ d-width amount))))
       (loop
@@ -162,12 +146,12 @@
 	  return candidate)))
 
 (defmethod add-dx ((display display) dx)
-  (let ((width (display-width display))
-	(height (display-height display)))
-    (case (orientation display)
+  (let ((width (screen-width *first*))
+	(height (screen-height *first*)))
+    (case (orientation *first*)
       (:landscape-i (setf dx (- dx)))
       (:portrait-i (setf dx (- dx))))
-    (case (orientation display)
+    (case (orientation *first*)
       ((:landscape :landscape-i)
        (incf (cursor-x display) dx)
        (when (>= (cursor-x display) width) (setf (cursor-x display) width))
@@ -180,12 +164,12 @@
        (cursor-y display)))))
 
 (defmethod add-dy ((display display) dy)
-  (let ((width (display-width display))
-	(height (display-height display)))
-    (case (orientation display)
+  (let ((width (screen-width *first*))
+	(height (screen-height *first*)))
+    (case (orientation *first*)
       (:portrait (setf dy (- dy)))
       (:landscape-i (setf dy (- dy))))
-    (case (orientation display)
+    (case (orientation *first*)
       ((:landscape :landscape-i)
        (incf (cursor-y display) dy)
        (when (>= (cursor-y display) height) (setf (cursor-y display) height))
@@ -198,6 +182,6 @@
        (cursor-x display)))))
 
 (defmethod orient-point ((display display) x y)
-  (case (orientation display)
-    (:landscape (values y (- (display-height display) x)))
-    (:portrait (- (display-width display) x))))
+  (case (orientation *first*)
+    (:landscape (values y (- (screen-height *first*) x)))
+    (:portrait (- (screen-width *first*) x))))

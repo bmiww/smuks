@@ -16,7 +16,6 @@
 (defvar *drm* nil)
 (defvar *wayland* nil)
 (defvar *iio* nil)
-(defvar *orientation* nil)
 (defvar *udev* nil)
 (defvar *udev-monitor* nil)
 (defvar *libinput* nil)
@@ -47,8 +46,6 @@
 
   (setf *drm* (init-drm))
   (setf *screen-tracker* (make-instance 'screen-tracker :drm *drm*))
-  ;; TODO: Only for refactoring - remove when handling multiple screens
-  (setf *first* (testie *screen-tracker*))
 
   (setf *socket* (init-socket))
   (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
@@ -59,8 +56,6 @@
 		     ;; But it might also match main-device proper
 		     ;; It could also be interesting to have more than one dev-t.
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
-			      :display-width (width *first*)
-			      :display-height (height *first*)
 			      :screen-tracker *screen-tracker*))
 
 
@@ -71,7 +66,7 @@
   (prep-shaders *screen-tracker*)
 
   (setf *iio* (init-libiio))
-  (determine-orientation (enable-accelerometer-scan *iio*))
+  (enable-accelerometer-scan *iio*)
 
   (setf *udev* (udev:udev-new))
   (setf *udev-monitor* (udev:monitor-udev *udev*))
@@ -198,26 +193,24 @@
       (page-flip *drm* (fb screen) (connector screen))
     (error (err) (declare (ignore err)) ())))
 
-;; TODO: This whole thing should be screen specific
+
+;; TODO: Add a way to check which screen belongs to the accelerometer
 (defun determine-orientation (orient)
-  (let ((current-orient *orientation*))
+  (let* ((dsi-screen (dsi-screen *screen-tracker*))
+	 (current-orient (orientation dsi-screen)))
     (destructuring-bind (x y z) orient
       (declare (ignore y))
       (let* ((z-neg (<= z 0)) (x-neg (<= x 0))
 	     (x (abs x)) (z (abs z)))
-	(cond
-	  ((and z-neg (> z x)) (setf *orientation* :landscape))
-	  ((> z x) (setf *orientation* :landscape-i))
-	  ((and x-neg (> x z)) (setf *orientation* :portrait))
-	  ((> x z) (setf *orientation* :portrait-i)))))
-    (unless (eq current-orient *orientation*)
-      (setf (orientation *wayland*) *orientation*)
-      ;; TODO: Layout needs to be recalculated for each screen that changed its orientation
+	(setf (orientation dsi-screen)
+	      (cond
+		((and z-neg (> z x)) :landscape)
+		((> z x) :landscape-i)
+		((and x-neg (> x z)) :portrait)
+		((> x z) :portrait-i)))))
+    (unless (eq current-orient (orientation dsi-screen))
       (recalculate-layout *wayland*)
-      (let ((projection (sglutil:make-projection-matrix
-			 (sdrm:screen-width *first* *orientation*) (sdrm:screen-height *first* *orientation*)
-			 (case *orientation* (:landscape -90) (:portrait 0) (:landscape-i 90) (:portrait-i 180)))))
-	(update-projections *screen-tracker* projection)))))
+      (prep-shaders dsi-screen))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │

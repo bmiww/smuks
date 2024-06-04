@@ -16,7 +16,6 @@
 
    add-framebuffer
    framebuffer-id framebuffer-buffer framebuffer-mode rm-framebuffer!
-   set-crtc! connector-crtc
 
    create-connector-framebuffer
 
@@ -27,6 +26,7 @@
    height width
    vrefresh mode
 
-   connector-type connected
+   set-crtc! connector-crtc
+   connector-type connected modes
    id
    hdisplay vdisplay))

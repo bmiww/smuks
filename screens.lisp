@@ -8,9 +8,6 @@
 (in-package :smuks)
 
 (defvar *screen-tracker* nil)
-;; TODO: Only for refactoring - remove when handling multiple screens
-(defvar *first* nil)
-
 
 ;; ┌─┐┌─┐┬─┐┌─┐┌─┐┌┐┌
 ;; └─┐│  ├┬┘├┤ ├┤ │││
@@ -25,12 +22,13 @@
    (shaders :initform nil :accessor shaders)
    (frame-counter :initform (make-instance 'frame-counter) :accessor frame-counter)
    (scene :initarg :scene :initform nil :accessor scene)
-   (configuring-neighbors :initform nil :accessor configuring-neighbors)))
+   (configuring-neighbors :initform nil :accessor configuring-neighbors)
+   (orientation :initform :landscape :accessor orientation)))
 
-(defmethod screen-width ((screen screen) orientation)
-  (case orientation ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen))))
-(defmethod screen-height ((screen screen) orientation)
-  (case orientation ((:landscape :landscape-i) (width screen)) ((:portrait :portrait-i) (height screen))))
+(defmethod screen-width ((screen screen))
+  (case (orientation screen) ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen))))
+(defmethod screen-height ((screen screen))
+  (case (orientation screen) ((:landscape :landscape-i) (width screen)) ((:portrait :portrait-i) (height screen))))
 
 (defmethod width ((screen screen)) (hdisplay (connector screen)))
 (defmethod height ((screen screen)) (vdisplay (connector screen)))
@@ -48,17 +46,21 @@
 (defmethod shader ((screen screen) (type (eql :texture))) (cadr (shaders screen)))
 (defmethod shader ((screen screen) (type (eql :capsule))) (nth 2 (shaders screen)))
 
+(defmethod shader-rot-val ((screen screen))
+  (case (orientation screen) (:landscape -90) (:portrait 0) (:landscape-i 90) (:portrait-i 180)))
+
 (defmethod prep-shaders ((screen screen))
-  (let ((width (width screen)) (height (height screen)))
+  (let ((width (screen-width screen)) (height (screen-height screen)) (rot (shader-rot-val screen)))
     (prep-gl-implementation (fb screen) width height)
-    (setf (shaders screen) `(,(shader-init:create-rect-shader width height)
-			     ,(shader-init:create-texture-shader width height)
-			     ,(restart-case (shader-init:create-capsule-shader width height)
+    (setf (shaders screen) `(,(shader-init:create-rect-shader width height rot)
+			     ,(shader-init:create-texture-shader width height rot)
+			     ,(restart-case (shader-init:create-capsule-shader width height rot)
 				(ignore () (nth 3 (shaders screen))))))))
 
 (defmethod update-projections ((screen screen) projection)
-  (loop for shader in (shaders screen)
-	do (shaders:update-projection shader projection)))
+  (let ((projection (sglutil:make-projection-matrix (screen-width screen) (screen-height screen) (shader-rot-val screen))))
+    (loop for shader in (shaders screen)
+	  do (shaders:update-projection shader projection))))
 
 (defmethod render-scene ((screen screen)) (funcall (scene screen) screen))
 (defmethod set-scene ((screen screen) scene) (setf (scene screen) scene))
@@ -88,10 +90,13 @@
 ;; TODO: Maybe this can also have egl in it?
 (defclass screen-tracker ()
   ((drm :initarg :drm :accessor drm)
-   (screens :initform nil :accessor screens)))
+   (screens :initform nil :accessor screens)
+   (max-width :initform 0 :accessor max-width)
+   (max-height :initform 0 :accessor max-height)))
 
 (defmethod initialize-instance :after ((tracker screen-tracker) &key drm)
   (let ((connectors (connectors drm)))
+    ;; TODO: Don't think i really need to sort anything any more here
     (setf connectors (sort connectors (lambda (a b)
 					(declare (ignore b))
 					(if (eq (connector-type a) :dsi) t nil))))
@@ -100,12 +105,15 @@
 		for index from 0
 		for fb-obj = (create-connector-framebuffer drm connector)
 		when fb-obj
-		  collect (make-instance 'screen
-			     :connector connector
-			     :buffer (framebuffer-buffer fb-obj)
-			     :fb (framebuffer-id fb-obj)
-			     :scene (nth index *scenes*)
-			     :drm drm)))))
+		  collect (let ((height (incf (max-height tracker) (vdisplay connector)))
+				(width (incf (max-width tracker) (hdisplay connector))))
+			    (make-instance 'screen
+			       :connector connector
+			       :orientation (guess-orientation width height)
+			       :buffer (framebuffer-buffer fb-obj)
+			       :fb (framebuffer-id fb-obj)
+			       :scene (nth index *scenes*)
+			       :drm drm))))))
 
 (defmethod stop-measuring-fps ((tracker screen-tracker))
   (loop for screen in (screens tracker) do (stop (frame-counter screen))))
@@ -175,14 +183,12 @@
   (loop for screen in (screens tracker)
 	do (render-frame screen)))
 
-;; TODO: Get rid of this - this is compat during refactoring
-(defmethod testie ((tracker screen-tracker)) (first (screens tracker)))
-
 ;; NOTE: I'll maybe use this to identify my tablet screen for the sake of associating touch or accelerometer events with it.
 (defmethod dsi-screen ((tracker screen-tracker)) (find-if (lambda (screen) (eq (connector-type screen) :dsi)) (screens tracker)))
 
 (defmethod is-in-click-location? ((tracker screen-tracker) x y)
-  (let ((locations (click-locations (testie tracker) *stupid-size*))
+  ;; TOOD: Do not use the first screen, actually refer to the screen-tracker width/height stuff
+  (let ((locations (click-locations (car (screens tracker)) *stupid-size*))
 	(result nil))
     (dolist (location locations)
       (let ((x-rect (first location)) (y-rect (second location)))
@@ -191,6 +197,14 @@
 	  (setf result (third location)))))
     result))
 
+
+
+
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+(defun guess-orientation (width height)
+  (if (> width height) :landscape :portrait))
 
 
 
