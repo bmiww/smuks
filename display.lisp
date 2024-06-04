@@ -100,7 +100,7 @@
 (defmethod recalculate-layout ((display display))
   (when (windows display)
     ;; TODO: Replace the car of screens by an actual iteration through screens
-    (let* ((first (car (screens display)))
+    (let* ((first (car (screens (screens display))))
 	   (d-width (screen-width first)) (d-height (screen-height first))
 	   (amount (length (windows display)))
 	   (width-per (floor (/ d-width amount))))
