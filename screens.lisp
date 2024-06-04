@@ -192,6 +192,7 @@
 
 ;; TODO: This also needs to take into account screen positions
 ;; And overall bounds when screens are skewed from each other
+;; TODO: This should instead recalculate screen-x and screen-y for each screen
 (defmethod recalculate-dimensions ((tracker screen-tracker))
   (error "This won't work as intended for now. See todo")
   (setf (max-width tracker) 0)
@@ -201,7 +202,7 @@
 	     (incf (max-height tracker) (screen-height screen))
 	     (incf (max-width tracker) (screen-width screen)))))
 
-;; TODO; For now going to force screens to be stacked vertically based on the order that they were connected
+;; TODO: This one is quite suboptimal, since it has to go through the whole list on every pointer motion event
 (defmethod bounds-check ((tracker screen-tracker) x y)
   (let* ((likely-screen (car (screens tracker))))
     (loop for screen in (screens tracker)
