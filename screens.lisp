@@ -214,7 +214,8 @@
     (let ((width (screen-width likely-screen))
 	  (height (screen-height likely-screen)))
       (values (min (max x (screen-x likely-screen)) (+ (screen-x likely-screen) width))
-	      (min (max y (screen-y likely-screen)) (+ (screen-y likely-screen) height))))))
+	      (min (max y (screen-y likely-screen)) (+ (screen-y likely-screen) height))
+	      likely-screen))))
 
 
 ;; TODO: Suboptimal. Since this is used to check if inputs should be handled differently,

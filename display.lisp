@@ -12,6 +12,7 @@
    (egl :accessor egl)
    (cursor-x :initform 0 :accessor cursor-x)
    (cursor-y :initform 0 :accessor cursor-y)
+   (cursor-screen :initform nil :accessor cursor-screen)
    ;; TODO: Both of these are dumb - these should be per CRTC/monitor/whatever
    (dev-t :initarg :dev-t :accessor dev-t)
    (display-serial :initform 0 :accessor display-serial)
@@ -20,6 +21,12 @@
    (pending-drag :initform nil :accessor pending-drag)
    (windows :initform nil :accessor windows)
    (screens :initarg :screen-tracker :initform nil :accessor screens)))
+
+(defmethod initialize-instance :after ((display display) &key screen-tracker)
+  (multiple-value-bind (x y screen) (bounds-check screen-tracker (cursor-x display) (cursor-y display))
+    (declare (ignore x y))
+    (setf (cursor-screen display) screen)))
+
 
 (defgeneric input (display type event))
 (defgeneric process (display type usecase event))
@@ -150,7 +157,8 @@
 (defmethod update-cursor ((display display) dx dy)
   (let ((new-x (+ (cursor-x display) dx))
 	(new-y (+ (cursor-y display) dy)))
-    (setf (values (cursor-x display) (cursor-y display)) (bounds-check (screens display) new-x new-y))))
+    (setf (values (cursor-x display) (cursor-y display) (cursor-screen display))
+	  (bounds-check (screens display) new-x new-y))))
 
 (defmethod orient-point ((display display) x y)
   (error "While working on multi-screen support, you broke most of the touchscreen stuff")
