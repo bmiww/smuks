@@ -23,7 +23,7 @@
    (frame-counter :initform (make-instance 'frame-counter) :accessor frame-counter)
    (scene :initarg :scene :initform nil :accessor scene)
    (configuring-neighbors :initform nil :accessor configuring-neighbors)
-   (orientation :initform :landscape :accessor orientation)))
+   (orientation :initform :landscape :initarg :orientation :accessor orientation)))
 
 (defmethod screen-width ((screen screen))
   (case (orientation screen) ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen))))
