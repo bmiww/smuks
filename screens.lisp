@@ -30,13 +30,23 @@
 
 (defmethod (setf orientation) (orientation (screen screen))
   (setf (slot-value screen 'orientation) orientation)
-  (recalculate-dimensions (tracker screen)))
+  (recalculate-dimensions (tracker screen))
+  (prep-shaders screen))
 
+(defmethod shader-rot-val ((screen screen))
+  (if (> (height screen) (width screen))
+      (case (orientation screen) (:landscape -90) (:portrait 0) (:landscape-i 180) (:portrait-i 180))
+      (case (orientation screen) (:landscape 0) (:portrait 0) (:landscape-i 180) (:portrait-i 180))))
 
 (defmethod screen-width ((screen screen))
-  (case (orientation screen) ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen))))
+  (if (> (height screen) (width screen))
+      (case (orientation screen) ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen)))
+      (case (orientation screen) ((:landscape :landscape-i) (width screen)) ((:portrait :portrait-i) (height screen)))))
+
 (defmethod screen-height ((screen screen))
-  (case (orientation screen) ((:landscape :landscape-i) (width screen)) ((:portrait :portrait-i) (height screen))))
+  (if (> (height screen) (width screen))
+      (case (orientation screen) ((:landscape :landscape-i) (width screen)) ((:portrait :portrait-i) (height screen)))
+      (case (orientation screen) ((:landscape :landscape-i) (height screen)) ((:portrait :portrait-i) (width screen)))))
 
 (defmethod width ((screen screen)) (hdisplay (connector screen)))
 (defmethod height ((screen screen)) (vdisplay (connector screen)))
@@ -54,12 +64,8 @@
 (defmethod shader ((screen screen) (type (eql :texture))) (cadr (shaders screen)))
 (defmethod shader ((screen screen) (type (eql :capsule))) (nth 2 (shaders screen)))
 
-;; TODO: This actually probably also should rely on width height proportion
-(defmethod shader-rot-val ((screen screen))
-  (case (orientation screen) (:landscape 0) (:portrait 0) (:landscape-i 180) (:portrait-i 180)))
-
 (defmethod prep-shaders ((screen screen))
-  (let ((width (width screen)) (height (height screen)) (rot (shader-rot-val screen)))
+  (let ((width (screen-width screen)) (height (screen-height screen)) (rot (shader-rot-val screen)))
     (prep-gl-implementation (fb screen) width height)
     (setf (shaders screen) `(,(shader-init:create-rect-shader width height rot)
 			     ,(shader-init:create-texture-shader width height rot)
@@ -192,15 +198,11 @@
 
 ;; TODO: This also needs to take into account screen positions
 ;; And overall bounds when screens are skewed from each other
-;; TODO: This should instead recalculate screen-x and screen-y for each screen
 (defmethod recalculate-dimensions ((tracker screen-tracker))
-  (error "This won't work as intended for now. See todo")
-  (setf (max-width tracker) 0)
-  (setf (max-height tracker) 0)
-  (loop for screen in (screens tracker)
-	do (progn
-	     (incf (max-height tracker) (screen-height screen))
-	     (incf (max-width tracker) (screen-width screen)))))
+  (let ((screen-y 0))
+    (loop for screen in (screens tracker)
+	  do (setf (screen-y screen) screen-y)
+	     (incf screen-y (screen-height screen)))))
 
 ;; TODO: This one is quite suboptimal, since it has to go through the whole list on every pointer motion event
 (defmethod bounds-check ((tracker screen-tracker) x y)

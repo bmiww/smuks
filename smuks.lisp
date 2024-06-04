@@ -214,8 +214,7 @@
 		 ((> x z) :portrait-i))))
 	(unless (eq current-orient new-orient)
 	  (setf (orientation dsi-screen) new-orient)
-	  (recalculate-layout *wayland*)
-	  (prep-shaders dsi-screen))))))
+	  (recalculate-layout *wayland*))))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │
@@ -258,9 +257,7 @@
 (defun input-callback (ev) (when (ready ev) (smuks::dispatch *libinput* 'handle-input)))
 (defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm*) :page-flip2 'set-frame-ready)))
 (defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
-;; TODO: Reenable orientation changes
-;; (defun accelerometer-callback (ev) (when (ready ev) (determine-orientation (read-accelerometer *iio*))))
-(defun accelerometer-callback (ev) (when (ready ev) ()))
+(defun accelerometer-callback (ev) (when (ready ev) (determine-orientation (read-accelerometer *iio*))))
 (defun client-callback (ev)
   (when (ready ev)
     (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
