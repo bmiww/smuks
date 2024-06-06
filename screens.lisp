@@ -106,6 +106,7 @@
 ;;    ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║
 ;;    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
 ;; TODO: Maybe this can also have egl in it?
+;; TODO: Not sure if the screen-tracker should hold the desktop logic
 (defclass screen-tracker ()
   ((drm :initarg :drm :accessor drm)
    (screens :initform nil :accessor screens)
@@ -138,7 +139,8 @@
 				     :scene (nth index *scenes*)
 				     :screen-y screen-y
 				     :drm drm)
-				(incf screen-y height))))))))
+				(incf screen-y height))))))
+    ))
 
 (defmethod stop-measuring-fps ((tracker screen-tracker))
   (loop for screen in (screens tracker) do (stop (frame-counter screen))))

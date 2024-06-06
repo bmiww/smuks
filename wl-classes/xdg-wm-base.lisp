@@ -62,7 +62,8 @@
    (min-width :initform 0 :accessor min-width)
    (min-height :initform 0 :accessor min-height)
    (max-width :initform 0 :accessor max-width)
-   (max-height :initform 0 :accessor max-height)))
+   (max-height :initform 0 :accessor max-height)
+   (desktop :initform nil :accessor desktop)))
 
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
   (setf (title toplevel) title))

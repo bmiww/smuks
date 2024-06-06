@@ -19,13 +19,26 @@
    (keyboard-focus :initform nil)
    (pointer-focus :initform nil :accessor pointer-focus)
    (pending-drag :initform nil :accessor pending-drag)
-   (windows :initform nil :accessor windows)
-   (screens :initarg :screen-tracker :initform nil :accessor screens)))
+   (screens :initarg :screen-tracker :initform nil :accessor screens)
+   (desktops :initform nil :accessor desktops)
+   (active-desktop :initform nil :accessor active-desktop)))
 
 (defmethod initialize-instance :after ((display display) &key screen-tracker)
   (multiple-value-bind (x y screen) (bounds-check screen-tracker (cursor-x display) (cursor-y display))
     (declare (ignore x y))
-    (setf (cursor-screen display) screen)))
+    (setf (cursor-screen display) screen))
+
+  ;; NOTE: For now creating 10 desktops each for one number key
+  (setf (desktops display)
+	(loop for i from 0 below 10
+	      collect (make-instance 'desktop)))
+
+  (setf (active-desktop display) (first (desktops display)))
+
+  ;; NOTE: For each screen we have available attach it to a different desktop
+  (loop for screen in (screens (screens display))
+	for desktop in (desktops display)
+	do (setf (screen desktop) screen)))
 
 
 (defgeneric input (display type event))
@@ -104,32 +117,16 @@
 ;; ┬ ┬┬┌┐┌┌┬┐┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┬┌┐┌┌─┐
 ;; │││││││ │││ ││││  ├─┤├─┤│││ │││  │││││ ┬
 ;; └┴┘┴┘└┘─┴┘└─┘└┴┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘┴┘└┘└─┘
-(defmethod recalculate-layout ((display display))
-  (when (windows display)
-    ;; TODO: Replace the car of screens by an actual iteration through screens
-    (let* ((first (car (screens (screens display))))
-	   (d-width (screen-width first)) (d-height (screen-height first))
-	   (amount (length (windows display)))
-	   (width-per (floor (/ d-width amount))))
-      (loop
-	for window in (windows display)
-	for i from 0
-	do (with-slots (x y width height) window
-	     (setf x (* i width-per)
-		   y 0
-		     width width-per
-		     height d-height)
-	     (xdg-toplevel:send-configure window width height '(1)))))))
-
 (defmethod new-toplevel ((display display) surface)
-  (setf (windows display) (pushnew surface (windows display)))
-  (wl:add-destroy-callback
-   surface
-   (lambda (surf)
-     (setf (windows display) (remove surf (windows display)))
-     (recalculate-layout display)))
+  (let* ((desktop (active-desktop display)))
+    (setf (windows desktop) (pushnew surface (windows desktop)))
+    (wl:add-destroy-callback
+     surface
+     (lambda (surf)
+       (setf (windows desktop) (remove surf (windows desktop)))
+       (recalculate-layout desktop)))
 
-  (recalculate-layout display))
+    (recalculate-layout desktop)))
 
 (defmethod finalize-toplevel ((display display) surface)
   (with-slots (x y width height) surface
@@ -166,3 +163,34 @@
     ;; (:landscape (values y (- (screen-height *first*) x)))
     ;; (:portrait (- (screen-width *first*) x)))
   )
+
+
+
+;; ┌┬┐┌─┐┌─┐┬┌─┌┬┐┌─┐┌─┐┌─┐
+;;  ││├┤ └─┐├┴┐ │ │ │├─┘└─┐
+;; ─┴┘└─┘└─┘┴ ┴ ┴ └─┘┴  └─┘
+;; TODO: Move this
+;; TODO: Rename to workspace or something???
+(defclass desktop ()
+  ((screen :initform nil :initarg :screen :accessor screen)
+   (windows :initform nil :accessor windows)))
+
+
+(defmethod has-screen ((desktop desktop) screen) (eq screen (screen desktop)))
+
+(defmethod recalculate-layout ((desktop desktop))
+  (when (windows desktop)
+    ;; TODO: Replace the car of screens by an actual iteration through screens
+    (let* ((screen (screen desktop))
+	   (d-width (screen-width screen)) (d-height (screen-height screen))
+	   (amount (length (windows desktop)))
+	   (width-per (floor (/ d-width amount))))
+      (loop
+	for window in (windows desktop)
+	for i from 0
+	do (with-slots (x y width height) window
+	     (setf x (* i width-per)
+		   y 0
+		     width width-per
+		     height d-height)
+	     (xdg-toplevel:send-configure window width height '(1)))))))

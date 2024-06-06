@@ -214,7 +214,10 @@
 		 ((> x z) :portrait-i))))
 	(unless (eq current-orient new-orient)
 	  (setf (orientation dsi-screen) new-orient)
-	  (recalculate-layout *wayland*))))))
+	  ;; TODO: For now disabling layout recalculation on orientation change
+	  ;; Since i'm working on windowing on different screens/desktops
+	  ;; (recalculate-layout *wayland*)
+	  )))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │
