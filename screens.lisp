@@ -191,15 +191,18 @@
 			   (prep-shaders screen)
 			   (start-monitor screen)
 
-			   (when (> (length (screens tracker)) 0)
-			     ;; TODO: This shouldn't be the first screen, there can be more than two screens overall
-			     (let ((first (nth 0 (screens tracker))))
-			       (set-scene screen 'scene-nothing-yet)
-			       (set-scene first 'scene-select-screen-pos)
-			       (setf (configuring-neighbors first) t)))
+			   ;; TODO: For now disabled the fancy - Set screen scene
+			   ;; while i figure out multi screen a bit more
+			   ;; (when (> (length (screens tracker)) 0)
+			     ;; ;; TODO: This shouldn't be the first screen, there can be more than two screens overall
+			     ;; (let ((first (nth 0 (screens tracker))))
+			       ;; (set-scene screen 'scene-nothing-yet)
+			       ;; (set-scene first 'scene-select-screen-pos)
+			       ;; (setf (configuring-neighbors first) t)))
 
 			   (push screen (screens tracker))
-			   (render-frame screen))))))))))
+			   (render-frame screen))))))))
+    (recalculate-dimensions tracker)))
 
 
 ;; TODO: This also needs to take into account screen positions
@@ -214,7 +217,7 @@
 (defmethod bounds-check ((tracker screen-tracker) x y)
   (let* ((likely-screen (car (screens tracker))))
     (loop for screen in (screens tracker)
-	     ;; TODO: Weird skip of the first item
+	  ;; TODO: Weird skip of the first item
 	  unless (eq likely-screen screen)
 	    when (or (> x (screen-x screen) (screen-x likely-screen))
 		     (> y (screen-y screen) (screen-y likely-screen)))
