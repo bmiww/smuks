@@ -144,7 +144,7 @@
 	(height (flo (height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (shaders.texture:draw (shader screen :texture) texture `(,x ,y ,width ,height))
+    (shaders.texture:draw (shader screen :texture) texture `(,(- x (screen-x screen)) ,(- y (screen-y screen)) ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)
     nil))
@@ -182,11 +182,11 @@
     (setf cursor-drawn (render-desktop screen desktop))
 
     (when (eq screen (cursor-screen *wayland*))
-      (unless cursor-drawn
-	(shaders.texture:draw (shader screen :texture) *cursor*
-			      `(,(- (cursor-x *wayland*) (screen-x screen))
-				,(- (cursor-y *wayland*) (screen-y screen))
-				36.0 36.0))))
+      ;; (unless cursor-drawn
+      (shaders.texture:draw (shader screen :texture) *cursor*
+			    `(,(- (cursor-x *wayland*) (screen-x screen))
+			      ,(- (cursor-y *wayland*) (screen-y screen))
+			      36.0 36.0)))
     (gl:flush)
     (gl:finish)
 
