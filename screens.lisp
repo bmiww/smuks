@@ -72,9 +72,10 @@
   (let ((width (screen-width screen)) (height (screen-height screen)) (rot (shader-rot-val screen)))
     (prep-gl-implementation (fb screen) width height)
     (setf (shaders screen) `(,(shader-init:create-rect-shader width height rot)
-			     ,(shader-init:create-texture-shader width height rot)
+			     ,(restart-case (shader-init:create-texture-shader width height rot)
+				(ignore () (nth 1 (shaders screen))))
 			     ,(restart-case (shader-init:create-capsule-shader width height rot)
-				(ignore () (nth 3 (shaders screen))))))))
+				(ignore () (nth 2 (shaders screen))))))))
 
 (defmethod update-projections ((screen screen) projection)
   (let ((projection (sglutil:make-projection-matrix (screen-width screen) (screen-height screen) (shader-rot-val screen))))
