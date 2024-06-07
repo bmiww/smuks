@@ -100,7 +100,8 @@ void main() {
 ;; See the rect-shader for an example.
 (defvar *draw-instances* 1)
 
-;; TODO: TRANSFORM???
+;; TODO: You should be able to turn shaders into render passes
+;; So that a texture shader wouldn't need to be reenabled for each texture
 (defmethod draw ((program shader) texture position)
   (destructuring-bind (x y width height) position
     (let ((translation-matrix (translation-matrix x y))
@@ -134,13 +135,10 @@ void main() {
 	(gl:enable-vertex-attrib-array attr-position)
 	(gl:vertex-attrib-pointer attr-position 4 :float nil (* 4 4) (cffi:null-pointer))
 
-	;; NOTE This has some info on how everything gets collected together with the attrib pointers
-	;; https://www.khronos.org/opengl/wiki/Generic_Vertex_Attribute_-_examples
-
 	(%gl:vertex-attrib-divisor attr-vert 0)
 	(%gl:vertex-attrib-divisor attr-position 1)
 
-	(gl:draw-arrays-instanced :triangle-strip 0 4 *draw-instances*)))))
+	(gl:draw-arrays :triangle-strip 0 4)))))
 
 (defstruct rect
   x y
