@@ -41,6 +41,7 @@
 	       #:cl-wl.wayland-core ;; TODO: Add to my own distribution
 	       #:cl-wl.xdg-shell ;; TODO: Add to my own distribution
 	       #:cl-wl.zwp-linux ;; TODO: Add to my own distribution
+	       #:cl-wl.zwlr-layer-shell  ;; TODO: Add to my own distribution
 	       ;; TODO: Make libiio optional via compile flag.
 	       ;; It is only really used for mobile devices.
 	       ;; In case if anyone needs it for desktop, hit me up.
@@ -80,7 +81,8 @@
 			     (:file "shm")
 			     (:file "seat")
 			     (:file "dd-manager")
-			     (:file "dmabuf")))
+			     (:file "dmabuf")
+			     (:file "layer-shell")))
 	       (:file "screens")
 	       (:file "display")
 	       (:file "display-inputs")

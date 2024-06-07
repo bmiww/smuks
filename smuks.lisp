@@ -11,7 +11,7 @@
 
 (defvar +socket-file+ "/tmp/smuks.socket")
 ;; Set to one to enable wayland debug messages. Dunno which output it goes to though.
-(defvar *enable-wayland-debug-logs* "")
+(defvar *enable-wayland-debug-logs* "1")
 
 (defvar *drm* nil)
 (defvar *wayland* nil)

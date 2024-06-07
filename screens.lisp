@@ -5,6 +5,8 @@
 ;; ╚════██║██║     ██╔══██╗██╔══╝  ██╔══╝  ██║╚██╗██║╚════██║
 ;; ███████║╚██████╗██║  ██║███████╗███████╗██║ ╚████║███████║
 ;; ╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝
+;; TODO: Screens are really actually what an output is.
+;; TODO: Screen tracker is really what a display is.
 (in-package :smuks)
 
 (defvar *screen-tracker* nil)
