@@ -33,6 +33,7 @@
     (toplevel (commit-toplevel surface))
     (cursor (commit-toplevel surface))
     (drag-surface (commit-toplevel surface))
+    (layer-surface (commit-toplevel surface))
     (t (format nil "Unsupported surface role: ~a" (type-of surface)))))
 
 (defmethod commit-toplevel ((surface surface))
@@ -69,12 +70,16 @@
 (defmethod wl-surface:damage ((surface surface) x y width height)
   "Notify the compositor of a an area that needs to be redrawn.
 This request seems to be deprecated in favor of the damage-buffer request."
-  (push (sglutil:make-damage :x x :y y :width width :height height) (pending-damage surface)))
+  (wl-surface:damage-buffer surface x y width height))
 
 (defmethod wl-surface:damage-buffer ((surface surface) x y width height)
   "This damage method is the same as wl-surface:damage - with one difference.
 The damage coordinates are in buffer coordinates, not surface coordinates."
-  (push (sglutil:make-damage :x x :y y :width width :height height) (pending-damage surface)))
+  ;; NOTE: Full denotes that we received a max-int value which opengl doesn't like
+  ;; This is often used in the protocol to denote that the whole buffer is damaged.
+  (push (sglutil:make-damage :x x :y y :width width :height height
+			     :full (or (> x 2147483646) (> y 2147483646)))
+	(pending-damage surface)))
 
 (defmethod wl-surface:set-opaque-region ((surface surface) region)
   "A hint to the region which should be considered more carefully for repaints.
@@ -169,7 +174,7 @@ Or some such."
 	    (sglutil:create-texture
 	     (pool-ptr (pending-buffer surface))
 	     width height stride
-	     :damage (damage surface)
+	     :damage (remove-if (lambda (damage) (sglutil:damage-full damage) damage) (damage surface))
 	     :texture texture))
       (setf (damage surface) nil)
       (setf (texture-type surface) :shm))))

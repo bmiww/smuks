@@ -24,7 +24,7 @@
    scaling-matrix
 
    ;; damage
-   make-damage
+   make-damage damage-full
 
    ;; texture
    mk-tex tex-id))
@@ -113,6 +113,7 @@
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
 (defstruct damage
+  (full nil)
   (x 0)
   (y 0)
   (width 0)

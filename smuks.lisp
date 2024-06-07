@@ -172,6 +172,16 @@
 	  for compost-surfaces = (all-ready-surfaces compositor)
 	  do (mapcar (lambda (surface) (render-surface screen surface)) compost-surfaces))))
 
+;; TODO: This is a quick hack to check how well the layer surfaces work
+;; You need a better mechanism to keep track of ALL surfaces to render for a given screen
+(defun render-layer-surfaces (screen desktop)
+  (declare (ignore desktop))
+  (mapcar (lambda (client) (when (compositor client)
+			(loop for surface in (all-ready-surfaces (compositor client))
+			      when (typep surface 'layer-surface)
+				do (render-surface screen surface))))
+	  (wl:all-clients *wayland*)))
+
 (defun render-frame (screen)
   (livesupport:update-repl-link)
   (let ((cursor-drawn nil)
@@ -185,6 +195,7 @@
 
     ;; (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
     (setf cursor-drawn (render-desktop screen desktop))
+    (render-layer-surfaces screen desktop)
 
     (when (eq screen (cursor-screen *wayland*))
       ;; (unless cursor-drawn

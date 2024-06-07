@@ -42,5 +42,9 @@
 
 ;; TODO: Seemingly can be null - which means - centered. Thanks protocol for being specific
 ;; TODO: This anchor should be double-buffered
+;; TODO: Cover more than just the center case
+;; TODO: The coordinates should most likely be based off of the current active desktop screen size
 (defmethod zwlr-layer-surface-v1:set-anchor ((surface layer-surface) anchor)
-  (setf (anchor surface) (if anchor anchor :center)))
+  (setf (anchor surface) (if anchor anchor :center))
+  (case (anchor surface)
+    (:center (setf (x surface) 50 (y surface) 50))))
