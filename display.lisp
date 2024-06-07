@@ -64,6 +64,7 @@
   (make-instance 'wl-data-device-manager:global :display display :dispatch-impl 'dd-manager)
   (make-instance 'xdg-wm-base:global :display display :dispatch-impl 'wm-base)
   (make-instance 'dmabuf-global :display display :dispatch-impl 'dmabuf)
+  (make-instance 'layer-shell-global :display display :dispatch-impl 'layer-shell)
   (loop for screen in screens
 	do (init-output display screen)))
 

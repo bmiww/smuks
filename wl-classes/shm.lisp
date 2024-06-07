@@ -22,6 +22,7 @@
 ;; ┌─┐┬ ┬┌┬┐
 ;; └─┐├─┤│││
 ;; └─┘┴ ┴┴ ┴
+;; TODO: When a pool gets destroyed, it should also be removed from shm here
 (defclass shm (wl-shm:dispatch)
   ((pools :initform (make-hash-table :test 'equal) :accessor pools)))
 
@@ -29,7 +30,7 @@
   (clrhash (pools shm)))
 
 (defmethod wl-shm:create-pool ((shm shm) id fd size)
-  (let ((pool (wl:mk-if 'pool shm id :fd fd :size size)))
+  (let ((pool (wl:mk-if 'pool shm id :fd fd :size size :shm shm)))
     (wl:add-destroy-callback pool (lambda (pool) (remhash (wl:id pool) (pools shm))))
     (setf (gethash id (pools shm)) pool)))
 
@@ -40,14 +41,15 @@
   ((buffers :initform (make-hash-table :test 'equal) :accessor buffers)
    (size :initarg :size :accessor size)
    (fd :initarg :fd :accessor fd)
-   (mmap-pool :initform nil :accessor mmap-pool)))
+   (mmap-pool :initform nil :accessor mmap-pool)
+   (shm :initarg :shm :accessor shm)))
 
 (defmethod initialize-instance :after ((pool pool) &key)
   (multiple-value-bind (ptr fd size) (mmap:mmap (fd pool) :size (size pool) :mmap '(:shared))
     (setf (mmap-pool pool) (make-mmap-pool :ptr ptr :fd fd :size size))))
 
 (defmethod wl:destroy ((pool pool))
-  (clrhash (buffers pool))
+  ;; (clrhash (buffers pool))
   (when (mmap-pool pool) (munmap (mmap-pool pool))))
 
 (defmethod wl-shm-pool:resize ((pool pool) size)
