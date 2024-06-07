@@ -162,9 +162,15 @@
 	 (surfaces (util:flatten (mapcar 'all-ready-surfaces compositors))))
     (mapcar (lambda (surface) (render-surface screen surface)) surfaces)))
 
+(defun render-desktop (screen desktop)
+  (let* ((surfaces (windows desktop)))
+    (mapcar (lambda (surface) (render-surface screen surface))
+	    (remove-if-not #'texture surfaces))))
+
 (defun render-frame (screen)
   (livesupport:update-repl-link)
-  (let ((cursor-drawn nil))
+  (let ((cursor-drawn nil)
+	(desktop (find-screen-desktop *wayland* screen)))
     (incr (frame-counter screen))
     (gl:bind-framebuffer :framebuffer (gl-framebuffer screen))
     (gl:viewport 0 0 (width screen) (height screen))
@@ -172,7 +178,8 @@
 
     (render-scene screen)
 
-    (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
+    ;; (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
+    (setf cursor-drawn (render-desktop screen desktop))
 
     (when (eq screen (cursor-screen *wayland*))
       (unless cursor-drawn

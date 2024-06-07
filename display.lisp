@@ -165,6 +165,9 @@
   )
 
 
+(defmethod find-screen-desktop ((display display) screen)
+  (find screen (desktops display) :key #'screen))
+
 
 ;; ┌┬┐┌─┐┌─┐┬┌─┌┬┐┌─┐┌─┐┌─┐
 ;;  ││├┤ └─┐├┴┐ │ │ │├─┘└─┐
@@ -174,7 +177,6 @@
 (defclass desktop ()
   ((screen :initform nil :initarg :screen :accessor screen)
    (windows :initform nil :accessor windows)))
-
 
 (defmethod has-screen ((desktop desktop) screen) (eq screen (screen desktop)))
 
