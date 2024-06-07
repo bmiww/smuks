@@ -174,6 +174,7 @@
 ;; ─┴┘└─┘└─┘┴ ┴ ┴ └─┘┴  └─┘
 ;; TODO: Move this
 ;; TODO: Rename to workspace or something???
+;; TODO: Because of desktop - drag & drop icon surfaces aren't rendering in a desktop other than the originating desktop
 (defclass desktop ()
   ((screen :initform nil :initarg :screen :accessor screen)
    (windows :initform nil :accessor windows)))

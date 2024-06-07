@@ -122,8 +122,8 @@
   (let ((texture (texture surface))
 	(width (flo (width surface)))
 	(height (flo (height surface)))
-	(x (- (cursor-x *wayland*) (flo (x surface))))
-	(y (- (cursor-y *wayland*) (flo (y surface)))))
+	(x (- (cursor-x *wayland*) (flo (x surface)) (screen-x screen)))
+	(y (- (cursor-y *wayland*) (flo (y surface)) (screen-y screen))))
 
     ;; TODO: Fix this active-surface usage. You moved active-surface to a client seat
     ;; And this use case in general seems wrong (could be improved)
@@ -144,7 +144,10 @@
 	(height (flo (height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (shaders.texture:draw (shader screen :texture) texture `(,(- x (screen-x screen)) ,(- y (screen-y screen)) ,width ,height))
+    (shaders.texture:draw (shader screen :texture)
+			  texture
+			  `(,(- x (screen-x screen)) ,(- y (screen-y screen))
+			    ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)
     nil))
@@ -164,8 +167,10 @@
 
 (defun render-desktop (screen desktop)
   (let* ((surfaces (windows desktop)))
-    (mapcar (lambda (surface) (render-surface screen surface))
-	    (remove-if-not #'texture surfaces))))
+    (loop for surface in surfaces
+	  for compositor = (compositor surface)
+	  for compost-surfaces = (all-ready-surfaces compositor)
+	  do (mapcar (lambda (surface) (render-surface screen surface)) compost-surfaces))))
 
 (defun render-frame (screen)
   (livesupport:update-repl-link)
