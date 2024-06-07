@@ -87,7 +87,12 @@
   (gl:bind-buffer :array-buffer vbo)
   (dotimes (i (length verts))
     (setf (gl:glaref arr i) (aref verts i)))
-  (gl:buffer-data :array-buffer :static-draw arr))
+  (gl:buffer-data :array-buffer :static-draw arr)
+  ;; TODO: Create and reenable the buffer-sub-data flow
+  ;; TODO: The width/height actually doesn't change that often
+  ;; A lot of this buffer prep could be skipped
+  ;; (buffer-sub-data :array-buffer arr)
+  )
 
 ;; ┌─┐┌─┐┌┐┌┌─┐┌┬┐┌─┐
 ;; │  │ ││││└─┐ │ └─┐
