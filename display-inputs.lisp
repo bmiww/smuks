@@ -136,4 +136,8 @@ and then clean the list out"
       (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key state))
     ;; Probably F12
     (when (and (eq state :pressed) (eq key 88))
-      (shutdown))))
+      (shutdown))
+    (when (eq state :pressed)
+      (case key
+	(2 (setf (active-desktop display) (nth 0 (desktops display))))
+	(3 (setf (active-desktop display) (nth 1 (desktops display))))))))
