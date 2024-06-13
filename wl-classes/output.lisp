@@ -26,6 +26,7 @@
    (subpixel-orientation :initarg :subpixel-orientation :initform :unknown :accessor output-subpixel-orientation)
    (make :initarg :make :accessor output-make)
    (model :initarg :model :accessor output-model)
+   (screen :initarg :screen :accessor screen)
    (transform :initarg :transform :initform :normal :accessor output-transform))
   (:documentation "Defines a lot of details regarding a physical output.
 A physical output will mostly be a monitor/screen.

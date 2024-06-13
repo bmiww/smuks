@@ -22,6 +22,7 @@
    (screens :initarg :screen-tracker :initform nil :accessor screens)
    (desktops :initform nil :accessor desktops)
    (active-desktop :initform nil :accessor active-desktop)
+   (outputs :initform nil :accessor outputs)
 
    (k-alt? :initform nil :accessor k-alt?)
    (k-ctrl? :initform nil :accessor k-ctrl?)
@@ -71,8 +72,9 @@
   (make-instance 'xdg-wm-base:global :display display :dispatch-impl 'wm-base)
   (make-instance 'dmabuf-global :display display :dispatch-impl 'dmabuf)
   (make-instance 'layer-shell-global :display display :dispatch-impl 'layer-shell)
-  (loop for screen in screens
-	do (init-output display screen)))
+  (setf (outputs display)
+	(loop for screen in screens
+	      collect (init-output display screen))))
 
 
 ;; TODO: This is very incomplete.
@@ -83,6 +85,7 @@
   (make-instance 'output-global :display display :dispatch-impl 'output
 		    :x 0 :y 0
 		    :width (width screen) :height (height screen)
+		    :screen screen
 		    :real-width (width screen) :real-height (height screen)
 		    :refresh-rate (sdrm:vrefresh screen)
 		    :make "TODO: Fill out make" :model "TODO: Fill out model"))
@@ -94,15 +97,17 @@
 (defmethod next-serial ((display display)) (incf (display-serial display)))
 
 (defmethod (setf keyboard-focus) (focus-surface (display display))
-  (let* ((client (wl:client focus-surface))
-	 (seat (seat client)))
-    (setf (slot-value display 'keyboard-focus) focus-surface)
-    (keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))
+  (if focus-surface
+      (let* ((client (wl:client focus-surface))
+	     (seat (seat client)))
+	(setf (slot-value display 'keyboard-focus) focus-surface)
+	(keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))
 
-    ;; TODO: You're supposed to send the actual pressed keys as last arg
-    ;; But currently don't have a keypress manager/tracker
-    (keyboard-enter seat (next-serial display) focus-surface '())
-    (notify-kb-modifiers seat)))
+	;; TODO: You're supposed to send the actual pressed keys as last arg
+	;; But currently don't have a keypress manager/tracker
+	(keyboard-enter seat (next-serial display) focus-surface '())
+	(notify-kb-modifiers seat))
+      (setf (slot-value display 'keyboard-focus) nil)))
 
 (defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))
 
@@ -182,7 +187,8 @@
 ;; TODO: Because of desktop - drag & drop icon surfaces aren't rendering in a desktop other than the originating desktop
 (defclass desktop ()
   ((screen :initform nil :initarg :screen :accessor screen)
-   (windows :initform nil :accessor windows)))
+   (windows :initform nil :accessor windows)
+   (fullscreen-window :initform nil :accessor fullscreen-window)))
 
 (defmethod has-screen ((desktop desktop) screen) (eq screen (screen desktop)))
 
