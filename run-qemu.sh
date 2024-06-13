@@ -3,7 +3,7 @@ qemu-system-x86_64 \
     -enable-kvm \
     -m 2048 \
     -drive file=/home/toms/qemages/smuks-arch.qcow2,format=qcow2,media=disk,if=virtio \
-    -vga virtio -device virtio-gpu,max_outputs=1,xres=1920,yres=1200 \
+    -vga virtio -device virtio-gpu,max_outputs=0,xres=1920,yres=1200 \
     -net user,hostfwd=tcp::10022-:22,hostfwd=tcp::10023-:10023,hostfwd=tcp::25252-:25252 \
     -net nic,model=virtio \
     -display none -spice port=5900,addr=127.0.0.1,disable-ticketing=on \
