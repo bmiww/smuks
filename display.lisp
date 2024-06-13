@@ -182,6 +182,9 @@
 
 (defmethod has-screen ((desktop desktop) screen) (eq screen (screen desktop)))
 
+(defmethod width ((desktop desktop)) (screen-width (screen desktop)))
+(defmethod height ((desktop desktop)) (screen-height (screen desktop)))
+
 (defmethod recalculate-layout ((desktop desktop))
   (when (windows desktop)
     ;; TODO: Replace the car of screens by an actual iteration through screens

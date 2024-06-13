@@ -95,8 +95,7 @@
 	;; NOTE: Full texture upload
 	(progn
 	  (gl:tex-image-2d :texture-2d 0 :rgba width height
-			   0 :rgba :unsigned-byte
-			   ptr)
+			   0 :rgba :unsigned-byte ptr)
 	  (setf (tex-initd texture) t)))
 
     texture))

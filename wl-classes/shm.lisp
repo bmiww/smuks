@@ -76,7 +76,11 @@
    (pixel-format :initarg :pixel-format :accessor pixel-format)
    (mmap-pool :initarg :mmap-pool :accessor mmap-pool)))
 
-(defmethod pool-ptr ((buffer buffer)) (cffi:inc-pointer (mmap-pool-ptr (mmap-pool buffer)) (offset buffer)))
+(defmethod pool-ptr ((buffer buffer))
+  (let* ((pool (mmap-pool buffer)) (ptr (mmap-pool-ptr pool)))
+    (if (> (offset buffer) 0)
+	(cffi:inc-pointer ptr (offset buffer))
+	ptr)))
 
 
 (defclass dma-buffer (wl-buffer:dispatch)

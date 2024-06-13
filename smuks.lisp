@@ -156,11 +156,29 @@
     (setf (needs-redraw surface) nil)
     nil))
 
+(defun render-layer-surface (screen surface)
+  (let ((texture (texture surface))
+	(width (flo (width surface)))
+	(height (flo (height surface)))
+	(x (flo (x surface)))
+	(y (flo (y surface))))
+    (when (< x 0) (setf x (- (/ (screen-width screen) 2) (/ width 2))))
+    (when (< y 0) (setf y (- (/ (screen-height screen) 2) (/ height 2))))
+    ;; (log! "Rendering layer surface at ~a ~a" x y)
+    (shaders.texture:draw (shader screen :texture)
+			  texture
+			  `(,(- x (screen-x screen)) ,(- y (screen-y screen))
+			    ,width ,height))
+    (flush-frame-callbacks surface)
+    (setf (needs-redraw surface) nil)
+    nil))
+
 (defun render-surface (screen surface)
   (typecase surface
     (cursor (render-cursor screen surface))
     ;; NOTE: For now - the display logic for a drag surface should be more or less the same as a cursors
     (drag-surface (render-cursor screen surface))
+    (layer-surface (render-layer-surface screen surface))
     (t (render-toplevel screen surface))))
 
 (defun render-clients (screen)
@@ -183,6 +201,8 @@
   (mapcar (lambda (client) (when (compositor client)
 			(loop for surface in (all-ready-surfaces (compositor client))
 			      when (typep surface 'layer-surface)
+				do (render-surface screen surface)
+			      when (typep surface 'subsurface)
 				do (render-surface screen surface))))
 	  (wl:all-clients *wayland*)))
 

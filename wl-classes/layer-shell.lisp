@@ -30,10 +30,29 @@
    (namespace :initarg :namespace :reader namespace)
    (keyboard-interactivity :initform nil :accessor keyboard-interactivity)
    (anchor :initform nil :accessor anchor)
-   (exclusive-zone :initform nil :accessor exclusive-zone)))
+   (exclusive-zone :initform nil :accessor exclusive-zone)
+   (new-size? :initform nil :accessor new-size?)
+   ;; TODO: For now just a quadruple - might make sense to introduce a struct for this
+   (margins :initform '(0 0 0 0) :accessor margins)))
+
+(defmethod wl-surface:commit ((surface layer-surface))
+  ;; TODO: Maybe possible to use the surface level "new-dimensions?" flag
+  (when (new-size? surface)
+    (let* ((display (wl:get-display surface))
+	   (desktop (active-desktop display)))
+      (when (eq (width surface) 0) (setf (width surface) (width desktop)))
+      (when (eq (height surface) 0) (setf (height surface) (height desktop)))
+      (zwlr-layer-surface-v1:send-configure surface (incf (configure-serial surface)) (width surface) (height surface))
+      (setf (new-size? surface) nil)))
+    ;; TODO: Wonder if there is a way to force a method call with a specific signature. E.G. in this case 'surface
+  (commit-toplevel surface))
 
 (defmethod zwlr-layer-surface-v1:set-keyboard-interactivity ((surface layer-surface) keyboard-interactivity)
   (setf (slot-value surface 'keyboard-interactivity) keyboard-interactivity))
+
+(defmethod zwlr-layer-surface-v1:set-margin ((surface layer-surface) top right bottom left)
+  (setf (margins surface) (list top right bottom left)))
+
 
 ;; TODO: This size should be double-buffered
 ;; TODO: Setting these might conflict with whatever i have going on in the surface methods.
@@ -41,7 +60,11 @@
 (defmethod zwlr-layer-surface-v1:set-size ((surface layer-surface) width height)
   (setf (width surface) width)
   (setf (height surface) height)
-  (setf (new-dimensions? surface) t))
+  (setf (new-dimensions? surface) t)
+  (setf (new-size? surface) t)
+  ;; TODO: For now just imitating the dimensions the client actually wants.
+  ;; This could also be checked in commit events - protocol says
+  )
 
 ;; TODO: Seemingly can be null - which means - centered. Thanks protocol for being specific
 ;; TODO: This anchor should be double-buffered
