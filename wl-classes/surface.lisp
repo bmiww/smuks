@@ -34,6 +34,7 @@
     (cursor (commit-toplevel surface))
     (drag-surface (commit-toplevel surface))
     (layer-surface (commit-toplevel surface))
+    (subsurface (commit-toplevel surface)) ;; TODO: This should have its own method - since theres very specific handling of a subsurface
     (t (format nil "Unsupported surface role: ~a" (type-of surface)))))
 
 (defmethod commit-toplevel ((surface surface))
@@ -194,7 +195,7 @@ Or some such."
 ;; ╚════██║██║   ██║██╔══██╗╚════██║██║   ██║██╔══██╗██╔══╝  ██╔══██║██║     ██╔══╝
 ;; ███████║╚██████╔╝██████╔╝███████║╚██████╔╝██║  ██║██║     ██║  ██║╚██████╗███████╗
 ;; ╚══════╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝
-(defclass subsurface (wl-subsurface:dispatch)
+(defclass subsurface (wl-subsurface:dispatch surface)
   ((surface :initarg :surface)
    (parent :initarg :parent)
    (sync-mode :initarg :sync-mode :accessor sync-mode)))

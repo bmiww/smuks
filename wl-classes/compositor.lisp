@@ -58,4 +58,4 @@
   ())
 
 (defmethod wl-subcompositor:get-subsurface ((subcompositor subcompositor) id surface parent)
-  (wl:mk-if 'subsurface subcompositor id :surface surface :parent parent))
+  (wl:up-if 'subsurface surface id :parent parent))
