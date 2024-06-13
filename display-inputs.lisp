@@ -129,18 +129,21 @@ and then clean the list out"
 	 (surface (keyboard-focus display))
 	 (client (and surface (wl:client surface)))
 	 (seat (and client (seat client)))
-	 (seat-keyboard (and seat (seat-keyboard seat))))
-    (case key
+	 (seat-keyboard (and seat (seat-keyboard seat)))
+	 (mods-changed? nil))
+    (setf mods-changed? (case key
       ;; LEFT ALT and RIGHT ALT
-      ((56 100) (setf (k-alt? display) (press? state)))
+      ((56 100) (setf (k-alt? display) (press? state)) t)
       ;; SUPER/WINDOWS
-      (125 (setf (k-super? display) (press? state)))
+      (125 (setf (k-super? display) (press? state)) t)
       ;; LEFT SHIFT AND RIGHT SHITF
-      ((42 54) (setf (k-shift? display) (press? state)))
+      ((42 54) (setf (k-shift? display) (press? state)) t)
       ;; LEFT CTRL AND RIGHT CTRL
-      ((29 97) (setf (k-ctrl? display) (press? state))))
+      ((29 97) (setf (k-ctrl? display) (press? state)) t)
+      (t nil)))
 
     (when seat-keyboard
+      (when mods-changed? (notify-kb-modifiers seat))
       ;; tODO: Key needs to be translated to the XKB keycode
       ;; NOTE: Although - i don't know - this seems to be working perfectly fine
       (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key state))

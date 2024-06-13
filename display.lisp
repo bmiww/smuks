@@ -102,9 +102,7 @@
     ;; TODO: You're supposed to send the actual pressed keys as last arg
     ;; But currently don't have a keypress manager/tracker
     (keyboard-enter seat (next-serial display) focus-surface '())
-    ;; TODO: We are supposed to send the active modifiers after an enter event.
-    ;; For now lazy
-    (keyboard-modifiers seat (next-serial display) 0 0 0 0)))
+    (notify-kb-modifiers seat)))
 
 (defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))
 

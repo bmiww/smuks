@@ -70,9 +70,23 @@
   (let* ((keyboard (seat-keyboard seat)))
     (wl-keyboard:send-enter keyboard serial surface keys)))
 
-(defmethod keyboard-modifiers ((seat seat) serial depressed latched locked group)
-  (let* ((keyboard (seat-keyboard seat)))
-    (wl-keyboard:send-modifiers keyboard serial depressed latched locked group)))
+(defun stupid-xkb-modifier-bitfield (display)
+  (let ((mods 0))
+    (when (k-shift? display) (setf mods (logior mods 1)))
+    (when (k-ctrl? display) (setf mods (logior mods 4)))
+    (when (k-alt? display) (setf mods (logior mods 8)))
+    (when (k-super? display) (setf mods (logior mods 64)))
+    mods))
+
+;; TODO: For now ignoring the latched and locked modifiers
+;; TODO: For now ignoring the group thing - supposedly it indicates a layout change?
+(defmethod notify-kb-modifiers ((seat seat))
+  (declare (ignore depressed))
+  (let* ((display (wl:get-display seat)) (keyboard (seat-keyboard seat)))
+    (wl-keyboard:send-modifiers keyboard
+				(next-serial display)
+				(stupid-xkb-modifier-bitfield display)
+				0 0 0)))
 
 (defmethod keyboard-destroy-callback ((seat seat) callback)
   (let* ((keyboard (seat-keyboard seat)))
