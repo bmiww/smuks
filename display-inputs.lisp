@@ -130,6 +130,16 @@ and then clean the list out"
 	 (client (and surface (wl:client surface)))
 	 (seat (and client (seat client)))
 	 (seat-keyboard (and seat (seat-keyboard seat))))
+    (case key
+      ;; LEFT ALT and RIGHT ALT
+      ((56 100) (setf (k-alt? display) (press? state)))
+      ;; SUPER/WINDOWS
+      (125 (setf (k-super? display) (press? state)))
+      ;; LEFT SHIFT AND RIGHT SHITF
+      ((42 54) (setf (k-shift? display) (press? state)))
+      ;; LEFT CTRL AND RIGHT CTRL
+      ((29 97) (setf (k-ctrl? display) (press? state))))
+
     (when seat-keyboard
       ;; tODO: Key needs to be translated to the XKB keycode
       ;; NOTE: Although - i don't know - this seems to be working perfectly fine
@@ -137,7 +147,13 @@ and then clean the list out"
     ;; Probably F12
     (when (and (eq state :pressed) (eq key 88))
       (shutdown))
-    (when (eq state :pressed)
+    (when (and (eq state :pressed) (k-super? display))
       (case key
+	;; Key p
+	(25 (uiop:launch-program "anyrun"))
+
+	;; Numeric keys - switching desktops
 	(2 (setf (active-desktop display) (nth 0 (desktops display))))
 	(3 (setf (active-desktop display) (nth 1 (desktops display))))))))
+
+(defun press? (state) (eq state :pressed))

@@ -21,7 +21,13 @@
    (pending-drag :initform nil :accessor pending-drag)
    (screens :initarg :screen-tracker :initform nil :accessor screens)
    (desktops :initform nil :accessor desktops)
-   (active-desktop :initform nil :accessor active-desktop)))
+   (active-desktop :initform nil :accessor active-desktop)
+
+   (k-alt? :initform nil :accessor k-alt?)
+   (k-ctrl? :initform nil :accessor k-ctrl?)
+   (k-shift? :initform nil :accessor k-shift?)
+   (k-super? :initform nil :accessor k-super?)))
+
 
 (defmethod initialize-instance :after ((display display) &key screen-tracker)
   (multiple-value-bind (x y screen) (bounds-check screen-tracker (cursor-x display) (cursor-y display))
