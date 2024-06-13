@@ -175,6 +175,10 @@
   )
 
 
+(defmethod find-output-desktop ((display display) output)
+  (let ((screen (output-screen (wl:global output))))
+    (find-screen-desktop display screen)))
+
 (defmethod find-screen-desktop ((display display) screen)
   (find screen (desktops display) :key #'screen))
 

@@ -113,9 +113,21 @@ Supposed to answer with a configure event showing the new size."
   (log! "xdg-toplevel:resize: Not implemented"))
 
 
+(defmethod xdg-toplevel:set-fullscreen ((toplevel toplevel) output)
+  (let* ((display (wl:get-display toplevel))
+	 (desktop (find-output-desktop display output))
+	 (screen (screen desktop)))
+    ;; TODO: None of the stupid cases where the states are sent as an array without a specified enum. So we use 2 as :fullscreen
+    (xdg-toplevel:send-configure toplevel (screen-width screen) (screen-height screen) '(2))
+    (xdg-surface:send-configure toplevel (incf (configure-serial toplevel)))))
+
+
+;; TODO: The configure sizes as 0 might be ridiculous
+;; For now assuming that this will tell the client that it should offer a resize
 (defmethod xdg-toplevel:unset-fullscreen ((toplevel toplevel))
   "A client wants to unset fullscreen state."
-  (log! "xdg-toplevel:unset-fullscreen: Not implemented"))
+  (xdg-toplevel:send-configure toplevel 0 0 '(1))
+  (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
 
 
