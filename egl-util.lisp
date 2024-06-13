@@ -26,7 +26,6 @@
    :context-minor-version 1
    :none))
 
-
 ;; ┌─┐┌─┐┌┐┌┌┬┐┌─┐─┐ ┬┌┬┐
 ;; │  │ ││││ │ ├┤ ┌┴┬┘ │
 ;; └─┘└─┘┘└┘ ┴ └─┘┴ └─ ┴
@@ -34,7 +33,9 @@
   (egl:load-egl-extensions) (check-egl-error "Binding extensions")
 
   (let* ((display (egl:get-display gbm)))
-    (egl:initialize display)                 (check-egl-error "Initializing display")
+    (multiple-value-bind (major minor) (egl:initialize display)
+      (util:log! "EGL version: ~a.~a" major minor)
+      (check-egl-error "Initializing display"))
     (egl:bind-wl-display display wl-display) (check-egl-error "Binding wayland")
     (egl:bind-api :opengl-es-api)            (check-egl-error "Binding api")
 

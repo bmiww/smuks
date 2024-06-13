@@ -12,6 +12,8 @@
 (defvar +socket-file+ "/tmp/smuks.socket")
 ;; Set to one to enable wayland debug messages. Dunno which output it goes to though.
 (defvar *enable-wayland-debug-logs* "1")
+(defvar *enable-mesa-debug-logs* "1")
+(defvar *enable-egl-debug-logs* "debug")
 
 (defvar *drm* nil)
 (defvar *wayland* nil)
@@ -33,6 +35,8 @@
   (heading)
 
   (setf (uiop/os:getenv "WAYLAND_DEBUG") *enable-wayland-debug-logs*)
+  (setf (uiop/os:getenv "MESA_DEBUG") *enable-mesa-debug-logs*)
+  (setf (uiop/os:getenv "EGL_LOG_LEVEL") *enable-egl-debug-logs*)
 
   ;; NOTE: Open a seat.
   ;; We block until libseat tells us that we have a seat
@@ -65,8 +69,8 @@
   (setf *cursor* (load-cursor-texture))
   (prep-shaders *screen-tracker*)
 
-  (setf *iio* (init-libiio))
-  (enable-accelerometer-scan *iio*)
+  ;; (setf *iio* (init-libiio))
+  ;; (enable-accelerometer-scan *iio*)
 
   (setf *udev* (udev:udev-new))
   (setf *udev-monitor* (udev:monitor-udev *udev*))
@@ -87,8 +91,8 @@
      (setf *input-poller* (input-listener))
      (log! "Starting the umpteenth poller. Now for seat events...")
      (setf *seat-poller* (seat-listener))
-     (log! "Starting the accelerometer poller. Waiting for accelerometer events...")
-     (setf *accelerometer-poller* (accelerometer-listener))
+     ;; (log! "Starting the accelerometer poller. Waiting for accelerometer events...")
+     ;; (setf *accelerometer-poller* (accelerometer-listener))
      (log! "Starting the udev poller. Waiting for udev events...")
      (setf *udev-poller* (udev-listener))
 
@@ -457,6 +461,6 @@
     ((cffi:pointer-eq (cl-async::poller-c *wl-poller*) handle) (cl-async:free-poller *wl-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *client-poller*) handle) (cl-async:free-poller *client-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *input-poller*) handle) (cl-async:free-poller *input-poller*))
-    ((cffi:pointer-eq (cl-async::poller-c *accelerometer-poller*) handle) (cl-async:free-poller *accelerometer-poller*))
+    ;; ((cffi:pointer-eq (cl-async::poller-c *accelerometer-poller*) handle) (cl-async:free-poller *accelerometer-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *udev-poller*) handle) (cl-async:free-poller *udev-poller*))
     (t (error "Unknown poller handle"))))
