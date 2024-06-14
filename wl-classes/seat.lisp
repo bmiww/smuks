@@ -198,8 +198,9 @@
 
 
 (defmethod pointer-frame ((seat seat))
-  (when (seat-mouse seat)
-    (wl-pointer:send-frame (seat-mouse seat))))
+  (let ((mouse (seat-mouse seat)))
+    (when (and mouse (>= (wl:version-want seat) 5))
+      (wl-pointer:send-frame (seat-mouse seat)))))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤   │││└─┐├─┘├─┤ │ │  ├─┤
