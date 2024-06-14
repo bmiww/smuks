@@ -15,6 +15,7 @@
    ;; TODO: Unused for now? Supposed to be DRM lib framebuffers
    ;; Related to planes? Like cursor plane and stuff?
    (framebuffers :initarg :framebuffers :accessor framebuffers)
+   (render-node :initarg :render-node :accessor render-node)
    (crtcs :initarg :crtcs :accessor crtcs)
    (crtc :initarg :crtc :accessor crtc)
    (connectors :initarg :connectors :accessor connectors)
@@ -88,8 +89,8 @@
   (let* ((devices (drm:get-devices))
 	 (first (first devices)))
     (unless first (error "No DRM capable graphics cards found"))
-    (let ((fd (open (drm:device!-primary first) :direction :io :if-exists :append)))
-      (make-instance 'gbm-device :file fd :render-node (drm:device!-render first)))))
+    (let ((fd (open (drm::device!-primary first) :direction :io :if-exists :append)))
+      (make-instance 'gbm-device :file fd :render-node (drm::device!-render first)))))
 
 ;; ┌─┐┌─┐┬  ┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
 ;; └─┐├┤ │  ├┤ │   │ │ │├┬┘└─┐
