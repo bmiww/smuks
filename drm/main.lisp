@@ -83,15 +83,13 @@
 
 
 ;; TODO: Iterate cards - but actually check their capabilities.
-;; TODO: Could also combine with render card capability reading
-;; TODO: Figure out the stupid style warning - it doesnt affect anything so far, but annoys me
-;; TODO: Mesa drm has a function to get the devices and then read their capabilities
+;; TODO; Perhaps have DRM control more than one card?
 (defun init-drm ()
-  (let* ((card (loop for i from 0 below 32
-		     for path = (format nil "/dev/dri/card~A" i)
-		     when (probe-file path) return path))
-	 (fd (open card :direction :io :if-exists :append)))
-    (make-instance 'gbm-device :file fd)))
+  (let* ((devices (drm:get-devices))
+	 (first (first devices)))
+    (unless first (error "No DRM capable graphics cards found"))
+    (let ((fd (open (drm:device!-primary first) :direction :io :if-exists :append)))
+      (make-instance 'gbm-device :file fd :render-node (drm:device!-render first)))))
 
 ;; ┌─┐┌─┐┬  ┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
 ;; └─┐├┤ │  ├┤ │   │ │ │├┬┘└─┐
