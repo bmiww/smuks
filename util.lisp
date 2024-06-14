@@ -96,6 +96,7 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
     (16 "EBUSY - Device or resource busy")
     (22 "EINVAL - Invalid argument")
     (25 "ENOTTY - Not a typewriter")
+    (32 "EPIPE - Broken pipe")
     (t (format nil "UNKNOWN ERROR CODE - ~a" code))))
 
 (defmacro check-err (&body body)
