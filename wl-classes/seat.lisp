@@ -195,12 +195,6 @@
 
 	(pointer-frame seat)))))
 
-(defmethod pointer-axis-stop ((pointer pointer) axis)
-  (when (>= (wl:version-want pointer) 5) (wl-pointer:send-axis-stop pointer (get-ms) axis)))
-
-(defmethod pointer-axis-source ((pointer pointer) axis)
-  (when (>= (wl:version-want pointer) 5) (wl-pointer:send-axis-source pointer axis)))
-
 (defmethod pointer-frame ((seat seat))
   (let ((mouse (seat-mouse seat)))
     (when (and mouse (>= (wl:version-want seat) 5))
@@ -219,6 +213,12 @@
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
 (defclass pointer (wl-pointer:dispatch)
   ((seat :initarg :seat :initform nil)))
+
+(defmethod pointer-axis-stop ((pointer pointer) axis)
+  (when (>= (wl:version-want pointer) 5) (wl-pointer:send-axis-stop pointer (get-ms) axis)))
+
+(defmethod pointer-axis-source ((pointer pointer) axis)
+  (when (>= (wl:version-want pointer) 5) (wl-pointer:send-axis-source pointer axis)))
 
 ;; TODO: PROTOCOL: If surface is nil - the pointer image should be hidden
 (defmethod wl-pointer:set-cursor ((pointer pointer) serial surface hotspot-x hotspot-y)
