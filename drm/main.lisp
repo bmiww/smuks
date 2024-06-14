@@ -5,6 +5,11 @@
 ;; ██║  ██║██╔══██╗██║╚██╔╝██║
 ;; ██████╔╝██║  ██║██║ ╚═╝ ██║
 ;; ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝
+;; NOTE: Some nice examples on different framebuffer/modeset handling
+;; https://github.com/dvdhrm/docs/blob/master/drm-howto/modeset-atomic.c
+;; TODO: Check example above and attempt the atomic modeset.
+;; TODO: Check device capabilities to see if DRM_CAP_CRTC_IN_VBLANK_EVENT is supported.
+;; Without it - page_flip_handler2 will not work.
 (in-package :smuks-drm)
 
 (defclass gbm-device ()
