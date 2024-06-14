@@ -81,7 +81,6 @@
 ;; TODO: For now ignoring the latched and locked modifiers
 ;; TODO: For now ignoring the group thing - supposedly it indicates a layout change?
 (defmethod notify-kb-modifiers ((seat seat))
-  (declare (ignore depressed))
   (let* ((display (wl:get-display seat)) (keyboard (seat-keyboard seat)))
     (wl-keyboard:send-modifiers keyboard
 				(next-serial display)
@@ -170,7 +169,7 @@
 	 (surface (active-surface seat)))
     (when seat-mouse
       (unless surface (error "No active surface for pointer scroll stop"))
-      (wl-pointer:send-axis-stop seat-mouse (get-ms) axis)
+      (pointer-axis-stop seat-mouse axis)
       (pointer-frame seat))))
 
 (defmethod pointer-scroll-finger ((seat seat) dx dy)
@@ -180,22 +179,27 @@
       (when surface
 	(if dx
 	    (progn
-	      (wl-pointer:send-axis-source seat-mouse :finger)
+	      (pointer-axis-source seat-mouse :finger)
 	      (wl-pointer:send-axis seat-mouse (get-ms) :vertical-scroll dx))
 	    (progn
-	      (wl-pointer:send-axis-source seat-mouse :finger)
+	      (pointer-axis-source seat-mouse :finger)
 	      (pointer-scroll-stop seat :vertical-scroll)))
 
 	(if dy
 	    (progn
-	      (wl-pointer:send-axis-source seat-mouse :finger)
+	      (pointer-axis-source seat-mouse :finger)
 	      (wl-pointer:send-axis seat-mouse (get-ms) :horizontal-scroll dy))
 	    (progn
-	      (wl-pointer:send-axis-source seat-mouse :finger)
+	      (pointer-axis-source seat-mouse :finger)
 	      (pointer-scroll-stop seat :horizontal-scroll)))
 
-	(wl-pointer:send-frame seat-mouse)))))
+	(pointer-frame seat)))))
 
+(defmethod pointer-axis-stop ((pointer pointer) axis)
+  (when (>= (wl:version-want pointer) 5) (wl-pointer:send-axis-stop pointer (get-ms) axis)))
+
+(defmethod pointer-axis-source ((pointer pointer) axis)
+  (when (>= (wl:version-want pointer) 5) (wl-pointer:send-axis-source pointer axis)))
 
 (defmethod pointer-frame ((seat seat))
   (let ((mouse (seat-mouse seat)))
