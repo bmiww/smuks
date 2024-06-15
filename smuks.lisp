@@ -204,7 +204,10 @@
 			      when (typep surface 'layer-surface)
 				do (render-surface screen surface)
 			      when (typep surface 'subsurface)
-				do (render-surface screen surface))))
+				do (render-surface screen surface))
+			;; TODO: Hacked popup renders in here - they should go somewhere else
+			(loop for surface in (all-popups (compositor client))
+			      do (render-surface screen surface))))
 	  (wl:all-clients *wayland*)))
 
 (defun render-frame (screen)

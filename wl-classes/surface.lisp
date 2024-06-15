@@ -35,6 +35,7 @@
     (cursor (commit-toplevel surface))
     (drag-surface (commit-toplevel surface))
     (subsurface (commit-toplevel surface)) ;; TODO: This should have its own method - since theres very specific handling of a subsurface
+    ;; TODO: You could probably remove this since you are implementing it next to the popup class
     (t (format nil "Unsupported surface role: ~a" (type-of surface)))))
 
 (defmethod commit-toplevel ((surface surface))
@@ -49,7 +50,8 @@
   (when (pending-frame-callbacks surface)
     (setf (frame-callbacks surface) (pending-frame-callbacks surface))
     (setf (pending-frame-callbacks surface) nil)
-    (setf (needs-redraw surface) t)))
+    (setf (needs-redraw surface) t)
+    ))
 
 (defmethod wl-surface:attach ((surface surface) buffer x y)
   ;; TODO: Protocol deprecation thing - you should instead notify the client

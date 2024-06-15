@@ -39,7 +39,9 @@
     (xdg-surface:send-configure xdg (incf (configure-serial xdg)))))
 
 (defmethod xdg-surface:get-popup ((xdg xdg-surface) id toplevel positioner)
-  (wl:up-if 'popup xdg id :toplevel toplevel :positioner positioner))
+  (wl:up-if 'popup xdg id :toplevel toplevel :positioner positioner)
+  (xdg-popup:send-configure xdg (x positioner) (y positioner) (width positioner) (height positioner))
+  (xdg-surface:send-configure xdg (incf (configure-serial xdg))))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (setf (width xdg) width)
@@ -147,6 +149,10 @@ Supposed to answer with a configure event showing the new size."
 (defclass popup (xdg-popup:dispatch xdg-surface grabbable)
   ((toplevel :initarg :toplevel :accessor toplevel)
    (positioner :initarg :positioner :accessor positioner)))
+
+(defmethod wl-surface:commit ((popup popup))
+  (commit-toplevel popup))
+
 
 ;; TODO: Seat ignored - global seat used instead.
 ;; TODO: This is supposed to check which nearest toplevel or popup has a keyboard focus on seat level - i think.
