@@ -24,7 +24,8 @@
    (crtcs :initarg :crtcs :accessor crtcs)
    (crtc :initarg :crtc :accessor crtc)
    (connectors :initarg :connectors :accessor connectors)
-   (encoders :initarg :encoders :accessor encoders)))
+   (encoders :initarg :encoders :accessor encoders)
+   (capabilities :initarg :capabilities :accessor capabilities)))
 
 (defmethod initialize-instance :after ((device gbm-device) &key file)
   ;; TODO: SBCL EXCLUSIVE
@@ -39,7 +40,9 @@
       (unless (setf (encoders device) (loop for encoder in (drm:resources-encoders resources) collect (init-encoder encoder)))
 	(error "No connectors found"))
       (unless (setf (connectors device) (loop for connector in (drm:resources-connectors resources) collect (init-connector connector (encoders device) (crtcs device))))
-	(error "No encoders found")))))
+	(error "No encoders found"))
+      (setf (capabilities device) (drm::resources-capabilities resources)))))
+
 
 (defmethod recheck-resources ((device gbm-device))
   (let* ((resources (setf (resources device) (drm:get-resources (fd device))))
