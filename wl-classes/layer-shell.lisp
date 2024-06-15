@@ -58,13 +58,11 @@
 ;; TODO: Setting these might conflict with whatever i have going on in the surface methods.
 ;; Therefore maybe i could ultimately just try calling the surface method
 (defmethod zwlr-layer-surface-v1:set-size ((surface layer-surface) width height)
-  (setf (width surface) width)
-  (setf (height surface) height)
-  (setf (new-dimensions? surface) t)
-  (setf (new-size? surface) t)
-  ;; TODO: For now just imitating the dimensions the client actually wants.
-  ;; This could also be checked in commit events - protocol says
-  )
+  (unless (and (eq width (width surface)) (eq height (height surface)))
+    (setf (width surface) width)
+    (setf (height surface) height)
+    (setf (new-dimensions? surface) t)
+    (setf (new-size? surface) t)))
 
 ;; TODO: Seemingly can be null - which means - centered. Thanks protocol for being specific
 ;; TODO: This anchor should be double-buffered

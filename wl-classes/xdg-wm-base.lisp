@@ -45,9 +45,10 @@
   (xdg-surface:send-configure xdg (incf (configure-serial xdg))))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
-  (setf (width xdg) width)
-  (setf (height xdg) height)
-  (setf (new-dimensions? xdg) t))
+  (unless (and (eq width (width xdg)) (eq height (height xdg)))
+    (setf (width xdg) width)
+    (setf (height xdg) height)
+    (setf (new-dimensions? xdg) t)))
 
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
 ;; The configuration sequence. Applying pending state or whatnot. Not sure
