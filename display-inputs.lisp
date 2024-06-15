@@ -83,14 +83,15 @@ and then clean the list out"
 	(let* ((client (wl:client surface))
 	       (seat (seat client))
 	       (surf-x (- new-x (x surface))) (surf-y (- new-y (y surface))))
-	  (if (and (active-surface seat) (eq (pointer-focus display) surface))
-	      (progn
-		(pointer-motion seat surf-x surf-y))
-	      (progn
-		(when (pointer-focus display)
-		  (pointer-leave (seat (wl:client (pointer-focus display)))))
-		(pointer-enter seat surface surf-x surf-y)
-		(setf (pointer-focus display) surface))))
+	  (when seat
+	    (if (and (active-surface seat) (eq (pointer-focus display) surface))
+		(progn
+		  (pointer-motion seat surf-x surf-y))
+		(progn
+		  (when (pointer-focus display)
+		    (pointer-leave (seat (wl:client (pointer-focus display)))))
+		  (pointer-enter seat surface surf-x surf-y)
+		  (setf (pointer-focus display) surface)))))
 	(when (pointer-focus display)
 	  (pointer-leave (seat (wl:client (pointer-focus display))))
 	  (setf (pointer-focus display) nil)))))
@@ -105,8 +106,9 @@ and then clean the list out"
 
     (when surface
       (let* ((seat (seat client)))
-	(setf (keyboard-focus display) surface)
-	(pointer-button seat button state)))))
+	(when seat
+	  (setf (keyboard-focus display) surface)
+	  (pointer-button seat button state))))))
 
 
 (defmethod process ((display display) (type (eql :pointer-scroll-finger)) (usecase (eql :passthrough)) event)

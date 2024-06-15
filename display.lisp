@@ -100,13 +100,14 @@
   (if focus-surface
       (let* ((client (wl:client focus-surface))
 	     (seat (seat client)))
-	(setf (slot-value display 'keyboard-focus) focus-surface)
-	(keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))
+	(when seat
+	  (setf (slot-value display 'keyboard-focus) focus-surface)
+	  (keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))
 
-	;; TODO: You're supposed to send the actual pressed keys as last arg
-	;; But currently don't have a keypress manager/tracker
-	(keyboard-enter seat (next-serial display) focus-surface '())
-	(notify-kb-modifiers seat))
+	  ;; TODO: You're supposed to send the actual pressed keys as last arg
+	  ;; But currently don't have a keypress manager/tracker
+	  (keyboard-enter seat (next-serial display) focus-surface '())
+	  (notify-kb-modifiers seat)))
       (setf (slot-value display 'keyboard-focus) nil)))
 
 (defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))
