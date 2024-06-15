@@ -102,7 +102,9 @@
 	   (caps (capabilities device)))
       (unless (getf caps :crtc-in-vblank-event)
 	(error "CRTC_IN_VBLANK_EVENT missing. Needed for page-flip2. Not strictly necessary, required in smuks."))
+      (drm:enable-capabilities (fd device) :universal-planes :atomic)
       device)))
+
 
 ;; ┌─┐┌─┐┬  ┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
 ;; └─┐├┤ │  ├┤ │   │ │ │├┬┘└─┐
