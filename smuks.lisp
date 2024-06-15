@@ -208,12 +208,14 @@
 	  (wl:all-clients *wayland*)))
 
 (defun render-frame (screen)
-  (sdrm::just-page-flip *drm* (fb screen) (connector screen)
-    (livesupport:update-repl-link)
-    (let ((cursor-drawn nil)
-	  (desktop (find-screen-desktop *wayland* screen)))
+  (livesupport:update-repl-link)
+  (let ((cursor-drawn nil)
+	(desktop (find-screen-desktop *wayland* screen))
+	(framebuffer (next-framebuffer screen)))
+
+    (sdrm::just-page-flip *drm* (framebuffer-id framebuffer) (connector screen)
       (incr (frame-counter screen))
-      (gl:bind-framebuffer :framebuffer (gl-framebuffer screen))
+      (gl:bind-framebuffer :framebuffer (framebuffer-gl-buffer framebuffer))
       (gl:viewport 0 0 (width screen) (height screen))
       (gl:clear :color-buffer-bit)
 

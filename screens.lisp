@@ -16,13 +16,11 @@
 ;; └─┘└─┘┴└─└─┘└─┘┘└┘
 (defclass screen ()
   ((tracker :initarg :tracker :accessor tracker)
-   (buffer :initarg :buffer :accessor buffer)
-   (fb :initarg :fb :accessor fb)
    (connector :initarg :connector :accessor connector)
-   (egl-image :initform nil :accessor egl-image)
    (drm :initarg :drm :accessor drm)
-   (gl-framebuffer :initform nil :accessor gl-framebuffer)
    (shaders :initform nil :accessor shaders)
+   (framebuffers :initarg :framebuffers :initform nil :accessor framebuffers)
+   (active-framebuffer :initform nil :accessor active-framebuffer)
    (frame-counter :initform (make-instance 'frame-counter) :accessor frame-counter)
    (scene :initarg :scene :initform nil :accessor scene)
    (configuring-neighbors :initform nil :accessor configuring-neighbors)
@@ -59,20 +57,36 @@
 (defmethod vrefresh ((screen screen)) (vrefresh (connector screen)))
 (defmethod connector-type ((screen screen)) (connector-type (connector screen)))
 (defmethod start-monitor ((screen screen))
-  (setf (egl-image screen) (create-egl-image *egl* (buffer screen) (width screen) (height screen)))
-  (setf (gl-framebuffer screen) (create-gl-framebuffer (egl-image screen)))
+  (loop for framebuffer in (framebuffers screen)
+	do (progn
+	     (setf (framebuffer-egl-image framebuffer)
+		   (create-egl-image *egl* (framebuffer-buffer framebuffer) (width screen) (height screen)))
+	     (setf (framebuffer-gl-buffer framebuffer)
+		   (create-gl-framebuffer (framebuffer-egl-image framebuffer)))))
 
-  (set-crtc! (fd (drm screen))
-	     (fb screen)
-	     (connector screen)))
+  ;; For the first frame - we only need the first buffer
+  (let ((first (first (framebuffers screen))))
+    (set-crtc! (fd (drm screen))
+	       (framebuffer-id first)
+	       (connector screen))))
 
 (defmethod shader ((screen screen) (type (eql :rect))) (car (shaders screen)))
 (defmethod shader ((screen screen) (type (eql :texture))) (cadr (shaders screen)))
 (defmethod shader ((screen screen) (type (eql :capsule))) (nth 2 (shaders screen)))
+(defmethod next-framebuffer ((screen screen))
+  (let ((framebuffers (framebuffers screen))
+	(active (active-framebuffer screen)))
+    (setf (active-framebuffer screen) (or (cadr (member active framebuffers)) (first framebuffers)))))
+
+
 
 (defmethod prep-shaders ((screen screen))
   (let ((width (screen-width screen)) (height (screen-height screen)) (rot (shader-rot-val screen)))
-    (prep-gl-implementation (fb screen) width height)
+    ;; NOTE: Binds the first framebuffer to generate the shaders. Don't think that in itself is necessary.
+    ;; But regardless, both buffer dimensions should be identical here.
+    (loop for framebuffer in (framebuffers screen)
+	  do (prep-gl-implementation (framebuffer-id framebuffer) width height))
+
     (setf (shaders screen) `(,(shader-init:create-rect-shader width height rot)
 			     ,(restart-case (shader-init:create-texture-shader width height rot)
 				(ignore () (nth 1 (shaders screen))))
@@ -89,17 +103,17 @@
 
 
 (defmethod cleanup-screen ((screen screen))
-  ;; TODO: Didn't clean up gl framebuffer before - might still be worthwhile to check
-  ;; (when (gl-framebuffer screen)
-    ;; (delete-gl-framebuffer (gl-framebuffer screen))
-    ;; (setf (gl-framebuffer screen) nil))
-  (when (egl-image screen)
-    (seglutil:destroy-image *egl* (egl-image screen))
-    (setf (egl-image screen) nil))
-  (when (fb screen)
-    (sdrm:rm-framebuffer! (drm screen) (fb screen) (buffer screen))
-    (setf (fb screen) nil)))
-
+  (loop for framebuffer in (framebuffers screen)
+	do (let ((egl-image (framebuffer-egl-image framebuffer))
+		 (framebuffer-id (framebuffer-id framebuffer))
+		 (framebuffer-buffer (framebuffer-buffer framebuffer)))
+	     (when egl-image
+	       (seglutil:destroy-image *egl* egl-image)
+	       (setf (framebuffer-egl-image framebuffer) nil))
+	     (when (and framebuffer-id framebuffer-buffer)
+	       (sdrm:rm-framebuffer! (drm screen) framebuffer-id framebuffer-buffer)
+	       (setf (framebuffer-id framebuffer) nil
+		     (framebuffer-buffer framebuffer) nil)))))
 
 
 ;; ████████╗██████╗  █████╗  ██████╗██╗  ██╗███████╗██████╗
@@ -116,6 +130,8 @@
    (max-width :initform 0 :accessor max-width)
    (max-height :initform 0 :accessor max-height)))
 
+(defvar *framebuffer-count* 2)
+
 (defmethod initialize-instance :after ((tracker screen-tracker) &key drm)
   (let ((connectors (connectors drm)))
     ;; TODO: Don't think i really need to sort anything any more here
@@ -128,8 +144,8 @@
       (setf (screens tracker)
 	    (loop for connector in connectors
 		  for index from 0
-		  for fb-obj = (create-connector-framebuffer drm connector)
-		  when fb-obj
+		  for fb-objs = (create-connector-framebuffer drm connector *framebuffer-count*)
+		  when fb-objs
 		    collect (let ((height (vdisplay connector))
 				  (width (hdisplay connector)))
 			      (prog1
@@ -137,20 +153,18 @@
 				     :connector connector
 				     :tracker tracker
 				     :orientation (guess-orientation width height)
-				     :buffer (framebuffer-buffer fb-obj)
-				     :fb (framebuffer-id fb-obj)
+				     :framebuffers fb-objs
 				     :scene (nth index *scenes*)
 				     :screen-y screen-y
 				     :drm drm)
-				(incf screen-y height))))))
-    ))
+				(incf screen-y height))))))))
 
 (defmethod stop-measuring-fps ((tracker screen-tracker))
   (loop for screen in (screens tracker) do (stop (frame-counter screen))))
 
 (defmethod measure-fps ((tracker screen-tracker))
   (loop for screen in (screens tracker)
-	do (run (frame-counter screen) (format nil "FPS:ScreenFB:~a: " (fb screen)))))
+	do (run (frame-counter screen) (format nil "FPS:Screen:~a: " screen))))
 
 (defmethod start-monitors ((tracker screen-tracker))
   (loop for screen in (screens tracker)
@@ -172,6 +186,7 @@
 (defmethod update-projections ((tracker screen-tracker) projection)
   (mapcar (lambda (screen) (update-projections screen projection)) (screens tracker)))
 
+;; TODO: Lots of duplication befween this and initialize-instance
 (defmethod handle-drm-change ((tracker screen-tracker))
   (let ((connectors (sdrm::recheck-resources (drm tracker))))
     (loop for connector in connectors
@@ -183,12 +198,12 @@
 		     (cleanup-screen existing-screen)
 		     (setf (screens tracker) (remove existing-screen (screens tracker))))
 		   (when (connected connector)
-		     (let ((fb-obj (create-connector-framebuffer (drm tracker) connector)))
-		       (when fb-obj
+		     (let ((fb-objs (create-connector-framebuffer (drm tracker) connector *framebuffer-count*)))
+		       (when fb-objs
 			 (let ((screen (make-instance 'screen
 					  :connector connector
-					  :buffer (framebuffer-buffer fb-obj)
-					  :fb (framebuffer-id fb-obj)
+					  :tracker tracker
+					  :framebuffers fb-objs
 					  :scene (nth (length (screens tracker)) *scenes*)
 					  :drm (drm tracker))))
 			   (prep-shaders screen)

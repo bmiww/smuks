@@ -12,7 +12,8 @@
 
 (defmacro just-page-flip (drm fb connector &body body)
   `(progn
-     ,@body
      (handler-case
-	 (page-flip ,drm ,fb ,connector)
-       (error (err) (declare (ignore err)) ()))))
+	 (progn
+	   (page-flip ,drm ,fb ,connector))
+       (error (err) (declare (ignore err)) ()))
+     ,@body))

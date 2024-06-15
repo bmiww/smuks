@@ -126,7 +126,7 @@
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐┌┐ ┬ ┬┌─┐┌─┐┌─┐┬─┐
 ;; ├┤ ├┬┘├─┤│││├┤ ├┴┐│ │├┤ ├┤ ├┤ ├┬┘
 ;; └  ┴└─┴ ┴┴ ┴└─┘└─┘└─┘└  └  └─┘┴└─
-(defstruct framebuffer id buffer)
+(defstruct framebuffer id buffer gl-buffer egl-image)
 
 (defvar *bo-flags* (logior gbm::BO_USE_SCANOUT gbm::BO_USE_RENDERING))
 
@@ -135,20 +135,22 @@
 
 ;; TODO: Figure out bpp. For now, just hardcoding it
 ;; TODO: Figure out depth. For now, just hardcoding it
-(defun create-connector-framebuffer (device connector)
+(defun create-connector-framebuffer (device connector &optional count)
   "By default uses the first available mode"
   (let ((mode (car (modes connector)))
 	(crtc (crtc connector)))
     (when (and mode crtc)
       (setf (mode crtc) mode)
-      (let* ((width (hdisplay mode))
-	     (height (vdisplay mode))
-	     (buffer-object (create-bo! device width height))
-	     (bpp 32) (depth 24))
-	(make-framebuffer :id (add-framebuffer (fd device) width height depth bpp
-					       (gbm:bo-get-stride buffer-object)
-					       (gbm:bo-get-handle buffer-object))
-			  :buffer buffer-object)))))
+      (loop for i from 0 below (or count 1)
+	    collect
+	    (let* ((width (hdisplay mode))
+		   (height (vdisplay mode))
+		   (buffer-object (create-bo! device width height))
+		   (bpp 32) (depth 24))
+	      (make-framebuffer :id (add-framebuffer (fd device) width height depth bpp
+						     (gbm:bo-get-stride buffer-object)
+						     (gbm:bo-get-handle buffer-object))
+				:buffer buffer-object))))))
 
 
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐

@@ -16,6 +16,7 @@
 
    add-framebuffer
    framebuffer-id framebuffer-buffer framebuffer-mode rm-framebuffer!
+   framebuffer-egl-image framebuffer-gl-buffer
 
    create-connector-framebuffer
 
