@@ -48,7 +48,8 @@
   ;; If the 0 was a timeout, we could also give it a value
   (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
 
-  (setf *drm* (init-drm))
+  (unless (setf *drm* (init-drm)) (error "Failed to initialize DRM"))
+
   (setf *screen-tracker* (make-instance 'screen-tracker :drm *drm*))
 
   (setf *socket* (init-socket))
@@ -377,7 +378,7 @@
   (cl-async:exit-event-loop))
 
 ;; TODO: So you probably might want to kill off the whole compositor if we receive this?
-  ;; When exactly does this happen anyway?
+;; When exactly does this happen anyway?
 (defun disable-seat (seat data)
   (declare (ignore seat data))
   (log! "DISABLING SEAT - NOT IMPLEMENTED YET"))

@@ -25,23 +25,30 @@
    (crtc :initarg :crtc :accessor crtc)
    (connectors :initarg :connectors :accessor connectors)
    (encoders :initarg :encoders :accessor encoders)
-   (capabilities :initarg :capabilities :accessor capabilities)))
+   (capabilities :initarg :capabilities :accessor capabilities)
+   (master :initform nil :accessor master)))
 
 (defmethod initialize-instance :after ((device gbm-device) &key file)
   ;; TODO: SBCL EXCLUSIVE
   (let ((fd (sb-sys:fd-stream-fd file)))
-    (drm::set-master fd)
-    (setf (fd-stream device) file)
-    (setf (fd device) fd)
-    (setf (gbm-pointer device) (gbm:create-device fd))
-    (let ((resources (setf (resources device) (drm:get-resources fd))))
-      (setf (capabilities device) (drm::resources-capabilities resources))
-      (unless (setf (crtcs device) (loop for crtc in (drm:resources-crtcs resources) collect (init-crtc crtc)))
-	(error "No CRTCs found"))
-      (unless (setf (encoders device) (loop for encoder in (drm:resources-encoders resources) collect (init-encoder encoder)))
-	(error "No connectors found"))
-      (unless (setf (connectors device) (loop for connector in (drm:resources-connectors resources) collect (init-connector connector (encoders device) (crtcs device))))
-	(error "No encoders found")))))
+    (handler-case
+	(progn
+	  (drm::set-master fd) (setf (master device) t)
+	  (setf (fd-stream device) file)
+	  (setf (fd device) fd)
+	  (setf (gbm-pointer device) (gbm:create-device fd))
+	  (let ((resources (setf (resources device) (drm:get-resources fd))))
+	    (describe resources)
+	    (setf (capabilities device) (drm::resources-capabilities resources))
+	    (unless (setf (crtcs device) (loop for crtc in (drm:resources-crtcs resources) collect (init-crtc crtc)))
+	      (error "No CRTCs found"))
+	    (unless (setf (encoders device) (loop for encoder in (drm:resources-encoders resources) collect (init-encoder encoder)))
+	      (error "No connectors found"))
+	    (unless (setf (connectors device) (loop for connector in (drm:resources-connectors resources) collect (init-connector connector (encoders device) (crtcs device))))
+	      (error "No encoders found"))))
+      (error (e)
+	(declare (ignore e))
+	(close-drm device)))))
 
 
 (defmethod recheck-resources ((device gbm-device))
@@ -102,7 +109,9 @@
 	   (caps (capabilities device)))
       (unless (getf caps :crtc-in-vblank-event)
 	(error "CRTC_IN_VBLANK_EVENT missing. Needed for page-flip2. Not strictly necessary, required in smuks."))
-      (drm:enable-capabilities (fd device) :universal-planes :atomic)
+      ;; TODO: For some reason - i'm getting EPERM when trying to set capabilities
+      ;; Might need to open the fd with the seat open function (read: elevated permissions)
+      ;; (drm:enable-capabilities (fd device) :universal-planes :atomic)
       device)))
 
 
@@ -146,10 +155,16 @@
 ;; │  │  ├┤ ├─┤││││ │├─┘
 ;; └─┘┴─┘└─┘┴ ┴┘└┘└─┘┴
 (defmethod close-drm ((device gbm-device))
-  (setf (resources device) nil)
-  (check-err (gbm:device-destroy (gbm-pointer device)))
-  (check-err (drm::drop-master (fd device)))
-  (close (fd-stream device)))
+  (when (resources device) (setf (resources device) nil))
+  (when (gbm-pointer device)
+    (check-err (gbm:device-destroy (gbm-pointer device)))
+    (setf (gbm-pointer device) nil))
+
+  (when (master device)
+    (check-err (drm::drop-master (fd device)))
+    (setf (master device) nil))
+
+  (when (fd-stream device) (close (fd-stream device)) (setf (fd-stream device) nil) (setf (fd device) nil)))
 
 (defun rm-framebuffer! (device fb buffer)
   (destroy-bo buffer)
