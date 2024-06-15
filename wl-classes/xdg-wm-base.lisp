@@ -146,9 +146,19 @@ Supposed to answer with a configure event showing the new size."
 ;; ┌─┐┌─┐┌─┐┬ ┬┌─┐
 ;; ├─┘│ │├─┘│ │├─┘
 ;; ┴  └─┘┴  └─┘┴
+;; TODO: As far as i can understand the positioner is transient and used only for the duration of the popup creation
+;; Will have dangling references here possibly
 (defclass popup (xdg-popup:dispatch xdg-surface grabbable)
   ((toplevel :initarg :toplevel :accessor toplevel)
    (positioner :initarg :positioner :accessor positioner)))
+
+;; TODO: Check if the shared initialize here is dangerous.
+;; Might be fine - worst case scenario - scope it to run only when an ACTUAL popup is being created
+(defmethod shared-initialize :after ((popup popup) slot-names &key positioner)
+  (declare (ignore slot-names))
+  (with-slots (x y off-x off-y) positioner
+    (setf (x popup) (+ x off-x)
+	  (y popup) (+ y off-y))))
 
 (defmethod wl-surface:commit ((popup popup))
   (commit-toplevel popup))
