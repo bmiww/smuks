@@ -106,8 +106,7 @@
 
 	  ;; TODO: You're supposed to send the actual pressed keys as last arg
 	  ;; But currently don't have a keypress manager/tracker
-	  (keyboard-enter seat (next-serial display) focus-surface '())
-	  (notify-kb-modifiers seat)))
+	  (keyboard-enter seat focus-surface '())))
       (setf (slot-value display 'keyboard-focus) nil)))
 
 (defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))

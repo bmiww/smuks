@@ -52,10 +52,20 @@
   ())
 
 
+;; ┌─┐┬─┐┌─┐┌┐ ┌┐ ┌─┐┌┐ ┬  ┌─┐
+;; │ ┬├┬┘├─┤├┴┐├┴┐├─┤├┴┐│  ├┤
+;; └─┘┴└─┴ ┴└─┘└─┘┴ ┴└─┘┴─┘└─┘
+(defclass grabbable ()
+  ((grab-child :initform nil :accessor grab-child)
+   (grab-parent :initform nil :accessor grab-parent))
+  (:documentation "A grabbable object is an object that can have a grab child
+Destroying the grabbable object will also destroy the grab child"))
+
+
 ;; ┌┬┐┌─┐┌─┐┬  ┌─┐┬  ┬┌─┐┬
 ;;  │ │ │├─┘│  ├┤ └┐┌┘├┤ │
 ;;  ┴ └─┘┴  ┴─┘└─┘ └┘ └─┘┴─┘
-(defclass toplevel (xdg-toplevel:dispatch xdg-surface)
+(defclass toplevel (xdg-toplevel:dispatch xdg-surface grabbable)
   ((title :initform nil :accessor title)
    (app-id :initform nil :accessor app-id)
    (parent :initform nil :accessor parent)
@@ -130,13 +140,26 @@ Supposed to answer with a configure event showing the new size."
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
 
-
 ;; ┌─┐┌─┐┌─┐┬ ┬┌─┐
 ;; ├─┘│ │├─┘│ │├─┘
 ;; ┴  └─┘┴  └─┘┴
-(defclass popup (xdg-popup:dispatch xdg-surface)
+(defclass popup (xdg-popup:dispatch xdg-surface grabbable)
   ((toplevel :initarg :toplevel :accessor toplevel)
    (positioner :initarg :positioner :accessor positioner)))
+
+;; TODO: Seat ignored - global seat used instead.
+;; TODO: This is supposed to check which nearest toplevel or popup has a keyboard focus on seat level - i think.
+;; Since for now i don't do explicit keyboard focus on seat level (i should) - we can try using the active-surface instead
+(defmethod xdg-popup:grab ((popup popup) seat serial)
+  "Grab here implies keyboard focus. If keyboard focus is lost - TODO"
+  (let ((active-surface (active-surface seat)))
+    (unless (or active-surface
+		(typep active-surface 'toplevel)
+		(typep active-surface 'popup))
+      (error "No active surface to grab from"))
+
+    ;; TODO: The keys here are supposed to be the currently pressed keys
+    (keyboard-enter seat popup '())))
 
 ;; ┌─┐┌─┐┌─┐┬┌┬┐┬┌─┐┌┐┌┌─┐┬─┐
 ;; ├─┘│ │└─┐│ │ ││ ││││├┤ ├┬┘
@@ -144,6 +167,8 @@ Supposed to answer with a configure event showing the new size."
 (defclass positioner (xdg-positioner:dispatch)
   ((x :initform 0 :accessor x)
    (y :initform 0 :accessor y)
+   (off-x :initform 0 :accessor off-x)
+   (off-y :initform 0 :accessor off-y)
    (width :initform 0 :accessor width)
    (height :initform 0 :accessor height)
    (a-width :initform 0 :accessor a-width)
@@ -167,6 +192,10 @@ Supposed to answer with a configure event showing the new size."
 
 (defmethod xdg-positioner:set-gravity ((positioner positioner) gravity)
   (setf (gravity positioner) gravity))
+
+(defmethod xdg-positioner:set-offset ((positioner positioner) x y)
+  (setf (off-x positioner) x
+	(off-y positioner) y))
 
 (defmethod xdg-positioner:set-constraint-adjustment ((positioner positioner) constraint)
   (log! "xdg-positioner:set-constraint-adjustment: Not implemented"))

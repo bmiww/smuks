@@ -66,9 +66,10 @@
     ;; I should perform keyboard focus when BOTH TOPLEVEL and KEYBOARD are created.
     (when surface (setf (keyboard-focus (wl:get-display surface)) surface))))
 
-(defmethod keyboard-enter ((seat seat) serial surface keys)
-  (let* ((keyboard (seat-keyboard seat)))
-    (wl-keyboard:send-enter keyboard serial surface keys)))
+(defmethod keyboard-enter ((seat seat) surface keys)
+  (let* ((keyboard (seat-keyboard seat)) (display (wl:get-display seat)))
+    (wl-keyboard:send-enter keyboard (next-serial display) surface keys)
+    (notify-kb-modifiers seat)))
 
 (defun stupid-xkb-modifier-bitfield (display)
   (let ((mods 0))
