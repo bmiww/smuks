@@ -205,7 +205,7 @@ Supposed to answer with a configure event showing the new size."
    (a-height :initform 0 :accessor a-height)
    (anchor :initform :bottom-left :accessor anchor)
    (gravity :initform 'top :accessor gravity)
-   (constraint :initform 'none :accessor constraint)))
+   (constraint :initform '() :accessor constraint)))
 
 (defmethod xdg-positioner:set-size ((positioner positioner) width height)
   (setf (width positioner) width
@@ -221,6 +221,7 @@ Supposed to answer with a configure event showing the new size."
 (defmethod xdg-positioner:set-anchor ((positioner positioner) anchor)
   (setf (anchor positioner) anchor))
 
+;; TODO: Still have no clue what gravity does in this situation
 (defmethod xdg-positioner:set-gravity ((positioner positioner) gravity)
   (setf (gravity positioner) gravity))
 
@@ -228,5 +229,7 @@ Supposed to answer with a configure event showing the new size."
   (setf (off-x positioner) x
 	(off-y positioner) y))
 
+;; TODO: Implement constraint handling
 (defmethod xdg-positioner:set-constraint-adjustment ((positioner positioner) constraint)
+  "This indicates what to do with the popup surface if it's width/height/x/y is outside the bounds of the parent surface."
   (setf (constraint positioner) constraint))

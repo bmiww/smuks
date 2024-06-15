@@ -178,8 +178,8 @@
   (let ((texture (texture surface))
 	(width (flo (width surface)))
 	(height (flo (height surface)))
-	(x (flo (x surface)))
-	(y (flo (y surface))))
+	(x (+ (flo (x surface)) (flo (x (grab-parent surface)))))
+	(y (+ (flo (y surface)) (flo (y (grab-parent surface))))))
 
     (progn
       (shaders.texture:draw (shader screen :texture) texture `(,x ,y ,width ,height))
