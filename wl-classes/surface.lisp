@@ -96,7 +96,7 @@ SMUKS: I'm not going to consider it for now, since i'm building tiling, and over
   "Sets the region which should be considered for input events.
 A coordinate falling outside of this region
 means the client doesn't have to receive that touch/pointer event."
-  (log! "UNIMPLEMENTED: Set input region"))
+  )
 
 ;; TODO: Implement to support clients setting higher/lower "dpi"
 (defmethod wl-surface:set-buffer-scale ((surface surface) scale)

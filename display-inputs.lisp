@@ -119,6 +119,17 @@ and then clean the list out"
 	(pointer-scroll-finger seat (pointer-scroll-finger@-dy event) (pointer-scroll-finger@-dx event))))))
 
 
+;; TODO: I do not know what to emulate via gesture holds so for now this is empty
+(defmethod process ((display display) (type (eql :gesture-hold-begin)) (usecase (eql :passthrough)) event)
+  (declare (ignore usecase))
+  )
+
+;; TODO: I do not know what to emulate via gesture holds so for now this is empty
+(defmethod process ((display display) (type (eql :gesture-hold-end)) (usecase (eql :passthrough)) event)
+  (declare (ignore usecase))
+  )
+
+
 ;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐
 ;; ├┴┐├┤ └┬┘├┴┐│ │├─┤├┬┘ ││
 ;; ┴ ┴└─┘ ┴ └─┘└─┘┴ ┴┴└──┴┘
