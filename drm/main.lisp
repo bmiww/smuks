@@ -91,14 +91,18 @@
     (when error-msg (error (format nil "Page flip:: ~a:~a~%" result error-msg)))))
 
 
-;; TODO: Iterate cards - but actually check their capabilities.
 ;; TODO; Perhaps have DRM control more than one card?
+;; TODO: This is mostly smuks specific - but parts of this file could go to the lib
 (defun init-drm ()
   (let* ((devices (drm:get-devices))
 	 (first (first devices)))
     (unless first (error "No DRM capable graphics cards found"))
-    (let ((fd (open (drm::device!-primary first) :direction :io :if-exists :append)))
-      (make-instance 'gbm-device :file fd :render-node (drm::device!-render first)))))
+    (let* ((fd (open (drm::device!-primary first) :direction :io :if-exists :append))
+	   (device (make-instance 'gbm-device :file fd :render-node (drm::device!-render first)))
+	   (caps (capabilities device)))
+      (unless (getf caps :crtc-in-vblank-event)
+	(error "CRTC_IN_VBLANK_EVENT missing. Needed for page-flip2. Not strictly necessary, required in smuks."))
+      device)))
 
 ;; ┌─┐┌─┐┬  ┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
 ;; └─┐├┤ │  ├┤ │   │ │ │├┬┘└─┐
