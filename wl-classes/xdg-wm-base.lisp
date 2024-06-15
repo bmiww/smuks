@@ -160,7 +160,15 @@ Supposed to answer with a configure event showing the new size."
   (with-slots (x y off-x off-y a-width a-height anchor) positioner
     (incf x off-x) (incf y off-y)
     (case anchor
-      (:bottom-left (incf y a-height)))
+      (:none ())
+      (:top (incf x (/ a-width 2)))
+      (:bottom (incf x (/ a-width 2)))
+      (:left (incf y (/ a-height 2)))
+      (:right (incf y (/ a-height 2)))
+      (:bottom-left (incf y a-height))
+      (:bottom-right (incf x a-width) (incf y a-height))
+      (:top-right (incf x a-width))
+      (:top-left nil))
 
     (setf (x popup) x (y popup) y)))
 
