@@ -35,13 +35,13 @@
     (setf (fd device) fd)
     (setf (gbm-pointer device) (gbm:create-device fd))
     (let ((resources (setf (resources device) (drm:get-resources fd))))
+      (setf (capabilities device) (drm::resources-capabilities resources))
       (unless (setf (crtcs device) (loop for crtc in (drm:resources-crtcs resources) collect (init-crtc crtc)))
 	(error "No CRTCs found"))
       (unless (setf (encoders device) (loop for encoder in (drm:resources-encoders resources) collect (init-encoder encoder)))
 	(error "No connectors found"))
       (unless (setf (connectors device) (loop for connector in (drm:resources-connectors resources) collect (init-connector connector (encoders device) (crtcs device))))
-	(error "No encoders found"))
-      (setf (capabilities device) (drm::resources-capabilities resources)))))
+	(error "No encoders found")))))
 
 
 (defmethod recheck-resources ((device gbm-device))
