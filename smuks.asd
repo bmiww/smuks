@@ -62,7 +62,8 @@
 	       (:module "drm"
 		:components ((:file "package")
 			     (:file "classes")
-			     (:file "main")))
+			     (:file "main")
+			     (:file "scanout")))
 	       (:file "shaders")
 	       (:file "gl-util")
 	       (:file "egl-util")

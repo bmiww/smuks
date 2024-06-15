@@ -207,42 +207,37 @@
 	  (wl:all-clients *wayland*)))
 
 (defun render-frame (screen)
-  (livesupport:update-repl-link)
-  (let ((cursor-drawn nil)
-	(desktop (find-screen-desktop *wayland* screen)))
-    (incr (frame-counter screen))
-    (gl:bind-framebuffer :framebuffer (gl-framebuffer screen))
-    (gl:viewport 0 0 (width screen) (height screen))
-    (gl:clear :color-buffer-bit)
+  (sdrm::just-page-flip *drm* (fb screen) (connector screen)
+    (livesupport:update-repl-link)
+    (let ((cursor-drawn nil)
+	  (desktop (find-screen-desktop *wayland* screen)))
+      (incr (frame-counter screen))
+      (gl:bind-framebuffer :framebuffer (gl-framebuffer screen))
+      (gl:viewport 0 0 (width screen) (height screen))
+      (gl:clear :color-buffer-bit)
 
-    (render-scene screen)
+      (render-scene screen)
 
-    ;; (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
-    (setf cursor-drawn (render-desktop screen desktop))
-    (render-layer-surfaces screen desktop)
+      ;; (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
+      (setf cursor-drawn (render-desktop screen desktop))
+      (render-layer-surfaces screen desktop)
 
-    (when (eq screen (cursor-screen *wayland*))
-      ;; (unless cursor-drawn
-      (shaders.texture:draw (shader screen :texture) *cursor*
-			    `(,(- (cursor-x *wayland*) (screen-x screen))
-			      ,(- (cursor-y *wayland*) (screen-y screen))
-			      36.0 36.0)))
-    (gl:flush)
-    (gl:finish)
+      (when (eq screen (cursor-screen *wayland*))
+	;; (unless cursor-drawn
+	(shaders.texture:draw (shader screen :texture) *cursor*
+			      `(,(- (cursor-x *wayland*) (screen-x screen))
+				,(- (cursor-y *wayland*) (screen-y screen))
+				36.0 36.0)))
+      (gl:flush)
+      (gl:finish)
 
 
-    ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
-    ;; Any events or changes that i could instead attach to?
-    ;; Maybe instead use per client flushes - for example when receiving commit from them
-    ;; TODO: Also a bit wasteful - clients that are on different screens might want/need different flushes
-    ;; Based on whether the screen frame was rendered
-    (wl:flush-clients *wayland*))
-
-  ;; TODO: Wasteful - also - didn't really help much at the moment.
-  ;; Try to bring it back inside the *frame-ready* check
-  (handler-case
-      (page-flip *drm* (fb screen) (connector screen))
-    (error (err) (declare (ignore err)) ())))
+      ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
+      ;; Any events or changes that i could instead attach to?
+      ;; Maybe instead use per client flushes - for example when receiving commit from them
+      ;; TODO: Also a bit wasteful - clients that are on different screens might want/need different flushes
+      ;; Based on whether the screen frame was rendered
+      (wl:flush-clients *wayland*))))
 
 
 ;; TODO: Add a way to check which screen belongs to the accelerometer
