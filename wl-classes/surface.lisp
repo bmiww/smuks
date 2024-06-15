@@ -176,7 +176,7 @@ Or some such."
 	    (sglutil:create-texture
 	     (pool-ptr (pending-buffer surface))
 	     width height stride
-	     :damage (remove-if (lambda (damage) (sglutil:damage-full damage) damage) (damage surface))
+	     :damage (damage surface)
 	     :texture texture))
       (setf (damage surface) nil)
       (setf (texture-type surface) :shm))))

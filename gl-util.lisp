@@ -80,9 +80,10 @@
 
     ;; TODO: Format is hardcoded - should be taken from the buffer values and mapped to a gl format
     ;; Shouldn't be :rgba twice - i guess
-    (if (and damage (tex-initd texture))
+    (if (tex-initd texture)
 	;; NOTE: Partial texture upload - only update the damaged areas
-	(loop for dmg in damage
+	;; If no damage provided - assume full damage
+	(loop for dmg in (or damage (list (make-damage :x 0 :y 0 :width width :height height)))
 	      for pointy = (damage-pointer ptr dmg width)
 	      do (if (< (cffi:pointer-address pointy) (cffi:pointer-address ptr-max))
 		     (gl:tex-sub-image-2d

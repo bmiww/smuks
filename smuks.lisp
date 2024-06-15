@@ -165,7 +165,6 @@
 	(y (flo (y surface))))
     (when (< x 0) (setf x (- (/ (screen-width screen) 2) (/ width 2))))
     (when (< y 0) (setf y (- (/ (screen-height screen) 2) (/ height 2))))
-    ;; (log! "Rendering layer surface at ~a ~a" x y)
     (shaders.texture:draw (shader screen :texture)
 			  texture
 			  `(,(- x (screen-x screen)) ,(- y (screen-y screen))
@@ -239,7 +238,7 @@
       (gl:viewport 0 0 (width screen) (height screen))
       (gl:clear :color-buffer-bit)
 
-      (render-scene screen)
+      ;; (render-scene screen)
 
       ;; (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
       (setf cursor-drawn (render-desktop screen desktop))
