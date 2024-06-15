@@ -156,11 +156,12 @@
 			      (setf (pointer-y seat) y))
       (pointer-frame seat))))
 
+;; TODO: Instead of ignoring button if no surface is active
+;; The caller should make sure that an active surface has been provided
 (defmethod pointer-button ((seat seat) button state)
   (let* ((seat-mouse (seat-mouse seat))
 	 (surface (active-surface seat)))
-    (when seat-mouse
-      (unless surface (error "No active surface for pointer button"))
+    (when (and seat-mouse surface)
       (wl-pointer:send-button seat-mouse (next-serial seat) (get-ms) button state)
       (pointer-frame seat))))
 
