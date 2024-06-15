@@ -22,7 +22,8 @@
    (damage :initform nil :accessor damage)
    (pending-frame-callbacks :initform nil :accessor pending-frame-callbacks)
    (compositor :initform nil :initarg :compositor :accessor compositor)
-   (frame-callbacks :initform nil :accessor frame-callbacks)))
+   (frame-callbacks :initform nil :accessor frame-callbacks)
+   (buffer-scale :initform 1 :accessor buffer-scale)))
 
 ;; ┌─┐┌─┐┌┬┐┌┬┐┬┌┬┐
 ;; │  │ ││││││││ │
@@ -99,7 +100,7 @@ means the client doesn't have to receive that touch/pointer event."
 (defmethod wl-surface:set-buffer-scale ((surface surface) scale)
   "Sets the scale for the surface buffer.
 This is one of the double buffered actions - so applied only after next commit"
-  (log! "UNIMPLEMENTED: Set buffer scale"))
+  (setf (buffer-scale surface) scale))
 
 (defmethod wl-surface:set-buffer-transform ((surface surface) transform)
   "Sets the transform for the surface buffer. This is an optimization thing if the client is made aware

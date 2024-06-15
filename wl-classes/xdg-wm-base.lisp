@@ -91,13 +91,14 @@ Destroying the grabbable object will also destroy the grab child"))
   (log! "xdg-toplevel:set-parent: Not implemented fully")
   (when parent (setf (parent toplevel) parent)))
 
+
+;; TODO: xdg-toplevel:set-min-size: size limitations still ignored
 (defmethod xdg-toplevel:set-min-size ((toplevel toplevel) width height)
-  (log! "xdg-toplevel:set-min-size: size limitations still ignored")
   (setf (min-width toplevel) width)
   (setf (min-height toplevel) height))
 
+;; TODO: xdg-toplevel:set-max-size: size limitations still ignored
 (defmethod xdg-toplevel:set-max-size ((toplevel toplevel) width height)
-  (log! "xdg-toplevel:set-max-size: size limitations still ignored")
   (setf (max-width toplevel) width)
   (setf (max-height toplevel) height))
 
