@@ -38,8 +38,9 @@
     (xdg-toplevel:send-configure xdg (width xdg) (height xdg) '(1))
     (xdg-surface:send-configure xdg (incf (configure-serial xdg)))))
 
-(defmethod xdg-surface:get-popup ((xdg xdg-surface) id toplevel positioner)
-  (wl:up-if 'popup xdg id :toplevel toplevel :positioner positioner)
+(defmethod xdg-surface:get-popup ((xdg xdg-surface) id parent positioner)
+  (wl:up-if 'popup xdg id :positioner positioner :grab-parent parent)
+  (setf (grab-child parent) xdg)
   (xdg-popup:send-configure xdg (x positioner) (y positioner) (width positioner) (height positioner))
   (xdg-surface:send-configure xdg (incf (configure-serial xdg))))
 
@@ -57,9 +58,10 @@
 ;; ┌─┐┬─┐┌─┐┌┐ ┌┐ ┌─┐┌┐ ┬  ┌─┐
 ;; │ ┬├┬┘├─┤├┴┐├┴┐├─┤├┴┐│  ├┤
 ;; └─┘┴└─┴ ┴└─┘└─┘┴ ┴└─┘┴─┘└─┘
+;; TODO: This could also just be part of xdg-surface probably
 (defclass grabbable ()
   ((grab-child :initform nil :accessor grab-child)
-   (grab-parent :initform nil :accessor grab-parent))
+   (grab-parent :initarg :grab-parent :initform nil :accessor grab-parent))
   (:documentation "A grabbable object is an object that can have a grab child
 Destroying the grabbable object will also destroy the grab child"))
 
@@ -149,16 +151,18 @@ Supposed to answer with a configure event showing the new size."
 ;; TODO: As far as i can understand the positioner is transient and used only for the duration of the popup creation
 ;; Will have dangling references here possibly
 (defclass popup (xdg-popup:dispatch xdg-surface grabbable)
-  ((toplevel :initarg :toplevel :accessor toplevel)
-   (positioner :initarg :positioner :accessor positioner)))
+  ((positioner :initarg :positioner :accessor positioner)))
 
 ;; TODO: Check if the shared initialize here is dangerous.
 ;; Might be fine - worst case scenario - scope it to run only when an ACTUAL popup is being created
 (defmethod shared-initialize :after ((popup popup) slot-names &key positioner)
   (declare (ignore slot-names))
-  (with-slots (x y off-x off-y) positioner
-    (setf (x popup) (+ x off-x)
-	  (y popup) (+ y off-y))))
+  (with-slots (x y off-x off-y a-width a-height anchor) positioner
+    (incf x off-x) (incf y off-y)
+    (case anchor
+      (:bottom-left (incf y a-height)))
+
+    (setf (x popup) x (y popup) y)))
 
 (defmethod wl-surface:commit ((popup popup))
   (commit-toplevel popup))
@@ -181,6 +185,7 @@ Supposed to answer with a configure event showing the new size."
 ;; ┌─┐┌─┐┌─┐┬┌┬┐┬┌─┐┌┐┌┌─┐┬─┐
 ;; ├─┘│ │└─┐│ │ ││ ││││├┤ ├┬┘
 ;; ┴  └─┘└─┘┴ ┴ ┴└─┘┘└┘└─┘┴└─
+;; TODO: The initforms for some of these things should probably be keywords rather than symbols
 (defclass positioner (xdg-positioner:dispatch)
   ((x :initform 0 :accessor x)
    (y :initform 0 :accessor y)
@@ -190,8 +195,9 @@ Supposed to answer with a configure event showing the new size."
    (height :initform 0 :accessor height)
    (a-width :initform 0 :accessor a-width)
    (a-height :initform 0 :accessor a-height)
-   (anchor :initform 'bottom :accessor anchor)
-   (gravity :initform 'top :accessor gravity)))
+   (anchor :initform :bottom-left :accessor anchor)
+   (gravity :initform 'top :accessor gravity)
+   (constraint :initform 'none :accessor constraint)))
 
 (defmethod xdg-positioner:set-size ((positioner positioner) width height)
   (setf (width positioner) width
@@ -199,10 +205,10 @@ Supposed to answer with a configure event showing the new size."
 
 (defmethod xdg-positioner:set-anchor-rect ((positioner positioner) x! y! width height)
   (with-slots (x y a-width a-height) positioner
-  (setf x x!
-	y y!
-	a-width width
-	a-height height)))
+    (setf x x!
+	  y y!
+	  a-width width
+	  a-height height)))
 
 (defmethod xdg-positioner:set-anchor ((positioner positioner) anchor)
   (setf (anchor positioner) anchor))
@@ -215,4 +221,4 @@ Supposed to answer with a configure event showing the new size."
 	(off-y positioner) y))
 
 (defmethod xdg-positioner:set-constraint-adjustment ((positioner positioner) constraint)
-  (log! "xdg-positioner:set-constraint-adjustment: Not implemented"))
+  (setf (constraint positioner) constraint))
