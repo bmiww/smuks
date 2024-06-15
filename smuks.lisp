@@ -21,6 +21,7 @@
 (defvar *udev* nil)
 (defvar *udev-monitor* nil)
 (defvar *libinput* nil)
+(defvar *seat* nil)
 
 (defnil
     *socket* *smuks-exit*
@@ -44,9 +45,7 @@
   ;; TODO: Give the loop like a 5 sec timeout? In case seatd/logind doesn't respond
   (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
   (unless *seat* (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
-  ;; TODO: We might be able to just run (libseat:dispatch *seat* 0) here instead of the loop
-  ;; If the 0 was a timeout, we could also give it a value
-  (cl-async:start-event-loop (lambda () (setf *seat-poller* (seat-listener))))
+  (libseat:dispatch *seat* 0)
 
   (unless (setf *drm* (init-drm)) (error "Failed to initialize DRM"))
 
@@ -80,6 +79,7 @@
   (init-globals *wayland* (screens *screen-tracker*))
 
   (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
+
   (cl-async:start-event-loop
    (lambda ()
      (log! "Starting DRM fd listener. Waiting for events...")
@@ -372,12 +372,7 @@
 ;; ┌─┐┌─┐┌─┐┌┬┐  ┌┬┐┌─┐┌─┐┬┌─┐
 ;; └─┐├┤ ├─┤ │   │││├─┤│ ┬││
 ;; └─┘└─┘┴ ┴ ┴   ┴ ┴┴ ┴└─┘┴└─┘
-;; TODO: Since we immediately try dispatching and wait on libseat, this whole function is here only
-;; for completeness sake.
-(defun enable-seat (seat data)
-  (declare (ignore seat data))
-  (log! "SEAT ENABLED")
-  (cl-async:exit-event-loop))
+(defun enable-seat (seat data) (declare (ignore seat data)) (log! "SEAT ENABLED"))
 
 ;; TODO: So you probably might want to kill off the whole compositor if we receive this?
 ;; When exactly does this happen anyway?
