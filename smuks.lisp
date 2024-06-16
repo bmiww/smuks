@@ -39,14 +39,14 @@
   (setf (uiop/os:getenv "MESA_DEBUG") *enable-mesa-debug-logs*)
   (setf (uiop/os:getenv "EGL_LOG_LEVEL") *enable-egl-debug-logs*)
 
-  ;; NOTE: Open a seat.
-  (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
-  (unless *seat* (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
+  (unless (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
+    (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
   (libseat:dispatch *seat* 0)
 
   (unless (setf *drm* (init-drm)) (error "Failed to initialize DRM"))
 
-  (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
+  (unless (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
+    (error "Failed to initialize libinput"))
 
   (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
