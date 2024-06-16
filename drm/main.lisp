@@ -38,7 +38,6 @@
 	  (setf (fd device) fd)
 	  (setf (gbm-pointer device) (gbm:create-device fd))
 	  (let ((resources (setf (resources device) (drm:get-resources fd))))
-	    (describe resources)
 	    (setf (capabilities device) (drm::resources-capabilities resources))
 	    (unless (setf (crtcs device) (loop for crtc in (drm:resources-crtcs resources) collect (init-crtc crtc)))
 	      (error "No CRTCs found"))
