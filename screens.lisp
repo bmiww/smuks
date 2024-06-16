@@ -96,7 +96,7 @@
 				(ignore () (nth 2 (shaders screen))))))))
 
 (defmethod update-projections ((screen screen) projection)
-  (let ((projection (sglutil:make-projection-matrix (screen-width screen) (screen-height screen) (shader-rot-val screen))))
+  (let ((projection (sglutil:projection-matrix (screen-width screen) (screen-height screen) (shader-rot-val screen))))
     (loop for shader in (shaders screen)
 	  do (shaders:update-projection shader projection))))
 

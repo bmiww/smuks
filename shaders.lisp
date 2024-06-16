@@ -32,7 +32,7 @@
   (with-slots (pointer projection uni-projection) shader
     (setf projection new-projection)
     (gl:use-program pointer)
-    (gl:uniform-matrix-3fv uni-projection projection nil)))
+    (gl:uniform-matrix-3fv uni-projection projection t)))
 
 ;; ┌─┐┬ ┬┌┐┌┌─┐┌─┐
 ;; ├┤ │ │││││  └─┐

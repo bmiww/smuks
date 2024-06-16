@@ -16,8 +16,7 @@
    prep-gl-implementation
    create-gl-framebuffer
    create-image-texture create-texture
-   make-projection-matrix
-   make-position-matrix
+   projection-matrix
    matrix->array
 
    translation-matrix
@@ -125,61 +124,41 @@
 ;; ┌┬┐┌─┐┌┬┐┬─┐┬┌─┐┌─┐┌─┐
 ;; │││├─┤ │ ├┬┘││  ├┤ └─┐
 ;; ┴ ┴┴ ┴ ┴ ┴└─┴└─┘└─┘└─┘
-(define-modify-macro multf (&optional (number 1)) *)
+(defun cos! (angle) "Cosine of an angle in degrees" (cos (* angle (/ pi 180))))
+(defun sin! (angle) "Sine of an angle in degrees" (sin (* angle (/ pi 180))))
+;; Get the sign of a number as 1 or -1
+(defun cps (val) (if (>= val 0) 1 -1))
 
-;; TODO: I have no idea what i was doing with the clem matrixes
-;; To transform them. This is inefficient. I should instead directly turn it into an array
-;; Or find the inner representation
-;; OR just use a decent matrix lib
-(defun matrix->array (clem-matrix)
-  (let ((list (clem::matrix->list clem-matrix)))
-    (make-array (list (length list)) :initial-contents list)))
+;; TODO: 3d-math lib does not support mat3 ortho matrices.
+;; For now too lazy to implement it on lib level, so going to do the calculations myself
+(defun ortho-matrix (width height)
+  (let* ((x (/ 2.0 width))
+	 (y (/ 2.0 height))
+	 (rc00 x) (rc10 0)
+	 (rc20 (* -1.0 (cps (+ rc00 rc10))))
+	 (rc01 0) (rc11 y)
+	 (rc21 (* -1.0 (cps (+ rc01 rc11))))
+	 (mat (math:mat
+	       rc00 rc10 rc20
+	       rc01 rc11 rc21
+	       0    0    1)))
+    mat))
 
-(defun cos! (angle)
-  "Cosine of an angle in degrees"
-  (cos (* angle (/ pi 180))))
+;; TODO: 3d-math lib does not support mat3 rotation matrices.
+;; For now too lazy to implement it on lib level, so going to do the calculations myself
+;; NOTE: The mcref is inverted from what you were using before because of row/column major differences
+(defun rotation-matrix (angle)
+  (let* ((cos (coerce (cos! angle) 'single-float))
+	 (sin (coerce (sin! angle) 'single-float))
+	 (mat (math:meye 3)))
+    (setf (math:mcref mat 0 0) cos)
+    (setf (math:mcref mat 1 0) (- sin))
+    (setf (math:mcref mat 0 1) sin)
+    (setf (math:mcref mat 1 1) cos)
+    mat))
 
-(defun sin! (angle)
-  "Sine of an angle in degrees"
-  (sin (* angle (/ pi 180))))
-
-(defun make-rot-matrix (angle)
-  (let* ((cos (coerce (cos! angle) 'double-float))
-	 (sin (coerce (sin! angle) 'double-float))
-	 (matrix (clem:identity-matrix 3)))
-    (setf (clem:mref matrix 0 0) cos)
-    (setf (clem:mref matrix 0 1) (- sin))
-    (setf (clem:mref matrix 1 0) sin)
-    (setf (clem:mref matrix 1 1) cos)
-    matrix))
-
-(defun make-projection-matrix (width height &optional (rotation 0))
-  (let* ((projection (clem:identity-matrix 3))
-	 (x (/ 2.0 width))
-	 (y (/ 2.0 height)))
-
-    (setf (clem:mref projection 2 0)
-	  (coerce (* -1.0 (copysign (+ (multf (clem:mref projection 0 0) x)
-				       (multf (clem:mref projection 1 0) x)))) 'double-float))
-
-    (setf (clem:mref projection 2 1)
-	  (coerce (* -1.0 (copysign (+ (multf (clem:mref projection 0 1) y)
-				       (multf (clem:mref projection 1 1) y)))) 'double-float))
-
-    (setf projection (clem:m* projection (make-rot-matrix rotation)))
-    (matrix->array projection)))
+(defun projection-matrix (width height &optional (rotation 0))
+  (math:marr3 (math:m* (rotation-matrix rotation) (ortho-matrix width height))))
 
 (defun translation-matrix (x y) (math:marr3 (math:mtranslation (math:vec (flo x) (flo y)))))
 (defun scaling-matrix (width height) (math:marr3 (math:mscaling (math:vec (flo (/ 1 width)) (flo (/ 1 height))))))
-
-(defun make-position-matrix (x y)
-  (let* ((ident (clem:identity-matrix 3))
-	 (position (clem:identity-matrix 3)))
-    ;; TODO: Check if column major
-    ;; (setf (clem:mref position 0 2) x)
-    ;; (setf (clem:mref position 1 2) y)
-    (setf (clem:mref position 2 0) x)
-    (setf (clem:mref position 2 1) y)
-    (matrix->array (clem:m* ident position))))
-
-(defun copysign (val) (if (>= val 0) 1 -1))

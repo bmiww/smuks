@@ -57,7 +57,6 @@
 	       #:bordeaux-threads
 	       #:str
 	       #:png-read ;; TODO: Unless you decide to create screenshotting tools - remove this dependency
-	       #:clem
 	       #:3d-math
 	       #:split-sequence)
   :components ((:file "util")

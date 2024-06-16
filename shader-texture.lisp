@@ -65,13 +65,6 @@ void main() {
     color = tex_color;
 }")
 
-
-(defmethod shaders:update-projection ((program shader) new-projection)
-  (with-slots (pointer projection uni-projection) program
-    (setf projection new-projection)
-    (gl:use-program pointer)
-    (gl:uniform-matrix-3fv uni-projection projection nil)))
-
 (defmethod initialize-instance :before ((program shader) &key projection)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position
 	       uni-translation uni-texture-scaling uni-sampler gl-buffer-array) program
