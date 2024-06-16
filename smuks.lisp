@@ -10,7 +10,7 @@
 (in-package :smuks)
 
 (defvar +socket-file+ "/tmp/smuks.socket")
-;; Set to one to enable wayland debug messages. Dunno which output it goes to though.
+
 (defvar *enable-wayland-debug-logs* "1")
 (defvar *enable-mesa-debug-logs* "1")
 (defvar *enable-egl-debug-logs* "debug")
@@ -25,7 +25,7 @@
 
 (defnil
     *socket* *smuks-exit*
-  *seat* *cursor*
+  *cursor*
   *egl* *egl-context*
   *client-poller* *wl-poller* *drm-poller* *input-poller*
   *seat-poller* *accelerometer-poller*
@@ -423,22 +423,6 @@
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
-(defun stop-app (process)
-  "Shorthand for stopping a process"
-  (uiop:terminate-process process))
-
-;; TODO: Attach error output too.
-(defun test-app (app-name)
-  "Launch a child process and listen to its output"
-  (log! "🟢 ~a: Starting an app" app-name)
-  (let ((process (uiop:launch-program `(,app-name) :output :stream :error-output *standard-output*)))
-    (bt:make-thread
-     (lambda ()
-       (loop while (uiop/launch-program:process-alive-p process)
-	     do (log! "🔴 ~a: ~a" app-name (uiop/stream:slurp-stream-string (uiop:process-info-output process))))
-       (log! "🟢 ~a: Client exit. Code: ~a" app-name (uiop:wait-process process))))
-    process))
-
 ;; Can be called from repl to stop the compositor
 (defun shutdown () (setf *smuks-exit* t))
 
