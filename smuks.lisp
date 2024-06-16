@@ -48,10 +48,8 @@
   (unless (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
     (error "Failed to initialize libinput"))
 
-  (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
-  (setf (egl *wayland*) *egl*)
 
-  (setf *screen-tracker* (make-instance 'screen-tracker :drm *drm* :egl *egl*))
+  (setf *screen-tracker* (make-instance 'screen-tracker :drm *drm*))
 
   (setf *socket* (init-socket))
   (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
@@ -62,6 +60,10 @@
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
 			      :egl *egl*
 			      :screen-tracker *screen-tracker*))
+
+  (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
+  (setf (egl *wayland*) *egl*)
+  (setf (egl *screen-tracker*) *egl*)
 
 
   (setf *cursor* (load-cursor-texture))
