@@ -42,6 +42,8 @@
 	       #:cl-wl.xdg-shell ;; TODO: Add to my own distribution
 	       #:cl-wl.zwp-linux ;; TODO: Add to my own distribution
 	       #:cl-wl.zwlr-layer-shell  ;; TODO: Add to my own distribution
+	       #:cl-wl.xdg-decoration  ;; TODO: Add to my own distribution
+	       #:cl-wl.virtual-keyboard  ;; TODO: Add to my own distribution
 	       ;; TODO: Make libiio optional via compile flag.
 	       ;; It is only really used for mobile devices.
 	       ;; In case if anyone needs it for desktop, hit me up.
