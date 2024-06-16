@@ -88,5 +88,5 @@
 	       (:file "display")
 	       (:file "display-inputs")
 	       (:file "display-inputs-screen-setup")
-	       (:file "render")
-	       (:file "smuks")))
+	       (:file "smuks")
+	       (:file "render")))

@@ -40,31 +40,29 @@
   (setf (uiop/os:getenv "EGL_LOG_LEVEL") *enable-egl-debug-logs*)
 
   ;; NOTE: Open a seat.
-  ;; We block until libseat tells us that we have a seat
-  ;; The loop will exit as soon as we have a seat
-  ;; TODO: Give the loop like a 5 sec timeout? In case seatd/logind doesn't respond
   (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
   (unless *seat* (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
   (libseat:dispatch *seat* 0)
 
   (unless (setf *drm* (init-drm)) (error "Failed to initialize DRM"))
 
-  (setf *screen-tracker* (make-instance 'screen-tracker :drm *drm*))
-
-  (setf *socket* (init-socket))
   (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
 
+  (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
+  (setf (egl *wayland*) *egl*)
+
+  (setf *screen-tracker* (make-instance 'screen-tracker :drm *drm* :egl *egl*))
+
+  (setf *socket* (init-socket))
   (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
 		     ;; This dev-t is probably rather wrong - since client apps probably can't use card0/card1
 		     ;; But instead should be notified of the render nodes renderD128 and so on
 		     ;; But it might also match main-device proper
 		     ;; It could also be interesting to have more than one dev-t.
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
+			      :egl *egl*
 			      :screen-tracker *screen-tracker*))
 
-
-  (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
-  (setf (egl *wayland*) *egl*)
 
   (setf *cursor* (load-cursor-texture))
   (prep-shaders *screen-tracker*)

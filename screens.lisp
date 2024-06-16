@@ -10,6 +10,8 @@
 (in-package :smuks)
 
 (defvar *screen-tracker* nil)
+(defvar *scenes* (list 'scene-1 'scene-2))
+(defvar *stupid-size* 150.0)
 
 ;; ┌─┐┌─┐┬─┐┌─┐┌─┐┌┐┌
 ;; └─┐│  ├┬┘├┤ ├┤ │││
@@ -60,7 +62,7 @@
   (loop for framebuffer in (framebuffers screen)
 	do (progn
 	     (setf (framebuffer-egl-image framebuffer)
-		   (create-egl-image *egl* (framebuffer-buffer framebuffer) (width screen) (height screen)))
+		   (create-egl-image (egl (tracker screen)) (framebuffer-buffer framebuffer) (width screen) (height screen)))
 	     (setf (framebuffer-gl-buffer framebuffer)
 		   (create-gl-framebuffer (framebuffer-egl-image framebuffer)))))
 
@@ -108,7 +110,7 @@
 		 (framebuffer-id (framebuffer-id framebuffer))
 		 (framebuffer-buffer (framebuffer-buffer framebuffer)))
 	     (when egl-image
-	       (seglutil:destroy-image *egl* egl-image)
+	       (seglutil:destroy-image (egl (tracker screen)) egl-image)
 	       (setf (framebuffer-egl-image framebuffer) nil))
 	     (when (and framebuffer-id framebuffer-buffer)
 	       (sdrm:rm-framebuffer! (drm screen) framebuffer-id framebuffer-buffer)
@@ -126,6 +128,7 @@
 ;; TODO: Not sure if the screen-tracker should hold the desktop logic
 (defclass screen-tracker ()
   ((drm :initarg :drm :accessor drm)
+   (egl :initarg :egl :accessor egl)
    (screens :initform nil :accessor screens)
    (max-width :initform 0 :accessor max-width)
    (max-height :initform 0 :accessor max-height)))
@@ -338,9 +341,6 @@
       (draw-rect (- width size (/ width 6) 50.0) (- (/ height 2) half))
       (draw-rect (- width size (/ width 3) 50.0) (- (/ height 2) half)))))
 
-
-(defvar *scenes* (list 'scene-1 'scene-2))
-(defvar *stupid-size* 150.0)
 
 (defun click-locations (screen size)
   (let ((width (flo (width screen))) (height (flo (height screen))))

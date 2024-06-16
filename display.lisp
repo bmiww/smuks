@@ -9,7 +9,7 @@
 (defclass display (wl:display)
   ;; Not sure we need 32. That's a lot of fingers.
   ((touch-slot-interesses :initform (make-array 32 :initial-element nil) :reader touch-slot-interesses)
-   (egl :accessor egl)
+   (egl :initarg :egl :accessor egl)
    (cursor-x :initform 0 :accessor cursor-x)
    (cursor-y :initform 0 :accessor cursor-y)
    (cursor-screen :initform nil :accessor cursor-screen)
