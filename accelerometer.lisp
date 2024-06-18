@@ -44,11 +44,15 @@
   ((index :accessor index)
    (scale :accessor scale)
    (enabled :accessor enabled)
-   (value-type :accessor value-type)
+   (real-bits :accessor real-bits)
+   (bytes :accessor bytes)
+   (shift :accessor shift)
+   (signed :accessor signed)
+   (endian :accessor endian)
    (paths :initform nil :accessor paths)))
 
 (defmethod read-initial-values ((node node))
-  (with-slots (paths enabled scale value-type index) node
+  (with-slots (paths enabled scale index bytes shift signed endian real-bits) node
     (with-open-file (enable-file (prop-paths-enable paths))
       (setf enabled (string= (read-line enable-file) "1")))
     (with-open-file (index-file (prop-paths-index paths))
@@ -57,29 +61,25 @@
       (setf scale (parse-float (read-line scale-file))))
     ;; Example type string: "le:s12/16>>4"
     (with-open-file (type-file (prop-paths-type paths))
-      (ppcre:register-groups-bind (endian sign real-bits store-bits shift)
+      (ppcre:register-groups-bind (endian sign real-bits store-bits shift-amount)
 	  ;; NOTE: This fancy regex does not include REPEAT information. My accelerometer doesn't have it.
 	  ("(le|be):(s|u)(\\d+)/(\\d+)>>(\\d+)" (read-line type-file))
-	(setf value-type
-	      (list :endian endian
-		    :sign sign
-		    :real-bits (parse-integer real-bits)
-		    :store-bits (parse-integer store-bits)
-		    :shift (parse-integer shift)))))))
+	(setf bytes (/ (parse-integer store-bits) 8))
+	(setf shift (parse-integer shift-amount))
+	(setf signed (string= sign "s"))
+	(setf endian (if (string= endian "le") :little :big))
+	;; NOTE: Seems rather useless, since real-bits would be determined from bytes and shift
+	(setf real-bits (parse-integer real-bits))))))
 
 
 (defmethod read-node-value ((node node) bytes)
-  (with-slots (value-type scale) node
-    (let ((value bytes))
-      (*
-       (progn
-	 (if (eq (getf value-type :sign) 's)
-	     (let ((mask (ash 1 (1- (getf value-type :real-bits)))))
-	       (if (>= value mask)
-		   (- value (ash 1 (getf value-type :store-bits)))
-		   value))
-	     value))
-       scale))))
+  (let ((bytes (make-array (length bytes) :initial-contents bytes)))
+    (* (scale node)
+       (ash
+	(if (signed node)
+	    (cl-intbytes:octets->int bytes 2)
+	    (cl-intbytes:octets->uint bytes 2))
+	(shift node)))))
 
 (defmethod set-on-state ((node node) on)
   (with-slots (paths enabled) node
@@ -139,21 +139,13 @@
       (read-initial-values node)
       (when enable (enable node)))))
 
-;; TODO: Lots of shitty assumptions here.
-;; Each value might be more than one byte.
-;; Values might not be in order depicted here.
-;; Not all values might be enabled.
+;; TODO: Values might not be in order depicted here.
 (defmethod read-accelerometer ((dev iio-dev))
-  (let ((available (read-data-available dev))
-	(file (open-file dev)))
-    (format t "Bytes available: ~a~%" available)
-    (let ((bytes (loop for i from 0 below available collect (read-byte file))))
-      (format t "Bytes: ~a~%" bytes)
-      (loop for i from 0 below (length bytes)
-	    collect (case i
-		      (0 (read-node-value (accel-x dev) (nth i bytes)))
-		      (1 (read-node-value (accel-y dev) (nth i bytes)))
-		      (2 (read-node-value (accel-z dev) (nth i bytes))))))))
+  (let ((file (open-file dev))
+	(reading (list (accel-x dev) (accel-y dev) (accel-z dev))))
+    (loop for node in reading
+	  for bytes = (loop for i from 0 below (bytes node) collect (read-byte file))
+	  collect (read-node-value node bytes))))
 
 
 (defmethod enable-all-axis ((dev iio-dev))
@@ -161,6 +153,7 @@
   (enable (accel-y dev))
   (enable (accel-z dev)))
 
+;; NOTE: For now unused. I'm reading only one sample - so don't really need to check how many samples are available.
 (defmethod read-data-available ((dev iio-dev))
   (with-open-file (availability (merge-pathnames "buffer0/data_available" (path dev)))
     (parse-integer (read-line availability))))
@@ -187,12 +180,12 @@
       (setf (watermark dev) watermark))))
 
 ;; TODO: This is blindly assuming that the enable file is always in buffer0
+;; NOTE: Will error out if no read interest on the nodes has been set.
 (defmethod set-accelerometer-state ((dev iio-dev) on)
   (let* ((devpath (path dev))
 	 (enable-path (uiop:merge-pathnames* "buffer0/enable" devpath)))
     (with-open-file (enable-file enable-path :direction :output :if-exists :overwrite)
-      (format enable-file "~a" (if on "1" "0"))
-      (print "Did the thing"))
+      (format enable-file "~a" (if on "1" "0")))
     (setf (enabled dev) on)))
 
 (defmethod enable-accelerometer ((dev iio-dev)) (set-accelerometer-state dev t))
