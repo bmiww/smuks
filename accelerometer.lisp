@@ -19,10 +19,22 @@
 (defclass dev ()
   ((of-name :initarg :of-name :accessor of-name)
    (of-fullname :initarg :of-fullname :accessor of-fullname)
-   (path :initarg :path :accessor path)))
+   (path :initarg :path :accessor path)
+   (dev-path :initarg :dev-path :accessor dev-path)
+   (open-file :initform nil :accessor open-file)
+   (dev-fd :initform nil :accessor dev-fd)))
 
 (defmethod initialize-instance :after ((dev dev) &key path)
+  (setf (dev-path dev)
+	(merge-pathnames (car (last (split "/" (trim-right (namestring path) :char-bag "/")))) "/dev/"))
   (parse-uevent (merge-pathnames path "uevent") dev))
+
+(defmethod fd ((dev dev))
+  (unless (dev-fd dev)
+    (setf (dev-fd dev) (sb-unix:unix-open (namestring (dev-path dev)) (logior #x0004) sb-unix:o_rdonly)))
+  (unless (open-file dev)
+    (setf (open-file dev) (sb-sys:make-fd-stream (dev-fd dev) :input t :buffering :none :element-type '(unsigned-byte 8) :timeout 2)))
+  (dev-fd dev))
 
 
 ;; ┌┐┌┌─┐┌┬┐┌─┐
@@ -46,6 +58,7 @@
     ;; Example type string: "le:s12/16>>4"
     (with-open-file (type-file (prop-paths-type paths))
       (ppcre:register-groups-bind (endian sign real-bits store-bits shift)
+	  ;; NOTE: This fancy regex does not include REPEAT information. My accelerometer doesn't have it.
 	  ("(le|be):(s|u)(\\d+)/(\\d+)>>(\\d+)" (read-line type-file))
 	(setf value-type
 	      (list :endian endian
@@ -55,8 +68,18 @@
 		    :shift (parse-integer shift)))))))
 
 
-;; (defmethod read-node-value (bytes)
-  ;; (ash))
+(defmethod read-node-value ((node node) bytes)
+  (with-slots (value-type scale) node
+    (let ((value bytes))
+      (*
+       (progn
+	 (if (eq (getf value-type :sign) 's)
+	     (let ((mask (ash 1 (1- (getf value-type :real-bits)))))
+	       (if (>= value mask)
+		   (- value (ash 1 (getf value-type :store-bits)))
+		   value))
+	     value))
+       scale))))
 
 (defmethod set-on-state ((node node) on)
   (with-slots (paths enabled) node
@@ -77,6 +100,7 @@
 ;; ┬┬┌─┐  ┌┬┐┌─┐┬  ┬┬┌─┐┌─┐
 ;; │││ │   ││├┤ └┐┌┘││  ├┤
 ;; ┴┴└─┘  ─┴┘└─┘ └┘ ┴└─┘└─┘
+;; TODO: Rename this one to accelerometer. Since that is what it is.
 (defclass iio-dev (dev)
   ((accel-x :initform (make-instance 'node) :accessor accel-x)
    (accel-y :initform (make-instance 'node) :accessor accel-y)
@@ -84,31 +108,75 @@
    (watermark :initform nil :accessor watermark)
    (enabled :initform nil :accessor enabled)))
 
+(defmethod close-dev ((dev iio-dev))
+  (when (enabled dev)
+    (disable-accelerometer dev)
+    (setf (enabled dev) nil))
 
-(defmethod set-read-interest ((dev iio-dev) prop)
+  (when (open-file dev)
+    (close (open-file dev))
+    (setf (open-file dev) nil))
+
+  (when (dev-fd dev)
+    (sb-unix:unix-close (dev-fd dev))
+    (setf (dev-fd dev) nil)))
+
+(defmethod shared-initialize :after ((dev iio-dev) slots &key)
+  (declare (ignore slots))
+  (read-interest dev :in-accel-x :enable t)
+  (read-interest dev :in-accel-y :enable t)
+  (read-interest dev :in-accel-z :enable t)
+  (set-watermark dev 1)
+  (set-length dev 3)
+  (enable-accelerometer dev))
+
+(defmethod read-interest ((dev iio-dev) prop &key enable)
   (let ((path-part (getf *accel-props* prop)))
     (unless path-part (error "Invalid property: ~a" prop))
     (let* ((prop-paths (get-accel-prop-paths (path dev) (first path-part)))
 	   (node (slot-value dev (cadr path-part))))
       (setf (paths node) prop-paths)
-      (read-initial-values node))))
+      (read-initial-values node)
+      (when enable (enable node)))))
 
-(defmethod shared-initialize :after ((dev iio-dev) slots &key)
-  (declare (ignore slots))
-  (set-read-interest dev :in-accel-x)
-  (set-read-interest dev :in-accel-y)
-  (set-read-interest dev :in-accel-z)
-  (read-watermark dev))
+;; TODO: Lots of shitty assumptions here.
+;; Each value might be more than one byte.
+;; Values might not be in order depicted here.
+;; Not all values might be enabled.
+(defmethod read-accelerometer ((dev iio-dev))
+  (let ((available (read-data-available dev))
+	(file (open-file dev)))
+    (format t "Bytes available: ~a~%" available)
+    (let ((bytes (loop for i from 0 below available collect (read-byte file))))
+      (format t "Bytes: ~a~%" bytes)
+      (loop for i from 0 below (length bytes)
+	    collect (case i
+		      (0 (read-node-value (accel-x dev) (nth i bytes)))
+		      (1 (read-node-value (accel-y dev) (nth i bytes)))
+		      (2 (read-node-value (accel-z dev) (nth i bytes))))))))
+
 
 (defmethod enable-all-axis ((dev iio-dev))
   (enable (accel-x dev))
   (enable (accel-y dev))
   (enable (accel-z dev)))
 
+(defmethod read-data-available ((dev iio-dev))
+  (with-open-file (availability (merge-pathnames "buffer0/data_available" (path dev)))
+    (parse-integer (read-line availability))))
+
 (defmethod read-watermark ((dev iio-dev))
   (let ((watermark-path (merge-pathnames "buffer0/watermark" (path dev))))
     (with-open-file (watermark-file watermark-path)
       (setf (watermark dev) (parse-integer (read-line watermark-file))))))
+
+;; TODO: For now implying that length value is same as watermark
+(defmethod set-length ((dev iio-dev) length)
+  (unless (typep length 'integer) (error "Invalid length: ~a" length))
+  (let ((length-path (merge-pathnames "buffer0/length" (path dev))))
+    (with-open-file (length-file length-path :direction :output :if-exists :overwrite)
+      (format length-file "~a" length))))
+
 
 (defmethod set-watermark ((dev iio-dev) watermark)
   "Watermark. Or the number of samples that can be stored in the device buffer."
@@ -123,8 +191,9 @@
   (let* ((devpath (path dev))
 	 (enable-path (uiop:merge-pathnames* "buffer0/enable" devpath)))
     (with-open-file (enable-file enable-path :direction :output :if-exists :overwrite)
-      (format enable-file (if on "1" "0"))
-      (setf (enabled dev) on))))
+      (format enable-file "~a" (if on "1" "0"))
+      (print "Did the thing"))
+    (setf (enabled dev) on)))
 
 (defmethod enable-accelerometer ((dev iio-dev)) (set-accelerometer-state dev t))
 (defmethod disable-accelerometer ((dev iio-dev)) (set-accelerometer-state dev nil))
@@ -161,7 +230,7 @@
 
 (defun list-iio-devs () (uiop:subdirectories "/sys/bus/iio/devices/"))
 
-(defun find-accelerometer-dev-new ()
+(defun find-accelerometer-dev ()
   (let* ((devs (list-iio-devs))
 	 (devs (mapcar (lambda (dev) (make-instance 'dev :path dev)) devs))
 	 (accel (find-if (lambda (dev) (string= (of-name dev) "accelerometer")) devs)))

@@ -66,6 +66,7 @@
 			     (:file "classes")
 			     (:file "main")
 			     (:file "scanout")))
+	       (:file "accelerometer")
 	       (:file "shaders")
 	       (:file "gl-util")
 	       (:file "egl-util")

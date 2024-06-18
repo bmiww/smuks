@@ -22,6 +22,7 @@
 (defvar *udev-monitor* nil)
 (defvar *libinput* nil)
 (defvar *seat* nil)
+(defvar *accel* nil)
 
 (defnil
     *socket* *smuks-exit*
@@ -69,6 +70,9 @@
   (setf *cursor* (load-cursor-texture))
   (prep-shaders *screen-tracker*)
 
+  (setf *accel* (iio-accelerometer::find-accelerometer-dev))
+
+
   ;; (setf *iio* (init-libiio))
   ;; (enable-accelerometer-scan *iio*)
 
@@ -92,6 +96,8 @@
      (setf *input-poller* (input-listener))
      (log! "Starting the umpteenth poller. Now for seat events...")
      (setf *seat-poller* (seat-listener))
+     (log! "Starting MY accelerometer poller. Waiting for accelerometer events...")
+     (setf *accelerometer-poller* (my-accelerometer-listener))
      ;; (log! "Starting the accelerometer poller. Waiting for accelerometer events...")
      ;; (setf *accelerometer-poller* (accelerometer-listener))
      (log! "Starting the udev poller. Waiting for udev events...")
@@ -173,6 +179,7 @@
 (defun input-listener () (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable)))
 (defun seat-listener () (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable)))
 (defun accelerometer-listener () (cl-async:poll (accelerometer-fd *iio*) 'accelerometer-callback :poll-for '(:readable)))
+(defun my-accelerometer-listener () (cl-async:poll (iio-accelerometer::fd *accel*) 'my-accelerometer-callback :poll-for '(:readable)))
 (defun udev-listener ()
   (udev::%monitor-enable-receiving *udev-monitor*)
   (cl-async:poll (udev:get-fd *udev-monitor*) 'udev-callback :poll-for '(:readable)))
@@ -184,6 +191,22 @@
 (defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm*) :page-flip2 'set-frame-ready)))
 (defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
 (defun accelerometer-callback (ev) (when (ready ev) (determine-orientation (read-accelerometer *iio*))))
+;; (defun my-accelerometer-callback (ev) (when (ready ev)
+				    ;; (handler-case (determine-orientation (iio-accelerometer::read-accelerometer *accel*))
+				      ;; (error (e)
+					;; (log! "Error reading accelerometer: ~a" e)))))
+(defun my-accelerometer-callback (ev)
+  (when (ready ev)
+    (handler-case
+	(progn
+	  ;; (determine-orientation
+	  (print "Read event")
+	  (print (iio-accelerometer::read-accelerometer *accel*))
+	  )
+      ;; )
+      (error (e)
+	(log! "Error reading accelerometer: ~a" e)))))
+
 (defun client-callback (ev)
   (when (ready ev)
     (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
@@ -314,7 +337,7 @@
   (when *wayland* (wl:destroy *wayland*))
 
   (when *seat* (libseat:close-seat *seat*))
-
+  (when *accel* (iio-accelerometer::close-dev *accel*))
   (when *socket*
     (unix-sockets:close-unix-socket *socket*)
     (delete-file +socket-file+))
@@ -336,6 +359,6 @@
     ((cffi:pointer-eq (cl-async::poller-c *wl-poller*) handle) (cl-async:free-poller *wl-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *client-poller*) handle) (cl-async:free-poller *client-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *input-poller*) handle) (cl-async:free-poller *input-poller*))
-    ;; ((cffi:pointer-eq (cl-async::poller-c *accelerometer-poller*) handle) (cl-async:free-poller *accelerometer-poller*))
+    ((cffi:pointer-eq (cl-async::poller-c *accelerometer-poller*) handle) (cl-async:free-poller *accelerometer-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *udev-poller*) handle) (cl-async:free-poller *udev-poller*))
     (t (error "Unknown poller handle"))))
