@@ -72,6 +72,7 @@
   (make-instance 'xdg-wm-base:global :display display :dispatch-impl 'wm-base)
   (make-instance 'dmabuf-global :display display :dispatch-impl 'dmabuf)
   (make-instance 'layer-shell-global :display display :dispatch-impl 'layer-shell)
+  (make-instance 'zxdg-decoration-manager-v1:global :display display :dispatch-impl 'decoration-manager)
   (setf (outputs display)
 	(loop for screen in screens
 	      collect (init-output display screen))))
