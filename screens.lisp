@@ -31,6 +31,7 @@
    (screen-y :initarg :screen-y :initform 0 :accessor screen-y)))
 
 (defmethod (setf orientation) (orientation (screen screen))
+  (unless orientation (error "Provided orientation cannot be nil."))
   (setf (slot-value screen 'orientation) orientation)
   (recalculate-dimensions (tracker screen))
   (prep-shaders screen))

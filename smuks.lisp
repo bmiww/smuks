@@ -130,10 +130,11 @@
 	     (x (abs x)) (z (abs z))
 	     (new-orient
 	       (cond
-		 ((and z-neg (> z x)) :landscape)
-		 ((> z x) :landscape-i)
-		 ((and x-neg (> x z)) :portrait)
-		 ((> x z) :portrait-i))))
+		 ((and z-neg (>= z x)) :portrait)
+		 ((>= z x) :portrait-i)
+		 ((and x-neg (>= x z)) :landscape)
+		 ((>= x z) :landscape-i)
+		 (t (error "Trap! This orientation check shouldn't be possible to reach")))))
 	(unless (eq current-orient new-orient)
 	  (setf (orientation dsi-screen) new-orient)
 	  ;; TODO: For now disabling layout recalculation on orientation change
