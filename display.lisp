@@ -214,4 +214,4 @@
 		   y (+ 0 (screen-y screen))
 		   width width-per
 		   height d-height)
-	     (xdg-toplevel:send-configure window width height '(1)))))))
+	     (configure-toplevel window))))))

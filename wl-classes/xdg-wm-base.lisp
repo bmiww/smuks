@@ -31,12 +31,7 @@
   (let ((display (wl:get-display xdg)))
     (wl:up-if 'toplevel xdg id)
     (new-toplevel display xdg)
-
-    ;; TODO: the last argument - the state - is actually not an enum
-    ;; It's an array. So i can't really use the enum logic here
-    ;; The xml also doesn't define that the array here would be filled with enum values
-    (xdg-toplevel:send-configure xdg (width xdg) (height xdg) '(1))
-    (xdg-surface:send-configure xdg (incf (configure-serial xdg)))))
+    (configure-toplevel xdg)))
 
 (defmethod xdg-surface:get-popup ((xdg xdg-surface) id parent positioner)
   (wl:up-if 'popup xdg id :positioner positioner :grab-parent parent)
@@ -79,6 +74,13 @@ Destroying the grabbable object will also destroy the grab child"))
    (max-width :initform 0 :accessor max-width)
    (max-height :initform 0 :accessor max-height)
    (desktop :initform nil :accessor desktop)))
+
+(defmethod configure-toplevel ((toplevel toplevel))
+  ;; TODO: the last argument - the state - is actually not an enum
+  ;; It's an array. So i can't really use the enum logic here
+  ;; The xml also doesn't define that the array here would be filled with enum values
+  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) '(1))
+  (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
   (setf (title toplevel) title))

@@ -137,10 +137,8 @@
 		 (t (error "Trap! This orientation check shouldn't be possible to reach")))))
 	(unless (eq current-orient new-orient)
 	  (setf (orientation dsi-screen) new-orient)
-	  ;; TODO: For now disabling layout recalculation on orientation change
-	  ;; Since i'm working on windowing on different screens/desktops
-	  ;; (recalculate-layout *wayland*)
-	  )))))
+	  (let ((related-desktop (find-screen-desktop *wayland* dsi-screen)))
+	    (recalculate-layout related-desktop)))))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │
