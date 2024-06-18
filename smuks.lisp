@@ -11,9 +11,9 @@
 
 (defvar +socket-file+ "/tmp/smuks.socket")
 
-(defvar *enable-wayland-debug-logs* "1")
-(defvar *enable-mesa-debug-logs* "1")
-(defvar *enable-egl-debug-logs* "debug")
+(defvar *enable-wayland-debug-logs* "")
+(defvar *enable-mesa-debug-logs* "")
+(defvar *enable-egl-debug-logs* "") ;; "debug"
 
 (defvar *drm* nil)
 (defvar *wayland* nil)
