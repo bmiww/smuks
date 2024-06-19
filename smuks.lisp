@@ -13,7 +13,7 @@
 
 (defvar *enable-wayland-debug-logs* "")
 (defvar *enable-mesa-debug-logs* "")
-(defvar *enable-egl-debug-logs* "") ;; "debug"
+(defvar *enable-egl-debug-logs* "fatal") ;; "debug"
 
 (defvar *drm* nil)
 (defvar *wayland* nil)
