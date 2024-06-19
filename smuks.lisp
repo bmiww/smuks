@@ -5,8 +5,8 @@
 ;; ╚════██║██║╚██╔╝██║██║   ██║██╔═██╗ ╚════██║
 ;; ███████║██║ ╚═╝ ██║╚██████╔╝██║  ██╗███████║
 ;; ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
-;; NOTE: SWC is a decent source of checking examples of what happens in a compositor
-;; https://github.com/michaelforney/swc/blob/master/libswc/swc.c
+;; NOTE: Command i usually use to fire up a debug session via ssh (xdg session id might differ)
+;; DEBUG_SMUKS=1 XDG_SESSION_ID=1 sbcl --dynamic-space-size 4028 --eval '(ql:quickload :swank)' --eval '(swank:create-server :port 25252 :dont-close t)' --eval '(ql:quickload :smuks)'
 (in-package :smuks)
 
 (defvar +socket-file+ "/tmp/smuks.socket")

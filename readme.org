@@ -1,5 +1,13 @@
 
 * Dependencies
+** Quicklisp dists
+*** Ultralisp
+https://ultralisp.org/
+(ql-dist:install-dist "http://dist.ultralisp.org/" :prompt nil)
+*** Shirakumo
+http://dist.shirakumo.org/shirakumo/
+(ql-dist:install-dist "http://dist.shirakumo.org/shirakumo.txt" :prompt nil)
+
 ** libiio
 https://man.archlinux.org/man/libiio.3.en
 https://github.com/mihaiolteanu/cl-libiio
