@@ -84,17 +84,19 @@
 
 
 (defmethod prep-shaders ((screen screen))
-  (let ((width (screen-width screen)) (height (screen-height screen)) (rot (shader-rot-val screen)))
+  (let ((width (screen-width screen)) (height (screen-height screen)) (rot (shader-rot-val screen))
+	(gl-version (gl-version (tracker screen))))
     ;; NOTE: Binds the first framebuffer to generate the shaders. Don't think that in itself is necessary.
     ;; But regardless, both buffer dimensions should be identical here.
     (loop for framebuffer in (framebuffers screen)
 	  do (prep-gl-implementation (framebuffer-id framebuffer) width height))
 
-    (setf (shaders screen) `(,(shader-init:create-rect-shader width height rot)
-			     ,(restart-case (shader-init:create-texture-shader width height rot)
+    (setf (shaders screen) `(,(shader-init:create-rect-shader width height rot gl-version)
+			     ,(restart-case (shader-init:create-texture-shader width height rot gl-version)
 				(ignore () (nth 1 (shaders screen))))
-			     ,(restart-case (shader-init:create-capsule-shader width height rot)
-				(ignore () (nth 2 (shaders screen))))))))
+			     ;; ,(restart-case (shader-init:create-capsule-shader width height rot gl-version)
+				;; (ignore () (nth 2 (shaders screen))))
+			     ))))
 
 (defmethod update-projections ((screen screen) projection)
   (let ((projection (sglutil:projection-matrix (screen-width screen) (screen-height screen) (shader-rot-val screen))))
@@ -130,6 +132,7 @@
 (defclass screen-tracker ()
   ((drm :initarg :drm :accessor drm)
    (egl :initarg :egl :accessor egl)
+   (gl-version :initarg :gl-version :accessor gl-version)
    (screens :initform nil :accessor screens)
    (max-width :initform 0 :accessor max-width)
    (max-height :initform 0 :accessor max-height)))
@@ -176,6 +179,13 @@
 
 (defmethod screen-by-crtc ((tracker screen-tracker) crtc-id)
   (find-if (lambda (screen) (eq (crtc-id (connector screen)) crtc-id)) (screens tracker)))
+
+
+(defmethod prep-shaders2 ((tracker screen-tracker) &key gl-version)
+  (when gl-version (setf (gl-version tracker) gl-version))
+  (loop for screen in (screens tracker)
+	do (prep-shaders screen)))
+
 
 (defmethod prep-shaders ((tracker screen-tracker))
   (loop for screen in (screens tracker)

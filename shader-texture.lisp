@@ -22,7 +22,11 @@
    (attr-position)
    (vao)))
 
-(defparameter vertex-shader-texture "
+
+;; ┌─┐┬  ┌─┐┬
+;; │ ┬│  └─┐│
+;; └─┘┴─┘└─┘┴─┘
+(defparameter vertex-shader-texture-310-es "
 #version 310 es
 uniform mat3 translation;
 uniform mat3 tex_scaling_matrix;
@@ -49,7 +53,7 @@ void main() {
 }")
 
 
-(defparameter fragment-shader-abgr "
+(defparameter fragment-shader-abgr-310-es "
 #version 310 es
 
 precision mediump float;
@@ -65,10 +69,65 @@ void main() {
     color = tex_color;
 }")
 
-(defmethod initialize-instance :before ((program shader) &key projection)
+
+(defparameter vertex-shader-texture-100 "
+#version 100
+
+uniform mat3 translation;
+uniform mat3 tex_scaling_matrix;
+uniform mat3 projection;
+
+attribute vec2 vert;
+attribute vec4 vert_position;
+
+varying vec2 v_tex_coords;
+
+mat2 scale(vec2 scale_vec){
+    return mat2(
+        scale_vec.x, 0.0,
+        0.0, scale_vec.y
+    );
+}
+
+void main() {
+    vec2 vert_transform_translation = vert_position.xy;
+    vec2 vert_transform_scale = vert_position.zw;
+    vec3 position = vec3(vert * scale(vert_transform_scale) + vert_transform_translation, 1.0);
+    v_tex_coords = (tex_scaling_matrix * position).xy;
+    gl_Position = vec4(projection * translation * position, 1.0);
+}")
+
+
+(defparameter fragment-shader-abgr-100 "
+#version 100
+
+precision mediump float;
+uniform sampler2D sampler;
+varying vec2 v_tex_coords;
+
+void main() {
+    vec4 tex_color = texture2D(sampler, v_tex_coords);
+    if (tex_color.a < 0.1) {
+       tex_color = vec4(0.0, 0.0, 0.0, 0.2);
+    }
+
+    gl_FragColor = tex_color;
+}")
+
+;; ┌─┐┌─┐┌┬┐┌─┐
+;; │  │ │ ││├┤
+;; └─┘└─┘─┴┘└─┘
+(defmethod initialize-instance :before ((program shader) &key projection gl-version)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position
 	       uni-translation uni-texture-scaling uni-sampler gl-buffer-array) program
-    (setf pointer (shaders:create-shader vertex-shader-texture fragment-shader-abgr))
+
+    (let ((fragment-shader (case gl-version
+			     (:GL-2-0 fragment-shader-abgr-100)
+			     (:GL-3-1 fragment-shader-abgr-310-es)))
+	  (vertex-shader (case gl-version
+			   (:GL-2-0 vertex-shader-texture-100)
+			   (:GL-3-1 vertex-shader-texture-310-es))))
+      (setf pointer (shaders:create-shader vertex-shader fragment-shader)))
 
     (setf instanced-vbo (gl:gen-buffer))
     (setf runtime-vbo (gl:gen-buffer))

@@ -22,6 +22,7 @@
 (defvar *libinput* nil)
 (defvar *seat* nil)
 (defvar *accel* nil)
+(defvar *gl-version* nil)
 
 (defnil
     *socket* *smuks-exit*
@@ -38,6 +39,8 @@
   (setf (uiop/os:getenv "WAYLAND_DEBUG") *enable-wayland-debug-logs*)
   (setf (uiop/os:getenv "MESA_DEBUG") *enable-mesa-debug-logs*)
   (setf (uiop/os:getenv "EGL_LOG_LEVEL") *enable-egl-debug-logs*)
+  (setf (uiop/os:getenv "XDG_SESSION_ID") "5")
+
 
   (unless (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
     (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
@@ -58,16 +61,15 @@
 		     ;; But it might also match main-device proper
 		     ;; It could also be interesting to have more than one dev-t.
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
-			      :egl *egl*
 			      :screen-tracker *screen-tracker*))
 
-  (setf (values *egl* *egl-context*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
+  (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
   (setf (egl *screen-tracker*) *egl*)
 
 
   (setf *cursor* (load-cursor-texture))
-  (prep-shaders *screen-tracker*)
+  (prep-shaders2 *screen-tracker* :gl-version *gl-version*)
 
   (setf *accel* (iio-accelerometer::find-accelerometer-dev))
 

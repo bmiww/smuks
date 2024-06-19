@@ -25,7 +25,10 @@
    (attr-color)
    (vao)))
 
-(defparameter vertex-shader-rectangle "
+;; ┌─┐┬  ┌─┐┬
+;; │ ┬│  └─┐│
+;; └─┘┴─┘└─┘┴─┘
+(defparameter vertex-shader-rectangle-310-es "
 #version 310 es
 
 uniform mat3 projection;
@@ -52,7 +55,7 @@ void main() {
 }
 ")
 
-(defparameter fragment-shader-rectangle "
+(defparameter fragment-shader-rectangle-310-es "
 #version 310 es
 
 precision mediump float;
@@ -64,9 +67,60 @@ void main() {
 }
 ")
 
-(defmethod initialize-instance :before ((program shader) &key projection)
+(defparameter vertex-shader-rectangle-100 "
+#version 100
+
+uniform mat3 projection;
+
+attribute vec2 vert;
+attribute vec4 position;
+attribute vec4 color;
+varying vec4 incolor;
+
+mat2 scale(vec2 scale_vec){
+    return mat2(
+        scale_vec.x, 0.0,
+        0.0, scale_vec.y
+    );
+}
+
+void main() {
+    vec2 transform_translation = position.xy;
+    vec2 transform_scale = position.zw;
+    vec3 position = vec3(vert * scale(transform_scale) + transform_translation, 1.0);
+
+    incolor = color;
+    gl_Position = vec4(projection * position, 1.0);
+}
+")
+
+(defparameter fragment-shader-rectangle-100 "
+#version 100
+
+precision mediump float;
+varying vec4 incolor;
+
+void main() {
+    gl_FragColor = incolor;
+}
+")
+
+
+;; ┌─┐┌─┐┌┬┐┌─┐
+;; │  │ │ ││├┤
+;; └─┘└─┘─┴┘└─┘
+(defmethod initialize-instance :before ((program shader) &key projection gl-version)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position attr-color gl-buffer-array) program
-    (setf pointer (shaders:create-shader vertex-shader-rectangle fragment-shader-rectangle))
+
+
+    (let ((fragment-shader (case gl-version
+			     (:GL-2-0 fragment-shader-rectangle-100)
+			     (:GL-3-1 fragment-shader-rectangle-310-es)))
+	  (vertex-shader (case gl-version
+			   (:GL-2-0 vertex-shader-rectangle-100)
+			   (:GL-3-1 vertex-shader-rectangle-310-es))))
+      (setf pointer (shaders:create-shader vertex-shader fragment-shader)))
+
     (setf instanced-vbo (gl:gen-buffer))
     (setf runtime-vbo (gl:gen-buffer))
     (setf vao (gl:gen-vertex-array))

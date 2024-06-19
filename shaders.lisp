@@ -25,7 +25,8 @@
   ((previous :initform nil :accessor previous)
    (pointer :accessor pointer)
    (projection :accessor projection)
-   (uni-projection :accessor uni-projection)))
+   (uni-projection :accessor uni-projection)
+   (gl-version :initarg :gl-version :accessor gl-version)))
 
 (defgeneric update-projection (shader projection))
 (defmethod update-projection ((shader shader-base) new-projection)

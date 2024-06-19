@@ -20,11 +20,10 @@
    check-egl-error))
 (in-package :smuks-egl-util)
 
-(defvar context-attribs
-  (list
-   :context-major-version 3
-   :context-minor-version 1
-   :none))
+(defvar context-attribs-3-1 '(:context-major-version 3 :context-minor-version 1 :none))
+(defvar context-attribs-2-0 '(:context-major-version 2 :context-minor-version 0 :none))
+(defvar context-attempts (list context-attribs-3-1 context-attribs-2-0))
+(defvar context-versions (list context-attribs-3-1 :gl-3-1 context-attribs-2-0 :gl-2-0))
 
 ;; ┌─┐┌─┐┌┐┌┌┬┐┌─┐─┐ ┬┌┬┐
 ;; │  │ ││││ │ ├┤ ┌┴┬┘ │
@@ -39,15 +38,30 @@
     (egl:bind-wl-display display wl-display) (check-egl-error "Binding wayland")
     (egl:bind-api :opengl-es-api)            (check-egl-error "Binding api")
 
-    (let* ((context (apply 'egl:create-context
-			   `(,display ,(cffi:null-pointer) ,(cffi:null-pointer) ,@context-attribs))))
-      (check-egl-error "Initializing egl context")
+
+    (let* ((context nil) (attempt (first context-attempts)))
+      (flet ((try-context ()
+	       (setf context (apply 'egl:create-context
+				    `(,display
+				      ,(cffi:null-pointer)
+				      ,(cffi:null-pointer)
+				      ,@attempt)))
+	       (check-egl-error "Initializing egl context")))
+
+	(handler-case (try-context)
+	  (error (e)
+	    (setf attempt (cadr (member attempt context-attempts :test 'eql)))
+	    (if attempt
+		(progn
+		  (util:log! "Failed to create context. Trying next context version" e)
+		  (try-context))
+		(error "None of the GL context versions worked")))))
 
       (when (cffi:null-pointer-p context) (error "Failed to create context (got null pointer)"))
       (egl:make-current display (cffi:null-pointer) (cffi:null-pointer) context)
       (when (cffi:null-pointer-p (egl:get-current-context)) (error "Context not CURRENT (got null pointer)"))
 
-      (values display context))))
+      (values display context (getf context-versions attempt)))))
 
 ;; TODO: For some reason make-current and terminate here are hanging
 ;; Don't know when i introduced this bug
