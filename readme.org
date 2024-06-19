@@ -8,23 +8,15 @@ https://ultralisp.org/
 http://dist.shirakumo.org/shirakumo/
 (ql-dist:install-dist "http://dist.shirakumo.org/shirakumo.txt" :prompt nil)
 
-** libiio
-https://man.archlinux.org/man/libiio.3.en
-https://github.com/mihaiolteanu/cl-libiio
-On archlinux this is just `pacman -S libiio`
-This one was missing on my laptop and the pinetab that i'm using.
-At the time of writing - i'm only starting to use the upstream package.
-In case if it doesn't work - it's entirely possible that i made adjustments and didn't upstream
-or properly redistribute my changes.
-*** Udev rule for accessing iio devices
+** Udev rule for accessing iio devices
 I don't know how to use udev, so here is what i'm basing the rule file idea off of
 https://stackoverflow.com/questions/52318133/how-to-change-specific-file-permissions-using-udev-rule
 The basic idea is adding a group and then telling the installing user that they are supposed to add themselves to this group
 ?Shitty? for package manager installs though (i'm not well versed in this yet)
 
-** Shirakumo distribution
-Can be added via quicklisp:
-(ql-dist:install-dist "http://dist.shirakumo.org/shirakumo.txt")
+*** TODO: connect with libseat
+Now that i've got my custom iio interaction - it should be relatively easy to use libseat open func
+to get an elevated open function
 
 ** Command to run the whole thing
 $ XDG_SESSION_ID=1 sbcl --eval "(ql:quickload :swank)" \
@@ -60,3 +52,11 @@ Setting the id seems to work mostly.
 *** Problems with the approach
 The libseat library that is used - seems to not want to use the XDG_SESSION_ID for some reason, and i had to build it myself
 before things worked out on archlinux-arm. The version at the time of writing is 0.8.0
+
+* Debugging
+** SSH
+
+LIES (but maybe still needed. Can't figure out why some of my devices don't like to activate the "main" logind session):
+If you want to start the compositor via SSH - make sure that you have set the value UsePAM to yes
+in /etc/ssh/sshd_config
+Otherwise - libseat/logind won't be able to activate a session
