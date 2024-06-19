@@ -33,7 +33,8 @@
   (with-slots (pointer projection uni-projection) shader
     (setf projection new-projection)
     (gl:use-program pointer)
-    (gl:uniform-matrix-3fv uni-projection projection t)))
+    (gl:uniform-matrix-3fv uni-projection projection t)
+    (check-gl-error "buffer-data uniform-matrix-3fv")))
 
 ;; ┌─┐┬ ┬┌┐┌┌─┐┌─┐
 ;; ├┤ │ │││││  └─┐
@@ -43,6 +44,7 @@
   (let ((vertex-shader (gl:create-shader :vertex-shader))
 	(fragment-shader (gl:create-shader :fragment-shader))
 	(shader-program (gl:create-program)))
+
     (gl:shader-source vertex-shader vertex)
     (check-gl-error "Vertex shader sourcing")
     (gl:shader-source fragment-shader fragment)
@@ -61,7 +63,9 @@
 
     (gl:attach-shader shader-program vertex-shader)
     (gl:attach-shader shader-program fragment-shader)
+
     (gl:link-program shader-program)
+
 
     (when (not (gl:get-program shader-program :link-status))
       (format t "Shader program info: ~a~%" (gl:get-program-info-log shader-program))
