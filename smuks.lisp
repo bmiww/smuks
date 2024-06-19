@@ -39,7 +39,6 @@
   (setf (uiop/os:getenv "WAYLAND_DEBUG") *enable-wayland-debug-logs*)
   (setf (uiop/os:getenv "MESA_DEBUG") *enable-mesa-debug-logs*)
   (setf (uiop/os:getenv "EGL_LOG_LEVEL") *enable-egl-debug-logs*)
-  (setf (uiop/os:getenv "XDG_SESSION_ID") "5")
 
 
   (unless (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))

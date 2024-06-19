@@ -57,8 +57,16 @@
       (setf enabled (string= (read-line enable-file) "1")))
     (with-open-file (index-file (prop-paths-index paths))
       (setf index (parse-integer (read-line index-file))))
-    (with-open-file (scale-file (prop-paths-scale paths))
-      (setf scale (parse-float (read-line scale-file))))
+
+    (handler-case
+	(with-open-file (scale-file (prop-paths-scale paths))
+	  (setf scale (parse-float (read-line scale-file))))
+      ;; NOTE: Some accelerometers define a common scale file for all nodes
+      ;; TODO: SBCL exclusive
+      (sb-ext:file-does-not-exist (e)
+	(with-open-file (scale-file (prop-paths-scale-fallback paths))
+	  (setf scale (parse-float (read-line scale-file))))))
+
     ;; Example type string: "le:s12/16>>4"
     (with-open-file (type-file (prop-paths-type paths))
       (ppcre:register-groups-bind (endian sign real-bits store-bits shift-amount)
@@ -200,6 +208,7 @@
   (index nil)
   (type nil)
   (scale nil)
+  (scale-fallback nil)
   (raw nil))
 
 (defun get-accel-prop-paths (devpath prop-path)
@@ -210,6 +219,7 @@
 		       :index (scan-el "index")
 		       :type (scan-el "type")
 		       :scale (base-el "scale")
+		       :scale-fallback (build-path (format nil "~a_~a" "in_accel" "scale"))
 		       :raw (base-el "raw")))))
 
 (defun parse-uevent (path dev)
