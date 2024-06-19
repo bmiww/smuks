@@ -118,6 +118,7 @@ void main() {
 ;; │  │ │ ││├┤
 ;; └─┘└─┘─┴┘└─┘
 (defmethod initialize-instance :before ((program shader) &key projection gl-version)
+  (setf (gl-version program) gl-version)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position
 	       uni-translation uni-texture-scaling uni-sampler gl-buffer-array) program
 
@@ -177,8 +178,8 @@ void main() {
 	(gl:enable-vertex-attrib-array attr-vert)
 	(gl:vertex-attrib-pointer attr-vert 2 :float nil (* 2 4) (cffi:null-pointer))
 
-	(gl:uniform-matrix-3fv uni-translation translation-matrix t)
-	(gl:uniform-matrix-3fv uni-texture-scaling tex-scaling-matrix t)
+	(uniform-matrix-3fv program uni-translation translation-matrix)
+	(uniform-matrix-3fv program uni-texture-scaling tex-scaling-matrix)
 
 	(gl:bind-buffer :array-buffer runtime-vbo)
 
@@ -191,8 +192,10 @@ void main() {
 	(gl:enable-vertex-attrib-array attr-position)
 	(gl:vertex-attrib-pointer attr-position 4 :float nil (* 4 4) (cffi:null-pointer))
 
-	(%gl:vertex-attrib-divisor attr-vert 0)
-	(%gl:vertex-attrib-divisor attr-position 1)
+
+
+	;; (%gl:vertex-attrib-divisor attr-vert 0)
+	;; (%gl:vertex-attrib-divisor attr-position 1)
 
 	(gl:draw-arrays :triangle-strip 0 4)))))
 

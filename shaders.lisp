@@ -15,7 +15,10 @@
    ;; Shader base
    shader-base update-projection pointer projection uni-projection
 
-   defshader update-shaders-of-name))
+   defshader update-shaders-of-name
+
+   gl-version
+   uniform-matrix-3fv))
 
 (in-package :shaders)
 
@@ -33,8 +36,22 @@
   (with-slots (pointer projection uni-projection) shader
     (setf projection new-projection)
     (gl:use-program pointer)
-    (gl:uniform-matrix-3fv uni-projection projection t)
+
+    (uniform-matrix-3fv shader uni-projection projection)
     (check-gl-error "buffer-data uniform-matrix-3fv")))
+
+(defmethod uniform-matrix-3fv ((shader shader-base) uniform matrix)
+  "A utility wrapper for older GL versions.
+GL es does not like the transpose flag."
+  (gl:uniform-matrix-3fv uniform
+			 (sglutil:mat->arr
+			  (case (gl-version shader)
+			    (:gl-2-0 (sglutil:transpose-mat matrix))
+			    (:gl-3-0 matrix)))
+			 (case (gl-version shader)
+			   (:gl-2-0 nil)
+			   (:gl-3-0 t))))
+
 
 ;; ┌─┐┬ ┬┌┐┌┌─┐┌─┐
 ;; ├┤ │ │││││  └─┐

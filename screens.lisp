@@ -75,7 +75,6 @@
 
 (defmethod shader ((screen screen) (type (eql :rect))) (car (shaders screen)))
 (defmethod shader ((screen screen) (type (eql :texture))) (cadr (shaders screen)))
-(defmethod shader ((screen screen) (type (eql :capsule))) (nth 2 (shaders screen)))
 (defmethod next-framebuffer ((screen screen))
   (let ((framebuffers (framebuffers screen))
 	(active (active-framebuffer screen)))
@@ -93,10 +92,7 @@
 
     (setf (shaders screen) `(,(shader-init:create-rect-shader width height rot gl-version)
 			     ,(restart-case (shader-init:create-texture-shader width height rot gl-version)
-				(ignore () (nth 1 (shaders screen))))
-			     ;; ,(restart-case (shader-init:create-capsule-shader width height rot gl-version)
-				;; (ignore () (nth 2 (shaders screen))))
-			     ))))
+				(ignore () (nth 1 (shaders screen))))))))
 
 (defmethod update-projections ((screen screen) projection)
   (let ((projection (sglutil:projection-matrix (screen-width screen) (screen-height screen) (shader-rot-val screen))))
@@ -319,9 +315,7 @@
   (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
 						    :x *red-x* :y *red-y* :w 200.0 :h 50.0
 						    :color '(1.0 0.0 0.0 0.6))))
-  (shaders.capsule:draw (shader screen :capsule) `(,(shaders.capsule::make-rect
-						    :x 400.0 :y 600.0 :w 200.0 :h 200.0
-						    :color '(0.2 0.2 0.2 1.0)))))
+  )
 
 (defvar *y-2-pos* 220.0)
 (defvar y-2-up t)
@@ -337,9 +331,7 @@
   (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
 						    :x 500.0 :y (next-y-2-pos) :w 200.0 :h 150.0
 						    :color '(0.2 0.2 0.2 1.0))))
-  (shaders.capsule:draw (shader screen :capsule) `(,(shaders.capsule::make-rect
-						    :x 800.0 :y 600.0 :w 200.0 :h 150.0
-						    :color '(0.2 0.2 0.2 1.0)))))
+  )
 
 ;; NOTE: Accidentally managed to draw like a laying down exclamation mark with this
 (defun scene-nothing-yet (screen)
@@ -368,9 +360,9 @@
 
 (defun scene-select-screen-pos (screen)
   (let ((size *stupid-size*))
-    (flet ((draw-capsule (x y)
-	     (shaders.capsule:draw (shader screen :capsule) `(,(shaders.capsule::make-rect
+    (flet ((draw-rect (x y)
+	     (shaders.rectangle:draw (shader screen :capsule) `(,(shaders.rectangle::make-rect
 								:x x :y y :w size :h size
 								:color '(0.2 0.2 0.2 1.0))))))
       (dolist (pos (click-locations screen size))
-	(draw-capsule (first pos) (second pos))))))
+	(draw-rect (first pos) (second pos))))))

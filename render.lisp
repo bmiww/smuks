@@ -22,7 +22,7 @@
       (gl:viewport 0 0 (width screen) (height screen))
       (gl:clear :color-buffer-bit)
 
-      ;; (render-scene screen)
+      (render-scene screen)
 
       ;; (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
       (setf cursor-drawn (render-desktop screen desktop))

@@ -17,7 +17,7 @@
    create-gl-framebuffer
    create-image-texture create-texture
    projection-matrix
-   matrix->array
+   matrix->array transpose-mat mat->arr
 
    translation-matrix
    scaling-matrix
@@ -157,8 +157,11 @@
     (setf (math:mcref mat 1 1) cos)
     mat))
 
-(defun projection-matrix (width height &optional (rotation 0))
-  (math:marr3 (math:m* (rotation-matrix rotation) (ortho-matrix width height))))
+(defun transpose-mat (mat) (math:mtranspose mat))
+(defun mat->arr (mat) (math:marr3 mat))
 
-(defun translation-matrix (x y) (math:marr3 (math:mtranslation (math:vec (flo x) (flo y)))))
-(defun scaling-matrix (width height) (math:marr3 (math:mscaling (math:vec (flo (/ 1 width)) (flo (/ 1 height))))))
+(defun projection-matrix (width height &optional (rotation 0))
+  (math:m* (rotation-matrix rotation) (ortho-matrix width height)))
+
+(defun translation-matrix (x y) (math:mtranslation (math:vec (flo x) (flo y))))
+(defun scaling-matrix (width height) (math:mscaling (math:vec (flo (/ 1 width)) (flo (/ 1 height)))))

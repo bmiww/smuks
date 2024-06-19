@@ -110,9 +110,8 @@ void main() {
 ;; │  │ │ ││├┤
 ;; └─┘└─┘─┴┘└─┘
 (defmethod initialize-instance :before ((program shader) &key projection gl-version)
+  (setf (gl-version program) gl-version)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position attr-color gl-buffer-array) program
-
-
     (let ((fragment-shader (case gl-version
 			     (:GL-2-0 fragment-shader-rectangle-100)
 			     (:GL-3-1 fragment-shader-rectangle-310-es)))
@@ -162,8 +161,16 @@ void main() {
     (gl:enable-vertex-attrib-array attr-color)
     (gl:vertex-attrib-pointer attr-color 4 :float nil (* 4 4) (cffi:inc-pointer (cffi:null-pointer) (* 4 4 (length rects))))
 
-    (%gl:vertex-attrib-divisor attr-vert 0)
-    (%gl:vertex-attrib-divisor attr-position 1)
-    (%gl:vertex-attrib-divisor attr-color 1)
 
-    (gl:draw-arrays-instanced :triangle-strip 0 4 (length rects))))
+    (case (gl-version program)
+      (:GL-2-0
+       (progn
+	 ;; (gl:draw-arrays :triangle-strip 0 9)
+	 ))
+      (:GL-3-1
+       (progn
+	 (%gl:vertex-attrib-divisor attr-vert 0)
+	 (%gl:vertex-attrib-divisor attr-position 1)
+	 (%gl:vertex-attrib-divisor attr-color 1)
+
+	 (gl:draw-arrays-instanced :triangle-strip 0 4 (length rects)))))))

@@ -60,3 +60,5 @@ LIES (but maybe still needed. Can't figure out why some of my devices don't like
 If you want to start the compositor via SSH - make sure that you have set the value UsePAM to yes
 in /etc/ssh/sshd_config
 Otherwise - libseat/logind won't be able to activate a session
+
+Also - archlinux seems to do something weird with the lib compilation. Setting XDG_SESSION_ID env variable doesn't help at all.
