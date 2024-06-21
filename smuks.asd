@@ -49,7 +49,7 @@
 	       ;; In case if anyone needs it for desktop, hit me up.
 	       ;; The flag could be resolved truthy by checking for the libiio.so file presence.
 	       ;; Or just deliver with it. Or compile it in somehow.
-	       #:cl-intbytes ;; NOTE: Used for the accelerometer package which could be extracted
+	       #:lisp-binary ;; NOTE: Used for the accelerometer package which could be extracted
 	       #:mmap
 	       #:livesupport
 	       #:unix-sockets
