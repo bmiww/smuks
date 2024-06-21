@@ -50,10 +50,10 @@ GL es does not like the transpose flag."
 			 (sglutil:mat->arr
 			  (case (gl-version shader)
 			    (:gl-2-0 (sglutil:transpose-mat matrix))
-			    (:gl-3-0 matrix)))
+			    (:gl-3-1 matrix)))
 			 (case (gl-version shader)
 			   (:gl-2-0 nil)
-			   (:gl-3-0 t))))
+			   (:gl-3-1 t))))
 
 
 ;; ┌─┐┬ ┬┌┐┌┌─┐┌─┐
