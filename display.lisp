@@ -210,9 +210,11 @@
       (loop
 	for window in (windows desktop)
 	for i from 0
-	do (with-slots (x y width height) window
-	     (setf x (+ (* i width-per) (screen-x screen))
-		   y (+ 0 (screen-y screen))
-		   width width-per
-		   height d-height)
+	do (progn
+	     (setf
+	      (x window) (+ (* i width-per) (screen-x screen))
+	      (y window) (screen-y screen)
+	      (width window) width-per
+	      (height window) d-height)
+
 	     (configure-toplevel window))))))

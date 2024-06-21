@@ -14,8 +14,8 @@
    (texture :initform nil :accessor texture)
    (texture-type :initform nil :accessor texture-type)
    (new-dimensions? :initform t :accessor new-dimensions?)
-   (width :initform -1 :accessor width)
-   (height :initform -1 :accessor height)
+   (width :initform -1)
+   (height :initform -1)
    (x :initform -1 :accessor x)
    (y :initform -1 :accessor y)
    (pending-damage :initform nil :accessor pending-damage)
@@ -24,6 +24,19 @@
    (compositor :initform nil :initarg :compositor :accessor compositor)
    (frame-callbacks :initform nil :accessor frame-callbacks)
    (buffer-scale :initform 1 :accessor buffer-scale)))
+
+
+(defmethod width ((surface surface)) (slot-value surface 'width))
+(defmethod height ((surface surface)) (slot-value surface 'height))
+
+(defmethod (setf width) (width (surface surface))
+  (setf (slot-value surface 'width) width)
+  (setf (slot-value surface 'new-dimensions?) t))
+
+(defmethod (setf height) (height (surface surface))
+  (setf (slot-value surface 'height) height)
+  (setf (slot-value surface 'new-dimensions?) t))
+
 
 ;; ┌─┐┌─┐┌┬┐┌┬┐┬┌┬┐
 ;; │  │ ││││││││ │
@@ -137,7 +150,7 @@ Or some such."
 ;; ├┴┐│ │├┤ ├┤ ├┤ ├┬┘
 ;; └─┘└─┘└  └  └─┘┴└─
 (defmacro commit-buffer (surface &body body)
-  `(let ((new-dimensions? (new-dimensions? ,surface)))
+  `(with-slots (new-dimensions?) ,surface
      ;; TODO: These are still needed since i don't know where to find the
      ;; width height for pointer surface for example
      (unless (eq (width (pending-buffer ,surface)) (width ,surface))
@@ -148,14 +161,16 @@ Or some such."
        (setf (height ,surface) (height (pending-buffer ,surface)))
        (setf new-dimensions? t))
 
-     (when (and new-dimensions? (texture ,surface)) (gl:delete-texture (sglutil:tex-id (texture ,surface))))
+     (when (and new-dimensions? (texture ,surface))
+       (gl:delete-texture (sglutil:tex-id (texture ,surface)))
+       (setf (texture ,surface) nil))
 
      ;; TODO: the texture here is implied and a bit annoying
      ;; Could add it as a reference in the macro args
-     (let ((texture (unless new-dimensions? (texture ,surface))))
+     (let ((texture (texture ,surface)))
        ,@body)
 
-     (setf (new-dimensions? ,surface) nil)
+     (setf new-dimensions? nil)
      (wl-buffer:send-release (pending-buffer surface))
      (setf (pending-buffer ,surface) nil)
      (setf (needs-redraw ,surface) t)))
