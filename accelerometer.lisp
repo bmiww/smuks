@@ -247,8 +247,7 @@
   (let* ((devs (list-iio-devs))
 	 (devs (mapcar (lambda (dev) (make-instance 'dev :path dev)) devs))
 	 (accel (find-if (lambda (dev) (string= (of-name dev) "accelerometer")) devs)))
-    (unless accel (error "No accelerometer found"))
-    (change-class accel 'iio-dev)
+    (when accel (change-class accel 'iio-dev))
     accel))
 
 

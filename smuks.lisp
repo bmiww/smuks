@@ -93,7 +93,7 @@
      (log! "Starting the umpteenth poller. Now for seat events...")
      (setf *seat-poller* (seat-listener))
      (log! "Starting MY accelerometer poller. Waiting for accelerometer events...")
-     (setf *accelerometer-poller* (my-accelerometer-listener))
+     (when *accel* (setf *accelerometer-poller* (my-accelerometer-listener)))
      (log! "Starting the udev poller. Waiting for udev events...")
      (setf *udev-poller* (udev-listener))
 
