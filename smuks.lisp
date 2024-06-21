@@ -123,8 +123,8 @@
 
 
 ;; TODO: Add a way to check which screen belongs to the accelerometer
+;; This might actually need to be a hack - check if DSI or some other on-board connector is used
 (defun determine-orientation (orient)
-  ;; (log! "Orientation: ~a" orient)
   (let* ((dsi-screen (dsi-screen *screen-tracker*))
 	 (current-orient (orientation dsi-screen)))
 

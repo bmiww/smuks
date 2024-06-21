@@ -193,9 +193,9 @@ void main() {
 	(gl:vertex-attrib-pointer attr-position 4 :float nil (* 4 4) (cffi:null-pointer))
 
 
-
-	;; (%gl:vertex-attrib-divisor attr-vert 0)
-	;; (%gl:vertex-attrib-divisor attr-position 1)
+	(when (eq (gl-version program) :GL-3-1)
+	  (%gl:vertex-attrib-divisor attr-vert 0)
+	  (%gl:vertex-attrib-divisor attr-position 1))
 
 	(gl:draw-arrays :triangle-strip 0 4)))))
 
