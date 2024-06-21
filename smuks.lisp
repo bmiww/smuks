@@ -121,12 +121,13 @@
 		   (print "Skipping frame"))))))
 
 
+
 ;; TODO: Add a way to check which screen belongs to the accelerometer
 (defun determine-orientation (orient)
+  ;; (log! "Orientation: ~a" orient)
   (let* ((dsi-screen (dsi-screen *screen-tracker*))
 	 (current-orient (orientation dsi-screen)))
 
-    ;; (log! "ORIENTATION: ~a" orient)
     (destructuring-bind (x y z) orient
       (declare (ignore y))
       (let* ((z-neg (<= z 0)) (x-neg (<= x 0))

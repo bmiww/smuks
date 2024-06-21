@@ -69,24 +69,27 @@
 
     ;; Example type string: "le:s12/16>>4"
     (with-open-file (type-file (prop-paths-type paths))
-      (ppcre:register-groups-bind (endian sign real-bits store-bits shift-amount)
+      (ppcre:register-groups-bind (endian-val sign real-bits store-bits shift-amount)
 	  ;; NOTE: This fancy regex does not include REPEAT information. My accelerometer doesn't have it.
 	  ("(le|be):(s|u)(\\d+)/(\\d+)>>(\\d+)" (read-line type-file))
 	(setf bytes (/ (parse-integer store-bits) 8))
 	(setf shift (parse-integer shift-amount))
 	(setf signed (string= sign "s"))
-	(setf endian (if (string= endian "le") :little :big))
+	(setf endian (if (string= endian-val "le") :little :big))
 	;; NOTE: Seems rather useless, since real-bits would be determined from bytes and shift
 	(setf real-bits (parse-integer real-bits))))))
 
 
 (defmethod read-node-value ((node node) bytes)
-  (let ((bytes (make-array (length bytes) :initial-contents bytes)))
+  (let* ((bytes (make-array (length bytes) :initial-contents bytes)))
     (* (scale node)
        (ash
-	(if (signed node)
-	    (cl-intbytes:octets->int bytes 2)
-	    (cl-intbytes:octets->uint bytes 2))
+	(let ((bytes (if (signed node)
+			   (cl-intbytes:octets->int bytes 2)
+			   (cl-intbytes:octets->uint bytes 2))))
+	  (if (eq (endian node) :big)
+	      (swap-bytes-16 bytes)
+	      bytes))
 	(shift node)))))
 
 (defmethod set-on-state ((node node) on)
@@ -131,6 +134,9 @@
 
 (defmethod shared-initialize :after ((dev iio-dev) slots &key)
   (declare (ignore slots))
+  ;; NOTE: In case if the device hasn't been properly disabled previously
+  (disable-accelerometer dev)
+
   (read-interest dev :in-accel-x :enable t)
   (read-interest dev :in-accel-y :enable t)
   (read-interest dev :in-accel-z :enable t)
@@ -150,8 +156,11 @@
 ;; TODO: Values might not be in order depicted here.
 (defmethod read-accelerometer ((dev iio-dev))
   (let ((file (open-file dev))
-	(reading (list (accel-x dev) (accel-y dev) (accel-z dev))))
+	(reading (list (accel-x dev) (accel-y dev) (accel-z dev)))
+	;; (data-available (read-data-available dev))
+	)
     (loop for node in reading
+	  ;; do (print (bytes node))
 	  for bytes = (loop for i from 0 below (bytes node) collect (read-byte file))
 	  collect (read-node-value node bytes))))
 
@@ -240,3 +249,12 @@
     (unless accel (error "No accelerometer found"))
     (change-class accel 'iio-dev)
     accel))
+
+
+;; NOTE: Taken from:
+;; https://github.com/sionescu/swap-bytes/blob/master/portable.lisp
+(defun swap-bytes-16 (integer)
+  (declare (type (unsigned-byte 16) integer)
+           (optimize (speed 3) (safety 0) (debug 0)))
+  (logior (ash (logand #xFF integer)  8)
+          (ash integer -8)))
