@@ -90,9 +90,15 @@
     (loop for framebuffer in (framebuffers screen)
 	  do (prep-gl-implementation (framebuffer-id framebuffer) width height))
 
-    (setf (shaders screen) `(,(shader-init:create-rect-shader width height rot gl-version)
-			     ,(restart-case (shader-init:create-texture-shader width height rot gl-version)
-				(ignore () (nth 1 (shaders screen))))))))
+    (let ((rect (shader screen :rect))
+	  (texture (shader screen :texture)))
+      (if (and rect texture)
+	  (progn
+	    (shaders:update-projection rect (sglutil:projection-matrix width height rot))
+	    (shaders:update-projection texture (sglutil:projection-matrix width height rot)))
+	  (setf (shaders screen) `(,(shader-init:create-rect-shader width height rot gl-version)
+				   ,(restart-case (shader-init:create-texture-shader width height rot gl-version)
+				      (ignore () (nth 1 (shaders screen))))))))))
 
 (defmethod update-projections ((screen screen) projection)
   (let ((projection (sglutil:projection-matrix (screen-width screen) (screen-height screen) (shader-rot-val screen))))
