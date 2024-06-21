@@ -137,9 +137,10 @@ and then clean the list out"
 ;; TODO: This does not clean up the keyboard-focus property when a client is gone.
 (defmethod process ((display display) (type (eql :keyboard-key)) (usecase (eql :passthrough)) event)
   (declare (ignore usecase))
-  (let* ((key (keyboard@-key event))
-	 (state (keyboard@-state event))
-	 (surface (keyboard-focus display))
+  (keyboard-key display (keyboard@-key event) (keyboard@-state event)))
+
+(defmethod keyboard-key ((display display) key state)
+  (let* ((surface (keyboard-focus display))
 	 (client (and surface (wl:client surface)))
 	 (seat (and client (seat client)))
 	 (seat-keyboard (and seat (seat-keyboard seat)))

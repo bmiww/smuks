@@ -44,6 +44,8 @@
 	       #:cl-wl.zwlr-layer-shell  ;; TODO: Add to my own distribution
 	       #:cl-wl.xdg-decoration  ;; TODO: Add to my own distribution
 	       #:cl-wl.virtual-keyboard  ;; TODO: Add to my own distribution
+	       #:cl-wl.text-input  ;; TODO: Add to my own distribution
+	       #:cl-wl.input-method  ;; TODO: Add to my own distribution
 	       ;; TODO: Make libiio optional via compile flag.
 	       ;; It is only really used for mobile devices.
 	       ;; In case if anyone needs it for desktop, hit me up.
@@ -85,7 +87,10 @@
 			     (:file "dd-manager")
 			     (:file "dmabuf")
 			     (:file "layer-shell")
-			     (:file "decor-manager")))
+			     (:file "decor-manager")
+			     (:file "text-input")
+			     (:file "input-method")
+			     (:file "virtual-keyboard")))
 	       (:file "screens")
 	       (:file "display")
 	       (:file "display-inputs")
