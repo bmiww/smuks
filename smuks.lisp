@@ -9,8 +9,6 @@
 ;; DEBUG_SMUKS=1 XDG_SESSION_ID=1 sbcl --dynamic-space-size 4028 --eval '(ql:quickload :swank)' --eval '(swank:create-server :port 25252 :dont-close t)' --eval '(ql:quickload :smuks)'
 (in-package :smuks)
 
-(defvar +socket-file+ "/tmp/smuks.socket")
-
 (defvar *enable-wayland-debug-logs* "")
 (defvar *enable-mesa-debug-logs* "")
 (defvar *enable-egl-debug-logs* "fatal") ;; "debug"
@@ -77,8 +75,6 @@
 
   (start-monitors *screen-tracker*)
   (init-globals *wayland* (screens *screen-tracker*))
-
-  (setf (uiop/os:getenv "WAYLAND_DISPLAY") +socket-file+)
 
   (cl-async:start-event-loop
    (lambda ()
@@ -244,16 +240,22 @@
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
 ;; └─┘└─┘└─┘┴ ┴└─┘ ┴
+(defun socket-path () (format nil "~a/~a" (uiop:getenv "XDG_RUNTIME_DIR") "wayland-0"))
 (defun init-socket ()
-  (restart-case
-      (if (probe-file +socket-file+)
-	  (error "Socket file already exists")
-	  (unix-sockets:make-unix-socket +socket-file+))
-    (create-new-socket ()
-      :report "Create new socket"
-      (log! "Creating new socket")
-      (delete-file +socket-file+)
-      (unix-sockets:make-unix-socket +socket-file+))))
+  (let ((socket-path (socket-path)) (socket nil))
+    (setf socket
+	  (restart-case
+	      (progn
+		(when (probe-file socket-path)
+		  (delete-file socket-path))
+		(unix-sockets:make-unix-socket socket-path))
+	    (create-new-socket ()
+	      :report "Create new socket"
+	      (log! "Creating new socket")
+	      (delete-file socket-path)
+	      (unix-sockets:make-unix-socket socket-path))))
+    (setf (uiop/os:getenv "WAYLAND_DISPLAY") socket-path)
+    socket))
 
 
 ;; ┌─┐┌─┐┌─┐┌┬┐  ┌┬┐┌─┐┌─┐┬┌─┐
@@ -325,7 +327,7 @@
   (when *accel* (iio-accelerometer::close-dev *accel*))
   (when *socket*
     (unix-sockets:close-unix-socket *socket*)
-    (delete-file +socket-file+))
+    (delete-file (socket-path)))
 
   (setfnil *egl* *egl-context* *drm* *smuks-exit*
 	   *wayland* *socket* *seat* *cursor* *accel*))
