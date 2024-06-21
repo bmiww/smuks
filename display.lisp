@@ -214,7 +214,7 @@
 	     (setf
 	      (x window) (+ (* i width-per) (screen-x screen))
 	      (y window) (screen-y screen)
-	      (width window) width-per
-	      (height window) d-height)
+	      (compo-max-width window) width-per
+	      (compo-max-height window) d-height)
 
 	     (configure-toplevel window))))))

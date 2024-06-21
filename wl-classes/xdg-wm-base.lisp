@@ -73,13 +73,15 @@ Destroying the grabbable object will also destroy the grab child"))
    (min-height :initform 0 :accessor min-height)
    (max-width :initform 0 :accessor max-width)
    (max-height :initform 0 :accessor max-height)
+   (compo-max-width :initform 0 :accessor compo-max-width)
+   (compo-max-height :initform 0 :accessor compo-max-height)
    (desktop :initform nil :accessor desktop)))
 
 (defmethod configure-toplevel ((toplevel toplevel))
   ;; TODO: the last argument - the state - is actually not an enum
   ;; It's an array. So i can't really use the enum logic here
   ;; The xml also doesn't define that the array here would be filled with enum values
-  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) '(1))
+  (xdg-toplevel:send-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel) '(1))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)

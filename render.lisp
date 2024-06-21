@@ -74,8 +74,8 @@
 ;; So that the main loop can know if it should render the display cursor or not
 (defun render-toplevel (screen surface)
   (let ((texture (texture surface))
-	(width (flo (width surface)))
-	(height (flo (height surface)))
+	(width (flo (compo-max-width surface)))
+	(height (flo (compo-max-height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
     (shaders.texture:draw (shader screen :texture)
