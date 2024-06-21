@@ -9,7 +9,9 @@
 ;; https://parzival2.github.io/blog/posts/understanding-iio-devices/
 
 (defpackage #:iio-accelerometer
-  (:use #:cl #:smuks-util #:str #:parse-float))
+  (:use #:cl #:smuks-util #:str #:parse-float)
+  (:export
+   find-accelerometer-dev))
 (in-package :iio-accelerometer)
 
 
