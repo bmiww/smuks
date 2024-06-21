@@ -22,6 +22,9 @@
 
 (in-package :shaders)
 
+;; TODO: Add shader program destroy
+;; https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDeleteProgram.xhtml
+;; https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDeleteShader.xhtml
 ;; TODO: Make previous optional for debugging
 ;; NOTE: Previous is meant to track previous versions of the shader (pointers)
 (defclass shader-base ()
