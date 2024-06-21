@@ -343,6 +343,8 @@
     ((cffi:pointer-eq (cl-async::poller-c *wl-poller*) handle) (cl-async:free-poller *wl-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *client-poller*) handle) (cl-async:free-poller *client-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *input-poller*) handle) (cl-async:free-poller *input-poller*))
-    ((cffi:pointer-eq (cl-async::poller-c *accelerometer-poller*) handle) (cl-async:free-poller *accelerometer-poller*))
+    ((and *accelerometer-poller*
+	  (cffi:pointer-eq (cl-async::poller-c *accelerometer-poller*) handle))
+	  (cl-async:free-poller *accelerometer-poller*))
     ((cffi:pointer-eq (cl-async::poller-c *udev-poller*) handle) (cl-async:free-poller *udev-poller*))
     (t (error "Unknown poller handle"))))
