@@ -41,9 +41,11 @@
 ;; ││││ │ ││├┤
 ;; ┘└┘└─┘─┴┘└─┘
 (defclass node ()
-  ((index :accessor index)
+  ((name :initarg :name :accessor name)
+   (index :accessor index)
    (scale :accessor scale)
    (enabled :accessor enabled)
+   (store-bits :accessor store-bits)
    (real-bits :accessor real-bits)
    (bytes :accessor bytes)
    (shift :accessor shift)
@@ -69,28 +71,19 @@
 
     ;; Example type string: "le:s12/16>>4"
     (with-open-file (type-file (prop-paths-type paths))
-      (ppcre:register-groups-bind (endian-val sign real-bits store-bits shift-amount)
+      (ppcre:register-groups-bind (endian-val sign real-bits-val store-bits-val shift-amount)
 	  ;; NOTE: This fancy regex does not include REPEAT information. My accelerometer doesn't have it.
 	  ("(le|be):(s|u)(\\d+)/(\\d+)>>(\\d+)" (read-line type-file))
-	(setf bytes (/ (parse-integer store-bits) 8))
+	(setf store-bits (parse-integer store-bits-val))
+	(setf bytes (/ (parse-integer store-bits-val) 8))
 	(setf shift (parse-integer shift-amount))
 	(setf signed (string= sign "s"))
 	(setf endian (if (string= endian-val "le") :little :big))
 	;; NOTE: Seems rather useless, since real-bits would be determined from bytes and shift
-	(setf real-bits (parse-integer real-bits))))))
-
+	(setf real-bits (parse-integer real-bits-val))))))
 
 (defmethod read-node-value ((node node) bytes)
-  (let* ((bytes (make-array (length bytes) :initial-contents bytes)))
-    (* (scale node)
-       (ash
-	(let ((bytes (if (signed node)
-			   (cl-intbytes:octets->int bytes 2)
-			   (cl-intbytes:octets->uint bytes 2))))
-	  (if (eq (endian node) :big)
-	      (swap-bytes-16 bytes)
-	      bytes))
-	(shift node)))))
+  (* (scale node) (ash bytes (shift node))))
 
 (defmethod set-on-state ((node node) on)
   (with-slots (paths enabled) node
@@ -113,9 +106,9 @@
 ;; ┴┴└─┘  ─┴┘└─┘ └┘ ┴└─┘└─┘
 ;; TODO: Rename this one to accelerometer. Since that is what it is.
 (defclass iio-dev (dev)
-  ((accel-x :initform (make-instance 'node) :accessor accel-x)
-   (accel-y :initform (make-instance 'node) :accessor accel-y)
-   (accel-z :initform (make-instance 'node) :accessor accel-z)
+  ((accel-x :initform (make-instance 'node :name :accel-x) :accessor accel-x)
+   (accel-y :initform (make-instance 'node :name :accel-y) :accessor accel-y)
+   (accel-z :initform (make-instance 'node :name :accel-z) :accessor accel-z)
    (watermark :initform nil :accessor watermark)
    (enabled :initform nil :accessor enabled)))
 
@@ -132,6 +125,9 @@
     (sb-unix:unix-close (dev-fd dev))
     (setf (dev-fd dev) nil)))
 
+;; TODO: Add code to decide on frequency.
+;; Reading too often is a waste of resources for what i'm trying to achieve.
+;; TODO: Maybe make freqeuncy settable via config.
 (defmethod shared-initialize :after ((dev iio-dev) slots &key)
   (declare (ignore slots))
   ;; NOTE: In case if the device hasn't been properly disabled previously
@@ -156,13 +152,18 @@
 ;; TODO: Values might not be in order depicted here.
 (defmethod read-accelerometer ((dev iio-dev))
   (let ((file (open-file dev))
-	(reading (list (accel-x dev) (accel-y dev) (accel-z dev)))
-	;; (data-available (read-data-available dev))
-	)
-    (loop for node in reading
-	  ;; do (print (bytes node))
-	  for bytes = (loop for i from 0 below (bytes node) collect (read-byte file))
-	  collect (read-node-value node bytes))))
+	(reading (list (accel-x dev) (accel-y dev) (accel-z dev))))
+    (let ((latest (loop for node in reading
+			for bytes = (lisp-binary:read-integer
+				     (real-bits node)
+				     file
+				     :byte-order (case (endian node)
+						   (:big :big-endian)
+						   (:little :little-endian))
+				     :signed (signed node))
+			collect (read-node-value node bytes))))
+      (clear-input file)
+      latest)))
 
 
 (defmethod enable-all-axis ((dev iio-dev))
