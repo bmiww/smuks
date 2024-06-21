@@ -70,7 +70,7 @@
   (setf *cursor* (load-cursor-texture))
   (prep-shaders2 *screen-tracker* :gl-version *gl-version*)
 
-  (setf *accel* (iio-accelerometer::find-accelerometer-dev))
+  (setf *accel* (iio-accelerometer:find-accelerometer-dev))
 
   (setf *udev* (udev:udev-new))
   (setf *udev-monitor* (udev:monitor-udev *udev*))
