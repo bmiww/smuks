@@ -137,6 +137,7 @@ void main() {
 
     (setf attr-vert (gl:get-attrib-location pointer "vert"))
     (setf attr-transform-scale (gl:get-attrib-location pointer "vert_transform_scale"))
+
     ;; TODO: This 4 is horrible.
     ;; Especially since i might at some point allocate more than one vertice
     (setf gl-buffer-array (shaders:allocate-gl-array 4))
@@ -146,12 +147,6 @@ void main() {
     (shaders:array-buffer-data instanced-vbo shaders:*instanced-vert*)
 
     (when projection (shaders:update-projection program projection))))
-
-
-;; TODO: This could be improved by sending in a list of surfaces to draw at once.
-;; For now just setting draw-instances to 1 and calling draw for each surface
-;; See the rect-shader for an example.
-(defvar *draw-instances* 1)
 
 
 ;; TODO: You should be able to turn shaders into render passes
