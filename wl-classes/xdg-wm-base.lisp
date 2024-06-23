@@ -32,7 +32,7 @@
     (wl:up-if 'toplevel xdg id)
     (new-toplevel display xdg)
     (add-state xdg :maximized)
-    (configure-toplevel xdg)))
+    (configure-toplevel-default xdg)))
 
 (defmethod xdg-surface:get-popup ((xdg xdg-surface) id parent positioner)
   (wl:up-if 'popup xdg id :positioner positioner :grab-parent parent)
@@ -79,15 +79,6 @@ Destroying the grabbable object will also destroy the grab child"))
    (desktop :initform nil :accessor desktop)
    (states :initform nil :accessor states)))
 
-(defmethod configure-toplevel ((toplevel toplevel))
-  ;; TODO: the last argument - the state - is actually not an enum
-  ;; It's an array. So i can't really use the enum logic here
-  ;; The xml also doesn't define that the array here would be filled with enum values
-
-  (let ((serial (incf (configure-serial toplevel))))
-    (xdg-toplevel:send-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel) (apply 'configure-states (states toplevel)))
-    (xdg-surface:send-configure toplevel serial)))
-
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
   (setf (title toplevel) title))
 
@@ -120,19 +111,27 @@ Destroying the grabbable object will also destroy the grab child"))
   "A client wants to maximize their window to maximum size.
 For tiling managers - i think i'll just resend the original configure event.
 Supposed to answer with a configure event showing the new size."
-  (log! "xdg-toplevel:set-maximized: Not considered in great detail")
-  (add-state toplevel :maximized)
-  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) (apply 'configure-states (states toplevel)))
-  (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
+  (let ((width (width toplevel))
+	(height (height toplevel)))
+
+    (when (< (compo-max-width toplevel) width) (setf width (compo-max-width toplevel)))
+    (when (< (compo-max-height toplevel) height) (setf height (compo-max-height toplevel)))
+
+    (add-state toplevel :maximized)
+    (do-window-configure toplevel width height)))
 
 (defmethod xdg-toplevel:unset-maximized ((toplevel toplevel))
   "A client wants to unset maximized state.
 For tiling managers - i think i'll just resend the original configure event.
 Supposed to answer with a configure event showing the new size."
-  (log! "xdg-toplevel:unset-maximized: Not considered in great detail")
-  (rem-state toplevel :maximized)
-  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) (apply 'configure-states (states toplevel)))
-  (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
+  (let ((width (width toplevel))
+	(height (height toplevel)))
+
+    (when (< (compo-max-width toplevel) width) (setf width (compo-max-width toplevel)))
+    (when (< (compo-max-height toplevel) height) (setf height (compo-max-height toplevel)))
+
+    (rem-state toplevel :maximized)
+    (do-window-configure toplevel width height)))
 
 (defmethod xdg-toplevel:resize ((toplevel toplevel) seat serial edges)
   "A client wants to resize their window."
@@ -153,16 +152,20 @@ Supposed to answer with a configure event showing the new size."
 
     (add-state toplevel :fullscreen)
 
-    (xdg-toplevel:send-configure toplevel width height (apply 'configure-states (states toplevel)))
-    (xdg-surface:send-configure toplevel (incf (configure-serial toplevel)))))
+    (do-window-configure toplevel width height)))
 
-
-;; TODO: The configure sizes as 0 might be ridiculous
-;; For now assuming that this will tell the client that it should offer a resize
 (defmethod xdg-toplevel:unset-fullscreen ((toplevel toplevel))
   "A client wants to unset fullscreen state."
   (rem-state toplevel :fullscreen)
-  (xdg-toplevel:send-configure toplevel 0 0 (apply 'configure-states (states toplevel)))
+  (do-window-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel)))
+
+(defmethod configure-toplevel-default ((toplevel toplevel))
+  (do-window-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel)))
+
+
+(defmethod do-window-configure ((toplevel toplevel) width height)
+  (log! "configure-toplevel: ~a ~a" width height)
+  (xdg-toplevel:send-configure toplevel width height (apply 'configure-states (states toplevel)))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
 

@@ -219,4 +219,4 @@
 	      (compo-max-width window) width-per
 	      (compo-max-height window) d-height)
 
-	     (configure-toplevel window))))))
+	     (configure-toplevel-default window))))))
