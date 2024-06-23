@@ -187,6 +187,9 @@ Supposed to answer with a configure event showing the new size."
 ;; Might be fine - worst case scenario - scope it to run only when an ACTUAL popup is being created
 (defmethod shared-initialize :after ((popup popup) slot-names &key positioner)
   (declare (ignore slot-names))
+  (setup-from-positioner popup positioner))
+
+(defmethod setup-from-positioner ((popup popup) positioner)
   (with-slots (x y off-x off-y a-width a-height anchor) positioner
     (incf x off-x) (incf y off-y)
     (case anchor
@@ -219,6 +222,9 @@ Supposed to answer with a configure event showing the new size."
 
     ;; TODO: The keys here are supposed to be the currently pressed keys
     (keyboard-enter seat popup '())))
+
+(defmethod xdg-popup:reposition ((popup popup) positioner token)
+  (setup-from-positioner popup positioner))
 
 ;; ┌─┐┌─┐┌─┐┬┌┬┐┬┌─┐┌┐┌┌─┐┬─┐
 ;; ├─┘│ │└─┐│ │ ││ ││││├┤ ├┬┘
@@ -270,6 +276,14 @@ Supposed to answer with a configure event showing the new size."
   "This indicates what to do with the popup surface if it's width/height/x/y is outside the bounds of the parent surface."
   (setf (constraint positioner) constraint))
 
+;; TODO: Implement set parent size - I'm not yet entirely sure what its supposed to achieve.
+;; Says that this should assume the parent size for popup positioning - but not really resize the parent?
+(defmethod xdg-positioner:set-parent-size ((positioner positioner) width height)
+  )
+
+;; TODO: Also not implemented. Should be used in conjuction with set-parent-size
+(defmethod xdg-positioner:set-parent-configure ((positioner positioner) serial)
+  )
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
