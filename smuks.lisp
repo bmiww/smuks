@@ -27,8 +27,7 @@
   *cursor*
   *egl* *egl-context*
   *client-poller* *wl-poller* *drm-poller* *input-poller*
-  *seat-poller* *accelerometer-poller*
-  *udev-poller*)
+  *seat-poller* *accelerometer-poller* *udev-poller*)
 
 (defun mainer ()
   (setf *log-output* *standard-output*)

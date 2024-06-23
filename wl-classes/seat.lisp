@@ -134,7 +134,10 @@
   (let ((seat-mouse (seat-mouse seat)))
     (when seat-mouse
       (setf (active-surface seat) surface)
-      (wl-pointer:send-enter seat-mouse (next-serial seat) surface x y)
+      (wl-pointer:send-enter
+       seat-mouse (next-serial seat) surface
+       (surface-x surface x)
+       (surface-y surface y))
       (pointer-frame seat))))
 
 (defmethod pointer-leave ((seat seat))
@@ -152,9 +155,10 @@
 	 (surface (active-surface seat)))
     (when seat-mouse
       (unless surface (error "No active surface for pointer motion"))
-      (wl-pointer:send-motion seat-mouse (get-ms)
-			      (setf (pointer-x seat) x)
-			      (setf (pointer-y seat) y))
+      (wl-pointer:send-motion
+       seat-mouse (get-ms)
+       (surface-x surface (setf (pointer-x seat) x))
+       (surface-y surface (setf (pointer-y seat) y)))
       (pointer-frame seat))))
 
 ;; TODO: Instead of ignoring button if no surface is active

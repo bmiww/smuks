@@ -42,9 +42,11 @@
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (unless (and (eq width (width xdg)) (eq height (height xdg)))
-    (setf (width xdg) width)
-    (setf (height xdg) height)
-    (setf (new-dimensions? xdg) t)))
+    (setf (window-x-offset xdg) x
+	  (window-y-offset xdg) y
+	  (width xdg) width
+	  (height xdg) height
+	  (new-dimensions? xdg) t)))
 
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
 ;; The configuration sequence. Applying pending state or whatnot. Not sure
@@ -74,10 +76,19 @@ Destroying the grabbable object will also destroy the grab child"))
    (min-height :initform 0 :accessor min-height)
    (max-width :initform 0 :accessor max-width)
    (max-height :initform 0 :accessor max-height)
+   (window-x-offset :initform 0 :accessor window-x-offset)
+   (window-y-offset :initform 0 :accessor window-y-offset)
    (compo-max-width :initform 0 :accessor compo-max-width)
    (compo-max-height :initform 0 :accessor compo-max-height)
    (desktop :initform nil :accessor desktop)
    (states :initform nil :accessor states)))
+
+(defmethod surface-x ((toplevel toplevel) x)
+  (+ x (window-x-offset toplevel)))
+
+(defmethod surface-y ((toplevel toplevel) y)
+  (+ y (window-y-offset toplevel)))
+
 
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
   (setf (title toplevel) title))

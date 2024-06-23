@@ -37,6 +37,8 @@
   (setf (slot-value surface 'height) height)
   (setf (slot-value surface 'new-dimensions?) t))
 
+(defmethod surface-x ((surface surface) x) x)
+(defmethod surface-y ((surface surface) y) y)
 
 ;; ┌─┐┌─┐┌┬┐┌┬┐┬┌┬┐
 ;; │  │ ││││││││ │
