@@ -102,8 +102,7 @@
 
 (defmethod (setf keyboard-focus) (focus-surface (display display))
   (if focus-surface
-      (let* ((client (wl:client focus-surface))
-	     (seat (seat client)))
+      (let* ((client (wl:client focus-surface)) (seat (seat client)))
 	(when seat
 	  (setf (slot-value display 'keyboard-focus) focus-surface)
 	  (keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))

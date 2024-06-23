@@ -107,7 +107,7 @@ and then clean the list out"
     (when surface
       (let* ((seat (seat client)))
 	(when seat
-	  (setf (keyboard-focus display) surface)
+	  (unless (eq (keyboard-focus display) surface) (setf (keyboard-focus display) surface))
 	  (pointer-button seat button state))))))
 
 
