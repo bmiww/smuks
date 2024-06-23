@@ -61,9 +61,6 @@ out vec4 color;
 
 void main() {
     vec4 tex_color = texture2D(sampler, v_tex_coords);
-    if (tex_color.a < 0.1) {
-       tex_color = vec4(0.0, 0.0, 0.0, 0.2);
-    }
     color = tex_color;
 }")
 
@@ -103,10 +100,6 @@ varying vec2 v_tex_coords;
 
 void main() {
     vec4 tex_color = texture2D(sampler, v_tex_coords);
-    if (tex_color.a < 0.1) {
-       tex_color = vec4(0.0, 0.0, 0.0, 0.2);
-    }
-
     gl_FragColor = tex_color;
 }")
 
