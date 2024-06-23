@@ -161,6 +161,14 @@
   (declare (ignore id))
   (setf (dd-manager client) iface))
 
+(defmethod print-object ((client client) stream)
+  (print-unreadable-object (client stream :type t)
+    (let* ((compositor (compositor client))
+	   (surfaces (when compositor (surfaces compositor)))
+	   (toplevel (when surfaces (loop for surface being the hash-values of surfaces
+					  when (typep surface 'toplevel) return surface))))
+      (when toplevel (format stream "Client: ~a:::~a" (title toplevel) (app-id toplevel))))))
+
 
 ;; ┌─┐┌─┐┬  ┬  ┬┌┐┌┌─┐
 ;; ├─┘│ ││  │  │││││ ┬
