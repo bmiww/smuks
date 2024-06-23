@@ -63,15 +63,13 @@
   (when (pending-frame-callbacks surface)
     (setf (frame-callbacks surface) (pending-frame-callbacks surface))
     (setf (pending-frame-callbacks surface) nil)
-    (setf (needs-redraw surface) t)
-    ))
+    (setf (needs-redraw surface) t)))
 
+;; TODO: Replace errors - with client error notification
 (defmethod wl-surface:attach ((surface surface) buffer x y)
-  ;; TODO: Protocol deprecation thing - you should instead notify the client
-  ;; of errors instead of breaking the compositor.
-  ;; Or check the version that the client wishes to achieve
-  ;; (unless (= x 0) (error "x must be 0"))
-  ;; (unless (= y 0) (error "y must be 0"))
+  (when (>= (wl:version-want buffer) 5)
+    (unless (= x 0) (error "x must be 0"))
+    (unless (= y 0) (error "y must be 0")))
   (setf (pending-buffer surface) buffer))
 
 (defmethod wl-surface:frame ((surface surface) callback)
@@ -199,9 +197,6 @@ Or some such."
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
-(defun class-is? (object class)
-  (typep object class))
-
 (defclass cursor (surface) ())
 
 
