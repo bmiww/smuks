@@ -169,6 +169,10 @@ and then clean the list out"
 	;; Key p
 	(25 (uiop:launch-program "anyrun"))
 
+	;; TODO: You want to have super-c to close the window
+	;; Key c
+	;; (46 ())
+
 	;; Numeric keys - switching desktops
 	(2 (setf (active-desktop display) (nth 0 (desktops display))))
 	(3 (setf (active-desktop display) (nth 1 (desktops display))))))))
