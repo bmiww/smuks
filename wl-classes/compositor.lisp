@@ -11,27 +11,19 @@
   ((surfaces :initform (make-hash-table :test 'equal) :accessor surfaces)))
 
 (defmethod all-surfaces ((compositor compositor)) (reverse (alexandria:hash-table-values (surfaces compositor))))
-(defmethod all-popups ((compositor compositor)) (remove-if-not #'is-popup (all-surfaces compositor)))
+
 (defmethod all-ready-surfaces ((compositor compositor))
-  (let* ((all (all-surfaces compositor))
-	 ;; TODO: Once you implement proper damage and don't clear on every frame
-	 ;; You could try to filter based on needs-redraw
-	 ;; (ready (remove-if-not #'needs-redraw all)))
-	 (ready (remove-if-not #'texture all)))
-    (let ((layers nil)
-	  (toplevels nil)
-	  (popups nil)
-	  (cursors nil)
-	  (surfaces nil))
-      (loop for surface in ready
-	    do (typecase surface
-		 (layer-surface (push surface layers))
-		 (toplevel (push surface toplevels))
-		 (popup (push surface popups))
-		 (cursor (push surface cursors))
-		 (surface ()) ;; Surfaces without a role should not be considered
-		 (t (push surface surfaces))))
-      (list layers toplevels popups cursors surfaces))))
+  (let* ((all (all-surfaces compositor)))
+    (remove-if-not #'texture all)))
+
+(defmethod all- ((compositor compositor) class)
+  (remove-if-not (lambda (surf) (typep surf class)) (all-ready-surfaces compositor)))
+
+(defmethod all-popups ((compositor compositor)) (all- compositor 'popup))
+(defmethod all-layers ((compositor compositor)) (all- compositor 'layer-surface))
+(defmethod all-toplevels ((compositor compositor)) (all- compositor 'toplevel))
+(defmethod all-subsurfaces ((compositor compositor)) (all- compositor 'subsurface))
+(defmethod all-cursors ((compositor compositor)) (all- compositor 'cursor))
 
 (defmethod all-popups ((compositor compositor))
   (remove-if-not (lambda (surf) (and (typep surf 'popup) (texture surf))) (all-surfaces compositor)))
@@ -76,11 +68,3 @@
 
 (defmethod wl-subcompositor:get-subsurface ((subcompositor subcompositor) id surface parent)
   (wl:up-if 'subsurface surface id :parent parent))
-
-
-
-;; ┬ ┬┌┬┐┬┬
-;; │ │ │ ││
-;; └─┘ ┴ ┴┴─┘
-
-(defun is-popup (surface) (typep surface 'popup))

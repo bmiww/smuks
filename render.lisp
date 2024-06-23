@@ -109,14 +109,16 @@
     (t (render-toplevel screen surface))))
 
 (defun render-desktop (screen desktop)
+  (declare (ignore desktop))
   (flet ((render (surface) (render-surface screen surface)))
-    (let* ((surfaces (windows desktop)))
-      (loop for surface in surfaces
-	    for compositor = (compositor surface)
-	    for compost-surfaces = (all-ready-surfaces compositor)
-	    do (destructuring-bind (layers toplevels popups cursors surfaces) compost-surfaces
-		 (mapcar #'render toplevels)
-		 (mapcar #'render popups)
-		 (mapcar #'render surfaces)
-		 (mapcar #'render layers)
-		 (mapcar #'render cursors))))))
+    (let ((clients (wl:all-clients *wayland*)))
+      (flet ((render-type (type)
+	       (loop for client in clients
+		     do (let ((compositor (compositor client)))
+			(when compositor
+			  (mapcar #'render (funcall type compositor)))))))
+	(render-type #'all-toplevels)
+	(render-type #'all-subsurfaces)
+	(render-type #'all-popups)
+	(render-type #'all-layers)
+	(render-type #'all-cursors)))))
