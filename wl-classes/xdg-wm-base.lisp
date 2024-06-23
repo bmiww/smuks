@@ -25,7 +25,9 @@
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
 (defclass xdg-surface (xdg-surface:dispatch surface)
-  ())
+  ((xdg-x-offset :initform 0 :accessor xdg-x-offset)
+   (xdg-y-offset :initform 0 :accessor xdg-y-offset)))
+
 
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((display (wl:get-display xdg)))
@@ -42,8 +44,8 @@
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (unless (and (eq width (width xdg)) (eq height (height xdg)))
-    (setf (window-x-offset xdg) x
-	  (window-y-offset xdg) y
+    (setf (xdg-x-offset xdg) x
+	  (xdg-y-offset xdg) y
 	  (width xdg) width
 	  (height xdg) height
 	  (new-dimensions? xdg) t)))
@@ -76,19 +78,13 @@ Destroying the grabbable object will also destroy the grab child"))
    (min-height :initform 0 :accessor min-height)
    (max-width :initform 0 :accessor max-width)
    (max-height :initform 0 :accessor max-height)
-   (window-x-offset :initform 0 :accessor window-x-offset)
-   (window-y-offset :initform 0 :accessor window-y-offset)
    (compo-max-width :initform 0 :accessor compo-max-width)
    (compo-max-height :initform 0 :accessor compo-max-height)
    (desktop :initform nil :accessor desktop)
    (states :initform nil :accessor states)))
 
-(defmethod surface-x ((toplevel toplevel) x)
-  (+ x (window-x-offset toplevel)))
-
-(defmethod surface-y ((toplevel toplevel) y)
-  (+ y (window-y-offset toplevel)))
-
+(defmethod surface-x ((toplevel toplevel) x) (+ x (xdg-x-offset toplevel)))
+(defmethod surface-y ((toplevel toplevel) y) (+ y (xdg-y-offset toplevel)))
 
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
   (setf (title toplevel) title))
