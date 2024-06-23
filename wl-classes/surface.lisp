@@ -69,7 +69,7 @@
 
 ;; TODO: Replace errors - with client error notification
 (defmethod wl-surface:attach ((surface surface) buffer x y)
-  (when (>= (wl:version-want buffer) 5)
+  (when (and buffer (>= (wl:version-want buffer) 5))
     (unless (= x 0) (error "x must be 0"))
     (unless (= y 0) (error "y must be 0")))
   (setf (pending-buffer surface) buffer))
