@@ -131,7 +131,7 @@ Or some such."
     (log! "UNIMPLEMENTED: Set offset")))
 
 ;; TODO: Destroy any connected textures and other resources
-(defmethod cl-wl:destroy ((surface surface))
+(defmethod cl-wl:destroy :before ((surface surface))
   (rem-surface (compositor surface) surface))
 
 
