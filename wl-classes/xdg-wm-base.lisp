@@ -31,6 +31,7 @@
   (let ((display (wl:get-display xdg)))
     (wl:up-if 'toplevel xdg id)
     (new-toplevel display xdg)
+    (add-state xdg :maximized)
     (configure-toplevel xdg)))
 
 (defmethod xdg-surface:get-popup ((xdg xdg-surface) id parent positioner)
@@ -75,7 +76,8 @@ Destroying the grabbable object will also destroy the grab child"))
    (max-height :initform 0 :accessor max-height)
    (compo-max-width :initform 0 :accessor compo-max-width)
    (compo-max-height :initform 0 :accessor compo-max-height)
-   (desktop :initform nil :accessor desktop)))
+   (desktop :initform nil :accessor desktop)
+   (states :initform nil :accessor states)))
 
 (defmethod configure-toplevel ((toplevel toplevel))
   ;; TODO: the last argument - the state - is actually not an enum
@@ -83,7 +85,7 @@ Destroying the grabbable object will also destroy the grab child"))
   ;; The xml also doesn't define that the array here would be filled with enum values
 
   (let ((serial (incf (configure-serial toplevel))))
-    (xdg-toplevel:send-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel) (configure-states :maximized))
+    (xdg-toplevel:send-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel) (apply 'configure-states (states toplevel)))
     (xdg-surface:send-configure toplevel serial)))
 
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
@@ -119,7 +121,8 @@ Destroying the grabbable object will also destroy the grab child"))
 For tiling managers - i think i'll just resend the original configure event.
 Supposed to answer with a configure event showing the new size."
   (log! "xdg-toplevel:set-maximized: Not considered in great detail")
-  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) (configure-states :maximized))
+  (add-state toplevel :maximized)
+  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) (apply 'configure-states (states toplevel)))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
 (defmethod xdg-toplevel:unset-maximized ((toplevel toplevel))
@@ -127,12 +130,14 @@ Supposed to answer with a configure event showing the new size."
 For tiling managers - i think i'll just resend the original configure event.
 Supposed to answer with a configure event showing the new size."
   (log! "xdg-toplevel:unset-maximized: Not considered in great detail")
-  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) (configure-states :maximized))
+  (rem-state toplevel :maximized)
+  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) (apply 'configure-states (states toplevel)))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
 (defmethod xdg-toplevel:resize ((toplevel toplevel) seat serial edges)
   "A client wants to resize their window."
-  (log! "xdg-toplevel:resize: Not implemented"))
+  (log! "xdg-toplevel:resize: Not implemented")
+  )
 
 
 (defmethod xdg-toplevel:set-fullscreen ((toplevel toplevel) output)
@@ -146,7 +151,9 @@ Supposed to answer with a configure event showing the new size."
       (setf height (screen-height screen))
       (setf width (screen-width screen)))
 
-    (xdg-toplevel:send-configure toplevel width height (configure-states :fullscreen))
+    (add-state toplevel :fullscreen)
+
+    (xdg-toplevel:send-configure toplevel width height (apply 'configure-states (states toplevel)))
     (xdg-surface:send-configure toplevel (incf (configure-serial toplevel)))))
 
 
@@ -154,9 +161,16 @@ Supposed to answer with a configure event showing the new size."
 ;; For now assuming that this will tell the client that it should offer a resize
 (defmethod xdg-toplevel:unset-fullscreen ((toplevel toplevel))
   "A client wants to unset fullscreen state."
-  (xdg-toplevel:send-configure toplevel 0 0 (configure-states :maximized))
+  (rem-state toplevel :fullscreen)
+  (xdg-toplevel:send-configure toplevel 0 0 (apply 'configure-states (states toplevel)))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
+
+(defmethod add-state ((toplevel toplevel) state)
+  (pushnew state (states toplevel)))
+
+(defmethod rem-state ((toplevel toplevel) state)
+  (setf (states toplevel) (remove state (states toplevel))))
 
 ;; ┌─┐┌─┐┌─┐┬ ┬┌─┐
 ;; ├─┘│ │├─┘│ │├─┘
