@@ -135,6 +135,7 @@ Or some such."
   (rem-surface (compositor surface) surface))
 
 
+;; TODO: Might need to apply offset stuff here...
 (defmethod in-bounds ((surface surface) x y)
   (and (<= (x surface) x (+ (x surface) (width surface)))
        (<= (y surface) y (+ (y surface) (height surface)))))

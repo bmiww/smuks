@@ -11,6 +11,7 @@
   ((surfaces :initform (make-hash-table :test 'equal) :accessor surfaces)))
 
 (defmethod all-surfaces ((compositor compositor)) (reverse (alexandria:hash-table-values (surfaces compositor))))
+(defmethod all-popups ((compositor compositor)) (remove-if-not #'is-popup (all-surfaces compositor)))
 (defmethod all-ready-surfaces ((compositor compositor))
   (let* ((all (all-surfaces compositor))
 	 ;; TODO: Once you implement proper damage and don't clear on every frame
@@ -74,3 +75,11 @@
 
 (defmethod wl-subcompositor:get-subsurface ((subcompositor subcompositor) id surface parent)
   (wl:up-if 'subsurface surface id :parent parent))
+
+
+
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+
+(defun is-popup (surface) (typep surface 'popup))
