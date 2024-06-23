@@ -121,9 +121,12 @@ of the screen rotation - it can rotate the buffer itself and save the compositor
 Or some such."
   (log! "UNIMPLEMENTED: Set buffer transform"))
 
+;; TODO: Implement set offset
+;; For now - i haven't seen it being used, once it is no longer 0, 0 - i should consider it
 (defmethod wl-surface:offset ((surface surface) x y)
   "Sets the offset of the surface."
-  (log! "UNIMPLEMENTED: Set offset"))
+  (when (or (not (= x 0)) (not (= y 0)))
+    (log! "UNIMPLEMENTED: Set offset")))
 
 ;; TODO: Destroy any connected textures and other resources
 (defmethod cl-wl:destroy ((surface surface))
