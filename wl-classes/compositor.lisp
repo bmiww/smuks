@@ -17,7 +17,19 @@
 	 ;; You could try to filter based on needs-redraw
 	 ;; (ready (remove-if-not #'needs-redraw all)))
 	 (ready (remove-if-not #'texture all)))
-    ready))
+    (let ((layers nil)
+	  (toplevels nil)
+	  (popups nil)
+	  (cursors nil)
+	  (surfaces nil))
+      (loop for surface in ready
+	    do (typecase surface
+		 (layer-surface (push surface layers))
+		 (toplevel (push surface toplevels))
+		 (popup (push surface popups))
+		 (cursor (push surface cursors))
+		 (t (push surface surfaces))))
+      (list layers toplevels popups cursors surfaces))))
 
 (defmethod all-popups ((compositor compositor))
   (remove-if-not (lambda (surf) (and (typep surf 'popup) (texture surf))) (all-surfaces compositor)))

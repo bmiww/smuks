@@ -23,7 +23,6 @@
 
       (render-scene screen)
       (render-desktop screen desktop)
-      (render-layer-surfaces screen desktop)
 
       (when (eq screen (cursor-screen *wayland*))
 	(unless (client-cursor-drawn screen)
@@ -60,8 +59,6 @@
     (setf (needs-redraw surface) nil)
     (setf (client-cursor-drawn screen) t)))
 
-;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
-;; So that the main loop can know if it should render the display cursor or not
 (defun render-toplevel (screen surface)
   (let ((texture (texture surface))
 	(width (flo (compo-max-width surface)))
@@ -73,8 +70,7 @@
 			  `(,(- x (screen-x screen)) ,(- y (screen-y screen))
 			    ,width ,height))
     (flush-frame-callbacks surface)
-    (setf (needs-redraw surface) nil)
-    nil))
+    (setf (needs-redraw surface) nil)))
 
 (defun render-layer-surface (screen surface)
   (let ((texture (texture surface))
@@ -89,8 +85,7 @@
 			  `(,(- x (screen-x screen)) ,(- y (screen-y screen))
 			    ,width ,height))
     (flush-frame-callbacks surface)
-    (setf (needs-redraw surface) nil)
-    nil))
+    (setf (needs-redraw surface) nil)))
 
 (defun render-popup (screen surface)
   (let ((texture (texture surface))
@@ -99,13 +94,9 @@
 	(x (+ (flo (x surface)) (flo (x (grab-parent surface)))))
 	(y (+ (flo (y surface)) (flo (y (grab-parent surface))))))
 
-    (progn
-      (shaders.texture:draw (shader screen :texture) texture `(,x ,y ,width ,height))
-      (flush-frame-callbacks surface)
-      (setf (needs-redraw surface) nil)
-      t)
-    ;; nil)
-  ))
+    (shaders.texture:draw (shader screen :texture) texture `(,x ,y ,width ,height))
+    (flush-frame-callbacks surface)
+    (setf (needs-redraw surface) nil)))
 
 
 (defun render-surface (screen surface)
@@ -117,30 +108,15 @@
     (popup (render-popup screen surface))
     (t (render-toplevel screen surface))))
 
-(defun render-clients (screen)
-  (let* ((clients (wl:all-clients *wayland*))
-	 (compositors (remove-if-not 'identity (mapcar 'compositor clients)))
-	 (surfaces (util:flatten (mapcar 'all-ready-surfaces compositors))))
-    (mapcar (lambda (surface) (render-surface screen surface)) surfaces)))
-
 (defun render-desktop (screen desktop)
-  (let* ((surfaces (windows desktop)))
-    (loop for surface in surfaces
-	  for compositor = (compositor surface)
-	  for compost-surfaces = (all-ready-surfaces compositor)
-	  do (mapcar (lambda (surface) (render-surface screen surface)) compost-surfaces))))
-
-;; TODO: This is a quick hack to check how well the layer surfaces work
-;; You need a better mechanism to keep track of ALL surfaces to render for a given screen
-(defun render-layer-surfaces (screen desktop)
-  (declare (ignore desktop))
-  (mapcar (lambda (client) (when (compositor client)
-			(loop for surface in (all-ready-surfaces (compositor client))
-			      when (typep surface 'layer-surface)
-				do (render-surface screen surface)
-			      when (typep surface 'subsurface)
-				do (render-surface screen surface))
-			;; TODO: Hacked popup renders in here - they should go somewhere else
-			(loop for surface in (all-popups (compositor client))
-			      do (render-surface screen surface))))
-	  (wl:all-clients *wayland*)))
+  (flet ((render (surface) (render-surface screen surface)))
+    (let* ((surfaces (windows desktop)))
+      (loop for surface in surfaces
+	    for compositor = (compositor surface)
+	    for compost-surfaces = (all-ready-surfaces compositor)
+	    do (destructuring-bind (layers toplevels popups cursors surfaces) compost-surfaces
+		 (mapcar #'render toplevels)
+		 (mapcar #'render popups)
+		 (mapcar #'render surfaces)
+		 (mapcar #'render layers)
+		 (mapcar #'render cursors))))))
