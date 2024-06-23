@@ -29,6 +29,7 @@
 		 (toplevel (push surface toplevels))
 		 (popup (push surface popups))
 		 (cursor (push surface cursors))
+		 (surface ()) ;; Surfaces without a role should not be considered
 		 (t (push surface surfaces))))
       (list layers toplevels popups cursors surfaces))))
 

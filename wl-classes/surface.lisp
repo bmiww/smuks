@@ -132,7 +132,8 @@ Or some such."
 
 ;; TODO: Destroy any connected textures and other resources
 (defmethod cl-wl:destroy :before ((surface surface))
-  (rem-surface (compositor surface) surface))
+  (when (eq (type-of surface) 'surface)
+    (rem-surface (compositor surface) surface)))
 
 
 ;; TODO: Might need to apply offset stuff here...
