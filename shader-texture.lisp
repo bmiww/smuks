@@ -19,7 +19,7 @@
    (runtime-vbo :accessor runtime-vbo)
    (gl-buffer-array :accessor gl-buffer-array)
    (attr-vert)
-   (attr-position)
+   (attr-transform-scale)
    (vao)))
 
 
@@ -33,7 +33,7 @@ uniform mat3 tex_scaling_matrix;
 uniform mat3 projection;
 
 in vec2 vert;
-in vec4 vert_position;
+in vec2 vert_transform_scale;
 
 out vec2 v_tex_coords;
 
@@ -45,9 +45,7 @@ mat2 scale(vec2 scale_vec){
 }
 
 void main() {
-    vec2 vert_transform_translation = vert_position.xy;
-    vec2 vert_transform_scale = vert_position.zw;
-    vec3 position = vec3(vert * scale(vert_transform_scale) + vert_transform_translation, 1.0);
+    vec3 position = vec3(vert * scale(vert_transform_scale), 1.0);
     v_tex_coords = (tex_scaling_matrix * position).xy;
     gl_Position = vec4(projection * translation * position, 1.0);
 }")
@@ -78,7 +76,7 @@ uniform mat3 tex_scaling_matrix;
 uniform mat3 projection;
 
 attribute vec2 vert;
-attribute vec4 vert_position;
+attribute vec2 vert_transform_scale;
 
 varying vec2 v_tex_coords;
 
@@ -90,9 +88,7 @@ mat2 scale(vec2 scale_vec){
 }
 
 void main() {
-    vec2 vert_transform_translation = vert_position.xy;
-    vec2 vert_transform_scale = vert_position.zw;
-    vec3 position = vec3(vert * scale(vert_transform_scale) + vert_transform_translation, 1.0);
+    vec3 position = vec3(vert * scale(vert_transform_scale), 1.0);
     v_tex_coords = (tex_scaling_matrix * position).xy;
     gl_Position = vec4(projection * translation * position, 1.0);
 }")
@@ -119,7 +115,7 @@ void main() {
 ;; └─┘└─┘─┴┘└─┘
 (defmethod initialize-instance :before ((program shader) &key projection gl-version)
   (setf (gl-version program) gl-version)
-  (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-position
+  (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-transform-scale
 	       uni-translation uni-texture-scaling uni-sampler gl-buffer-array) program
 
     (let ((fragment-shader (case gl-version
@@ -140,7 +136,7 @@ void main() {
     (setf uni-texture-scaling (gl:get-uniform-location pointer "tex_scaling_matrix"))
 
     (setf attr-vert (gl:get-attrib-location pointer "vert"))
-    (setf attr-position (gl:get-attrib-location pointer "vert_position"))
+    (setf attr-transform-scale (gl:get-attrib-location pointer "vert_transform_scale"))
     ;; TODO: This 4 is horrible.
     ;; Especially since i might at some point allocate more than one vertice
     (setf gl-buffer-array (shaders:allocate-gl-array 4))
@@ -157,13 +153,14 @@ void main() {
 ;; See the rect-shader for an example.
 (defvar *draw-instances* 1)
 
+
 ;; TODO: You should be able to turn shaders into render passes
 ;; So that a texture shader wouldn't need to be reenabled for each texture
 (defmethod draw ((program shader) texture position)
   (destructuring-bind (x y width height) position
     (let ((translation-matrix (translation-matrix x y))
 	  (tex-scaling-matrix (scaling-matrix width height)))
-      (with-slots (vao pointer instanced-vbo runtime-vbo attr-vert attr-position
+      (with-slots (vao pointer instanced-vbo runtime-vbo attr-vert attr-transform-scale
 		   uni-translation uni-texture-scaling gl-buffer-array) program
 	(gl:use-program pointer)
 	(gl:bind-vertex-array vao)
@@ -185,24 +182,14 @@ void main() {
 
 	(shaders:fill-buffer
 	 runtime-vbo
-	 (concatenate
-	  'simple-vector
-	  (util:flatten (loop for rect in `(,(make-rect :x 0.0 :y 0.0 :w width :h height)) collect (space-tuple rect))))
+	 (concatenate 'simple-vector (util:flatten (list (list width height))))
 	 gl-buffer-array)
-	(gl:enable-vertex-attrib-array attr-position)
-	(gl:vertex-attrib-pointer attr-position 4 :float nil (* 4 4) (cffi:null-pointer))
+	(gl:enable-vertex-attrib-array attr-transform-scale)
+	(gl:vertex-attrib-pointer attr-transform-scale 4 :float nil (* 4 4) (cffi:null-pointer))
 
 
 	(when (eq (gl-version program) :GL-3-1)
 	  (%gl:vertex-attrib-divisor attr-vert 0)
-	  (%gl:vertex-attrib-divisor attr-position 1))
+	  (%gl:vertex-attrib-divisor attr-transform-scale 1))
 
 	(gl:draw-arrays :triangle-strip 0 4)))))
-
-(defstruct rect
-  x y
-  w h
-  color)
-
-(defmethod space-tuple ((rect rect))
-  (list (rect-x rect) (rect-y rect) (rect-w rect) (rect-h rect)))
