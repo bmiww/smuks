@@ -138,8 +138,17 @@ Supposed to answer with a configure event showing the new size."
 (defmethod xdg-toplevel:set-fullscreen ((toplevel toplevel) output)
   (let* ((display (wl:get-display toplevel))
 	 (desktop (find-output-desktop display output))
-	 (screen (screen desktop)))
-    (xdg-toplevel:send-configure toplevel (screen-width screen) (screen-height screen) (configure-states :fullscreen))
+	 (screen (screen desktop))
+	 (state :maximized)
+	 (height (compo-max-height toplevel))
+	 (width (compo-max-width toplevel)))
+    (when (and (eq (screen-height screen) height)
+	       (eq (screen-width screen) width))
+      (setf height (screen-height screen))
+      (setf width (screen-width screen))
+      (setf state :fullscreen))
+
+    (xdg-toplevel:send-configure toplevel width height (configure-states state))
     (xdg-surface:send-configure toplevel (incf (configure-serial toplevel)))))
 
 
