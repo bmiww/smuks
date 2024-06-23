@@ -188,10 +188,10 @@ Supposed to answer with a configure event showing the new size."
     (incf x off-x) (incf y off-y)
     (case anchor
       (:none ())
-      (:top (incf x (/ a-width 2)))
-      (:bottom (incf x (/ a-width 2)))
-      (:left (incf y (/ a-height 2)))
-      (:right (incf y (/ a-height 2)))
+      (:top (incf x (floor (/ a-width 2))))
+      (:bottom (incf x (floor (/ a-width 2))))
+      (:left (incf y (floor (/ a-height 2))))
+      (:right (incf y (floor (/ a-height 2))))
       (:bottom-left (incf y a-height))
       (:bottom-right (incf x a-width) (incf y a-height))
       (:top-right (incf x a-width))
@@ -233,6 +233,12 @@ Supposed to answer with a configure event showing the new size."
    (anchor :initform :bottom-left :accessor anchor)
    (gravity :initform 'top :accessor gravity)
    (constraint :initform '() :accessor constraint)))
+
+;; TODO: Not really doing anything with this yet.
+;; Not sure it is that important for me
+(defmethod xdg-positioner:set-reactive ((positioner positioner))
+  )
+
 
 (defmethod xdg-positioner:set-size ((positioner positioner) width height)
   (setf (width positioner) width
