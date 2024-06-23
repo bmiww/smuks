@@ -57,11 +57,11 @@
     (when (and keyboard-focus (eq (wl:client keyboard-focus) client)) (setf (keyboard-focus display) nil))
     (when (and pending-drag (eq (wl:client pending-drag) client)) (setf (pending-drag display) nil))))
 
+
 ;; ┌─┐┌─┐┌┬┐┬ ┬┌─┐
 ;; └─┐├┤  │ │ │├─┘
 ;; └─┘└─┘ ┴ └─┘┴
 
-;; TODO: I don't much like the drm arg here
 (defmethod init-globals ((display display) screens)
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
   (make-instance 'wl-compositor:global :display display :dispatch-impl 'compositor)
@@ -76,6 +76,7 @@
   (make-instance 'zwp-text-input-manager-v3:global :display display :dispatch-impl 'text-input-manager)
   (make-instance 'zwp-input-method-manager-v2:global :display display :dispatch-impl 'input-method-manager)
   (make-instance 'zwp-virtual-keyboard-manager-v1:global :display display :dispatch-impl 'virtual-keyboard-manager)
+  (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
   (setf (outputs display)
 	(loop for screen in screens
 	      collect (init-output display screen))))

@@ -22,6 +22,9 @@
 (defvar *accel* nil)
 (defvar *gl-version* nil)
 
+#+xwayland
+(defvar *xwayland-process* nil)
+
 (defnil
     *socket* *smuks-exit*
   *cursor*
@@ -47,7 +50,6 @@
   (unless (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
     (error "Failed to initialize libinput"))
 
-
   (setf *screen-tracker* (make-instance 'screen-tracker :drm *drm*))
 
   (setf *socket* (init-socket))
@@ -58,6 +60,9 @@
 		     ;; It could also be interesting to have more than one dev-t.
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
 			      :screen-tracker *screen-tracker*))
+
+  ;; #+xwayland
+  ;; (setf *xwayland-process* (uiop:launch-program "Xwayland"))
 
   (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
@@ -323,6 +328,9 @@
 
 
 (defun cleanup ()
+  #+xwayland
+  (when *xwayland-process* (uiop:terminate-process *xwayland-process*))
+
   (when *screen-tracker* (cleanup-screen-tracker *screen-tracker*))
 
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))

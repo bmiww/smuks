@@ -11,7 +11,10 @@
 ;; NOTE: Disable cl-opengl error checking to shave off some runtime
 
 (defvar *DEBUG_MODE* (uiop/os:getenv "DEBUG_SMUKS"))
+(defvar *ENABLE_XWAYLAND* t)
+
 (when *DEBUG_MODE* (pushnew :cl-opengl-no-check-error *features*))
+(when *ENABLE_XWAYLAND* (pushnew :xwayland *features*))
 
 (asdf:defsystem #:smuks
   :serial t
@@ -46,6 +49,7 @@
 	       #:cl-wl.virtual-keyboard  ;; TODO: Add to my own distribution
 	       #:cl-wl.text-input  ;; TODO: Add to my own distribution
 	       #:cl-wl.input-method  ;; TODO: Add to my own distribution
+	       #:cl-wl.xwayland  ;; TODO: Add to my own distribution
 	       ;; TODO: Make libiio optional via compile flag.
 	       ;; It is only really used for mobile devices.
 	       ;; In case if anyone needs it for desktop, hit me up.
@@ -90,7 +94,8 @@
 			     (:file "decor-manager")
 			     (:file "text-input")
 			     (:file "input-method")
-			     (:file "virtual-keyboard")))
+			     (:file "virtual-keyboard")
+			     (:file "xwayland")))
 	       (:file "screens")
 	       (:file "display")
 	       (:file "display-inputs")
