@@ -48,7 +48,7 @@
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
 ;; The configuration sequence. Applying pending state or whatnot. Not sure
 (defmethod xdg-surface:ack-configure ((xdg xdg-surface) serial)
-  ())
+  )
 
 
 ;; ┌─┐┬─┐┌─┐┌┐ ┌┐ ┌─┐┌┐ ┬  ┌─┐
@@ -81,8 +81,10 @@ Destroying the grabbable object will also destroy the grab child"))
   ;; TODO: the last argument - the state - is actually not an enum
   ;; It's an array. So i can't really use the enum logic here
   ;; The xml also doesn't define that the array here would be filled with enum values
-  (xdg-toplevel:send-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel) '(1))
-  (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
+
+  (let ((serial (incf (configure-serial toplevel))))
+    (xdg-toplevel:send-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel) (configure-states :maximized))
+    (xdg-surface:send-configure toplevel serial)))
 
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
   (setf (title toplevel) title))
@@ -117,7 +119,7 @@ Destroying the grabbable object will also destroy the grab child"))
 For tiling managers - i think i'll just resend the original configure event.
 Supposed to answer with a configure event showing the new size."
   (log! "xdg-toplevel:set-maximized: Not considered in great detail")
-  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) '(1))
+  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) (configure-states :maximized))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
 (defmethod xdg-toplevel:unset-maximized ((toplevel toplevel))
@@ -125,7 +127,7 @@ Supposed to answer with a configure event showing the new size."
 For tiling managers - i think i'll just resend the original configure event.
 Supposed to answer with a configure event showing the new size."
   (log! "xdg-toplevel:unset-maximized: Not considered in great detail")
-  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) '(1))
+  (xdg-toplevel:send-configure toplevel (width toplevel) (height toplevel) (configure-states :maximized))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
 (defmethod xdg-toplevel:resize ((toplevel toplevel) seat serial edges)
@@ -137,8 +139,7 @@ Supposed to answer with a configure event showing the new size."
   (let* ((display (wl:get-display toplevel))
 	 (desktop (find-output-desktop display output))
 	 (screen (screen desktop)))
-    ;; TODO: None of the stupid cases where the states are sent as an array without a specified enum. So we use 2 as :fullscreen
-    (xdg-toplevel:send-configure toplevel (screen-width screen) (screen-height screen) '(2))
+    (xdg-toplevel:send-configure toplevel (screen-width screen) (screen-height screen) (configure-states :fullscreen))
     (xdg-surface:send-configure toplevel (incf (configure-serial toplevel)))))
 
 
@@ -146,7 +147,7 @@ Supposed to answer with a configure event showing the new size."
 ;; For now assuming that this will tell the client that it should offer a resize
 (defmethod xdg-toplevel:unset-fullscreen ((toplevel toplevel))
   "A client wants to unset fullscreen state."
-  (xdg-toplevel:send-configure toplevel 0 0 '(1))
+  (xdg-toplevel:send-configure toplevel 0 0 (configure-states :maximized))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
 
@@ -238,3 +239,20 @@ Supposed to answer with a configure event showing the new size."
 (defmethod xdg-positioner:set-constraint-adjustment ((positioner positioner) constraint)
   "This indicates what to do with the popup surface if it's width/height/x/y is outside the bounds of the parent surface."
   (setf (constraint positioner) constraint))
+
+
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+(defun configure-states (&rest states)
+  (loop for state in states
+	collect (case state
+		  (:maximized 1)
+		  (:fullscreen 2)
+		  (:resizing 3)
+		  (:activated 4)
+		  (:tiled-left 5)
+		  (:tiled-right 6)
+		  (:tiled-top 7)
+		  (:tiled-bottom 8)
+		  (:suspended 9))))
