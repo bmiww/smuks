@@ -137,7 +137,6 @@ Supposed to answer with a configure event showing the new size."
     (when (< (compo-max-width toplevel) width) (setf width (compo-max-width toplevel)))
     (when (< (compo-max-height toplevel) height) (setf height (compo-max-height toplevel)))
 
-    (rem-state toplevel :maximized)
     (do-window-configure toplevel width height)))
 
 (defmethod xdg-toplevel:resize ((toplevel toplevel) seat serial edges)
