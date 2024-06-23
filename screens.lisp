@@ -28,7 +28,8 @@
    (configuring-neighbors :initform nil :accessor configuring-neighbors)
    (orientation :initform :landscape :initarg :orientation :reader orientation)
    (screen-x :initarg :screen-x :initform 0 :accessor screen-x)
-   (screen-y :initarg :screen-y :initform 0 :accessor screen-y)))
+   (screen-y :initarg :screen-y :initform 0 :accessor screen-y)
+   (client-cursor-drawn :initform nil :accessor client-cursor-drawn)))
 
 (defmethod (setf orientation) (orientation (screen screen))
   (unless orientation (error "Provided orientation cannot be nil."))

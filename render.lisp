@@ -12,8 +12,7 @@
 ;; ┴ ┴┴ ┴┴┘└┘
 (defun render-frame (screen)
   (livesupport:update-repl-link)
-  (let ((cursor-drawn nil)
-	(desktop (find-screen-desktop *wayland* screen))
+  (let ((desktop (find-screen-desktop *wayland* screen))
 	(framebuffer (next-framebuffer screen)))
 
     (sdrm::just-page-flip *drm* (framebuffer-id framebuffer) (connector screen)
@@ -23,17 +22,16 @@
       (gl:clear :color-buffer-bit)
 
       (render-scene screen)
-
-      ;; (setf cursor-drawn (some (lambda (val) val) (render-clients screen)))
-      (setf cursor-drawn (render-desktop screen desktop))
+      (render-desktop screen desktop)
       (render-layer-surfaces screen desktop)
 
       (when (eq screen (cursor-screen *wayland*))
-	;; (unless cursor-drawn
-	(shaders.texture:draw (shader screen :texture) *cursor*
-			      `(,(- (cursor-x *wayland*) (screen-x screen))
-				,(- (cursor-y *wayland*) (screen-y screen))
-				36.0 36.0)))
+	(unless (client-cursor-drawn screen)
+	  (shaders.texture:draw (shader screen :texture) *cursor*
+				`(,(- (cursor-x *wayland*) (screen-x screen))
+				  ,(- (cursor-y *wayland*) (screen-y screen))
+				  36.0 36.0))))
+      (setf (client-cursor-drawn screen) nil)
       (gl:flush)
       (gl:finish)
 
@@ -49,8 +47,6 @@
 ;; ┌─┐┌─┐┬─┐  ┌─┐┌┐  ┬┌─┐┌─┐┌┬┐
 ;; ├─┘├┤ ├┬┘  │ │├┴┐ │├┤ │   │
 ;; ┴  └─┘┴└─  └─┘└─┘└┘└─┘└─┘ ┴
-;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
-;; So that the main loop can know if it should render the display cursor or not
 ;; TODO: This is almost identical to render-toplevel, with the difference being the coordinates
 (defun render-cursor (screen surface)
   (let ((texture (texture surface))
@@ -59,16 +55,10 @@
 	(x (- (cursor-x *wayland*) (flo (x surface)) (screen-x screen)))
 	(y (- (cursor-y *wayland*) (flo (y surface)) (screen-y screen))))
 
-    ;; TODO: Fix this active-surface usage. You moved active-surface to a client seat
-    ;; And this use case in general seems wrong (could be improved)
-    ;; (if (active-surface (role surface))
-    (progn
-      (shaders.texture:draw (shader screen :texture) texture `(,x ,y ,width ,height))
-      (flush-frame-callbacks surface)
-      (setf (needs-redraw surface) nil)
-      t)
-    ;; nil)
-  ))
+    (shaders.texture:draw (shader screen :texture) texture `(,x ,y ,width ,height))
+    (flush-frame-callbacks surface)
+    (setf (needs-redraw surface) nil)
+    (setf (client-cursor-drawn screen) t)))
 
 ;; TODO: The boolean return value is stupid. Tells that a cursor has been rendered
 ;; So that the main loop can know if it should render the display cursor or not
