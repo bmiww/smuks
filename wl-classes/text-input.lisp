@@ -29,7 +29,7 @@
    (width :initarg :width :accessor width)
    (height :initarg :height :accessor height)
    (enabled :initarg :enabled :accessor enabled)
-   (pending-rectangle :initarg :pending-rectangle :accessor pending-rectangle)))
+   (pending-rectangle :initform nil :initarg :pending-rectangle :accessor pending-rectangle)))
 
 ;; TODO: Should be double buffered. Commit should apply these changes.
 (defmethod zwp-text-input-v3:set-cursor-rectangle ((text-input text-input) x y width height)

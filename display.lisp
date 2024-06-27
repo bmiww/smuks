@@ -176,11 +176,10 @@
 	  (bounds-check (screens display) new-x new-y))))
 
 (defmethod orient-point ((display display) x y)
-  (error "While working on multi-screen support, you broke most of the touchscreen stuff")
-  ;; (case (orientation *first*)
-    ;; (:landscape (values y (- (screen-height *first*) x)))
-    ;; (:portrait (- (screen-width *first*) x)))
-  )
+  (let ((touch-screen (dsi-screen (screens display))))
+    (case (orientation touch-screen)
+      (:landscape (values y (+ (- (screen-height touch-screen) x) (screen-x touch-screen))))
+      (:portrait (- (screen-width touch-screen) x)))))
 
 
 (defmethod find-output-desktop ((display display) output)
