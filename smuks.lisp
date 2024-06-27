@@ -26,11 +26,9 @@
 (defvar *xwayland-process* nil)
 
 (defnil
-    *socket* *smuks-exit*
-  *cursor*
-  *egl* *egl-context*
-  *client-poller* *wl-poller* *drm-poller* *input-poller*
-  *seat-poller* *accelerometer-poller* *udev-poller*)
+    *socket*
+  *smuks-exit* *cursor*
+  *egl* *egl-context*)
 
 (defun mainer ()
   (setf *log-output* *standard-output*)
@@ -83,20 +81,27 @@
   (cl-async:start-event-loop
    (lambda ()
      (log! "Starting DRM fd listener. Waiting for events...")
-     (setf *drm-poller* (drm-listener))
+     (cl-async:poll (fd *drm*) 'drm-callback :poll-for '(:readable))
+
      (log! "Starting wayland client socket listener. Waiting for clients...")
-     (setf *client-poller* (client-listener))
+     (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t)
+
      (log! "Starting wayland event loop listener. Waiting for events...")
-     (setf *wl-poller* (wayland-listener))
+     (cl-async:poll (wl:event-loop-fd *wayland*) 'wayland-callback :poll-for '(:readable))
+
      (log! "Starting input event poller. Waiting for user inputs...")
-     (setf *input-poller* (input-listener))
+     (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable))
+
      (log! "Starting the umpteenth poller. Now for seat events...")
-     (setf *seat-poller* (seat-listener))
+     (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable))
+
      (when *accel*
        (log! "Starting MY accelerometer poller. Waiting for accelerometer events...")
-       (setf *accelerometer-poller* (my-accelerometer-listener)))
+       (cl-async:poll (iio-accelerometer::fd *accel*) 'my-accelerometer-callback :poll-for '(:readable)))
+
      (log! "Starting the udev poller. Waiting for udev events...")
-     (setf *udev-poller* (udev-listener))
+     (udev::%monitor-enable-receiving *udev-monitor*)
+     (cl-async:poll (udev:get-fd *udev-monitor*) 'udev-callback :poll-for '(:readable))
 
      (recursively-render-frame))))
 
@@ -177,17 +182,6 @@
 ;; ┌─┐┌─┐┬  ┬  ┬┌┐┌┌─┐
 ;; ├─┘│ ││  │  │││││ ┬
 ;; ┴  └─┘┴─┘┴─┘┴┘└┘└─┘
-;; Listeners
-(defun wayland-listener () (cl-async:poll (wl:event-loop-fd *wayland*) 'wayland-callback :poll-for '(:readable)))
-(defun client-listener () (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t))
-(defun drm-listener () (cl-async:poll (fd *drm*) 'drm-callback :poll-for '(:readable)))
-(defun input-listener () (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable)))
-(defun seat-listener () (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable)))
-(defun my-accelerometer-listener () (cl-async:poll (iio-accelerometer::fd *accel*) 'my-accelerometer-callback :poll-for '(:readable)))
-(defun udev-listener ()
-  (udev::%monitor-enable-receiving *udev-monitor*)
-  (cl-async:poll (udev:get-fd *udev-monitor*) 'udev-callback :poll-for '(:readable)))
-
 ;; Slightly annoying callbacks
 (defun ready (ev) (member :readable ev))
 (defun wayland-callback (ev) (when (ready ev) (handle-wayland-event)))
