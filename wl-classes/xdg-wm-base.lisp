@@ -170,7 +170,6 @@ Supposed to answer with a configure event showing the new size."
 
 
 (defmethod do-window-configure ((toplevel toplevel) width height)
-  (log! "configure-toplevel: ~a ~a" width height)
   (xdg-toplevel:send-configure toplevel width height (apply 'configure-states (states toplevel)))
   (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
 
