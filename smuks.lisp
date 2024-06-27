@@ -346,23 +346,3 @@
 
   (setfnil *egl* *egl-context* *drm* *smuks-exit*
 	   *wayland* *socket* *seat* *cursor* *accel*))
-
-;; ┬ ┬┌─┐┌─┐┬┌─┌─┐
-;; ├─┤├─┤│  ├┴┐└─┐
-;; ┴ ┴┴ ┴└─┘┴ ┴└─┘
-;; TODO: This is a fix for cl-async not having a handler for gracious :poll closing
-;; Weirdly enough - i expected them to crash due to this missing method, but they don't.
-;; I should probably fix this in cl-async by introducing the handle-cleanup method.
-;; Could be done by keeping track of the pointers and the respective poller objects. Singletony, but eh.
-(defmethod cl-async::handle-cleanup ((handle-type (eql :poll)) handle)
-  (cond
-    ((cffi:pointer-eq (cl-async::poller-c *seat-poller*) handle) (cl-async:free-poller *seat-poller*))
-    ((cffi:pointer-eq (cl-async::poller-c *drm-poller*) handle) (cl-async:free-poller *drm-poller*))
-    ((cffi:pointer-eq (cl-async::poller-c *wl-poller*) handle) (cl-async:free-poller *wl-poller*))
-    ((cffi:pointer-eq (cl-async::poller-c *client-poller*) handle) (cl-async:free-poller *client-poller*))
-    ((cffi:pointer-eq (cl-async::poller-c *input-poller*) handle) (cl-async:free-poller *input-poller*))
-    ((and *accelerometer-poller*
-	  (cffi:pointer-eq (cl-async::poller-c *accelerometer-poller*) handle))
-	  (cl-async:free-poller *accelerometer-poller*))
-    ((cffi:pointer-eq (cl-async::poller-c *udev-poller*) handle) (cl-async:free-poller *udev-poller*))
-    (t (error "Unknown poller handle"))))
