@@ -139,6 +139,11 @@ Supposed to answer with a configure event showing the new size."
 
     (do-window-configure toplevel width height)))
 
+(defmethod xdg-toplevel:set-minimized ((toplevel toplevel))
+  "A client wants to minimize their window.
+For my purposes - i'm just ignoring this and giving the client the current state as configure"
+  (do-window-configure toplevel (width toplevel) (height toplevel)))
+
 (defmethod xdg-toplevel:resize ((toplevel toplevel) seat serial edges)
   "A client wants to resize their window."
   (log! "xdg-toplevel:resize: Not implemented")

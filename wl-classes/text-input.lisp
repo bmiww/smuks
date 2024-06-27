@@ -47,6 +47,27 @@ Can be used to render text-completions and other fancy things around the cursor.
 	    (height text-input) height
 	    (pending-rectangle text-input) nil))))
 
+;; TODO: Implement this one. For now - no clue what it does.
+(defmethod zwp-text-input-v3:set-surrounding-text ((text-input text-input) text cursor anchor)
+  ())
+
+;; TODO: Implement this one. For now - no clue what it does
+(defmethod zwp-text-input-v3:set-text-change-cause ((text-input text-input) cause)
+  ())
+
+
+;; TODO: Implement this one. For now - no clue what it does
+;; The method name is an obvious hint though.
+(defmethod zwp-text-input-v3:set-content-type ((text-input text-input) hint purpose)
+  ())
+
+;; TODO: Implement this one. For now - no clue what it does
+;; The method name is an obvious hint though.
+;; NOTE: Only max one text input should be active at any given time.
+(defmethod zwp-text-input-v3:enable ((text-input text-input))
+  ())
+
+
 ;; TODO: Interestingly enough - "kitty" used the disable method without the enable.
 ;; Does it assume that the text-input is enabled by default during commit?
 (defmethod zwp-text-input-v3:disable ((text-input text-input))
