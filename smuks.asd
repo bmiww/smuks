@@ -57,6 +57,7 @@
 	       ;; Or just deliver with it. Or compile it in somehow.
 	       #:lisp-binary ;; NOTE: Used for the accelerometer package which could be extracted
 	       #:mmap
+	       #:osicat
 	       #:livesupport
 	       #:unix-sockets
 	       #:alexandria
