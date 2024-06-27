@@ -131,6 +131,7 @@
 ;; TODO: Add a way to check which screen belongs to the accelerometer
 ;; This might actually need to be a hack - check if DSI or some other on-board connector is used
 (defun determine-orientation (orient)
+  (print orient)
   (let* ((dsi-screen (dsi-screen *screen-tracker*))
 	 (current-orient (orientation dsi-screen)))
 
@@ -191,7 +192,8 @@
 (defun my-accelerometer-callback (ev)
   (when (ready ev)
     (handler-case
-	(determine-orientation (iio-accelerometer::read-accelerometer *accel*))
+	;; (determine-orientation (iio-accelerometer::read-accelerometer *accel*))
+	()
       (error (e)
 	(log! "Error reading accelerometer: ~a" e)))))
 
