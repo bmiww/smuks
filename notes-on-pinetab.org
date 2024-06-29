@@ -26,3 +26,8 @@ REVERTED
 Talks about converting a DTB to DTS -> Editing -> Recompiling to DTB
 https://forum.pine64.org/showthread.php?tid=2078&pid=19149#pid19149
 https://xdaforums.com/t/how-to-convert-back-qualcomms-dtb-to-dts-file-extract-kernel-config.3221223/
+
+
+* Applications of interest
+** A reddit post of someones opinionated day to day programs
+https://www.reddit.com/r/PINE64official/s/nnpAnD4GnV
