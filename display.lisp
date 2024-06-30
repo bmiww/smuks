@@ -32,7 +32,7 @@
 
 (defvar *framebuffer-count* 2)
 
-(defmethod initialize-instance :after ((display display))
+(defmethod initialize-instance :after ((display display) &key)
 
   ;; NOTE: For now creating 10 desktops each for one number key
   (setf (desktops display)
@@ -112,7 +112,7 @@
 				     :screen-y screen-y
 				     :drm (drm display)
 				     ;; NOTE: Moved from old output thing
-				     :display display :dispatch-impl 'output
+				     :display display :dispatch-impl 'output-dispatch
 				     ;; TODO: These could be determined differently\
 				     :x 0 :y 0
 				     :width (width screen) :height (height screen)

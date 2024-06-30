@@ -17,7 +17,7 @@
 ;;  ╚═════╝ ╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
 ;; TODO: This is where you probably want to fake a virtual output for use cases such as:
 ;; Video call video sharing - virtual output with fake details
-(defclass output-global (wl-output:global)
+(defclass output (wl-output:global)
   ;; TODO: Thse x/y most likely mean the same as screen-x and screen-y
   ((x :initarg :x :accessor output-x)
    (y :initarg :y :accessor output-y)
@@ -62,7 +62,7 @@ transform - is the screen rotated? is the screen flipped?
 "))
 
 
-(defmethod render-scene ((screen screen)) (funcall (scene screen) screen))
+(defmethod render-scene ((output output)) (funcall (scene output) output))
 (defmethod prep-shaders ((output output))
   (let ((width (output-width output)) (height (output-height output)) (rot (shader-rot-val output))
 	(gl-version (gl-version (tracker output))))
@@ -111,12 +111,12 @@ transform - is the screen rotated? is the screen flipped?
   (recalculate-dimensions (tracker output))
   (prep-shaders output))
 
-(defmethod update-projections ((screen screen) projection)
-  (let ((projection (sglutil:projection-matrix (screen-width screen) (screen-height screen) (shader-rot-val screen))))
-    (loop for shader in (shaders screen)
+(defmethod update-projections ((output output) projection)
+  (let ((projection (sglutil:projection-matrix (screen-width output) (screen-height output) (shader-rot-val output))))
+    (loop for shader in (shaders output)
 	  do (shaders:update-projection shader projection))))
 
-(defmethod set-scene ((screen screen) scene) (setf (scene screen) scene))
+(defmethod set-scene ((output output) scene) (setf (scene output) scene))
 
 ;; ┌─┐┌─┐┬  ┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
 ;; └─┐├┤ │  ├┤ │   │ │ │├┬┘└─┐
@@ -152,16 +152,16 @@ transform - is the screen rotated? is the screen flipped?
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘
 ;; └─┘┴─┘└─┘┴ ┴┘└┘└─┘┴
-(defmethod cleanup-screen ((screen screen))
-  (loop for framebuffer in (framebuffers screen)
+(defmethod cleanup-screen ((output output))
+  (loop for framebuffer in (framebuffers output)
 	do (let ((egl-image (framebuffer-egl-image framebuffer))
 		 (framebuffer-id (framebuffer-id framebuffer))
 		 (framebuffer-buffer (framebuffer-buffer framebuffer)))
 	     (when egl-image
-	       (seglutil:destroy-image (egl (tracker screen)) egl-image)
+	       (seglutil:destroy-image (egl (wl:get-display output)) egl-image)
 	       (setf (framebuffer-egl-image framebuffer) nil))
 	     (when (and framebuffer-id framebuffer-buffer)
-	       (sdrm:rm-framebuffer! (drm screen) framebuffer-id framebuffer-buffer)
+	       (sdrm:rm-framebuffer! (drm output) framebuffer-id framebuffer-buffer)
 	       (setf (framebuffer-id framebuffer) nil
 		     (framebuffer-buffer framebuffer) nil)))))
 
@@ -173,12 +173,12 @@ transform - is the screen rotated? is the screen flipped?
 ;; ██████╔╝██║███████║██║     ██║  ██║   ██║   ╚██████╗██║  ██║
 ;; ╚═════╝ ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝
 ;; TODO: Implement the release request handler
-(defclass output (wl-output:dispatch)
+(defclass output-dispatch (wl-output:dispatch)
   ())
 
 ;; TODO: Add posibility to name an output - send via name event
 ;; TODO: Add posibility to give outputs a description - send via description event
-(defmethod initialize-instance :after ((output output) &key)
+(defmethod initialize-instance :after ((output output-dispatch) &key)
   (let ((global (wl:global output)))
     (wl-output:send-geometry output
 			     (output-x global)
