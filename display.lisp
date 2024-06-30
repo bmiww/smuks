@@ -33,15 +33,12 @@
 (defvar *framebuffer-count* 2)
 
 (defmethod initialize-instance :after ((display display) &key)
-
   ;; NOTE: For now creating 10 desktops each for one number key
   (setf (desktops display)
 	(loop for i from 0 below 10
 	      collect (make-instance 'desktop)))
 
-  (setf (active-desktop display) (first (desktops display)))
-
-  )
+  (setf (active-desktop display) (first (desktops display))))
 
 
 (defgeneric input (display type event))
@@ -348,20 +345,19 @@
 ;; TODO: Rename to workspace or something???
 ;; TODO: Because of desktop - drag & drop icon surfaces aren't rendering in a desktop other than the originating desktop
 (defclass desktop ()
-  ((screen :initform nil :initarg :screen :accessor screen)
+  ((output :initform nil :initarg :output :accessor output)
    (windows :initform nil :accessor windows)
    (fullscreen-window :initform nil :accessor fullscreen-window)))
 
-(defmethod has-screen ((desktop desktop) screen) (eq screen (screen desktop)))
+(defmethod has-output ((desktop desktop) output) (eq output (output desktop)))
 
-(defmethod width ((desktop desktop)) (screen-width (screen desktop)))
-(defmethod height ((desktop desktop)) (screen-height (screen desktop)))
+(defmethod width ((desktop desktop)) (screen-width (output desktop)))
+(defmethod height ((desktop desktop)) (screen-height (output desktop)))
 
 (defmethod recalculate-layout ((desktop desktop))
   (when (windows desktop)
-    ;; TODO: Replace the car of screens by an actual iteration through screens
-    (let* ((screen (screen desktop))
-	   (d-width (screen-width screen)) (d-height (screen-height screen))
+    (let* ((output (output desktop))
+	   (d-width (screen-width output)) (d-height (screen-height output))
 	   (amount (length (windows desktop)))
 	   (width-per (floor (/ d-width amount))))
       (loop
@@ -369,8 +365,8 @@
 	for i from 0
 	do (progn
 	     (setf
-	      (x window) (+ (* i width-per) (screen-x screen))
-	      (y window) (screen-y screen)
+	      (x window) (+ (* i width-per) (screen-x output))
+	      (y window) (screen-y output)
 	      (compo-max-width window) width-per
 	      (compo-max-height window) d-height)
 
