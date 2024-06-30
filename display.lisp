@@ -58,7 +58,7 @@
 ;; └─┐├┤  │ │ │├─┘
 ;; └─┘└─┘ ┴ └─┘┴
 
-(defmethod init-globals ((display display) screens)
+(defmethod init-globals ((display display))
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
   (make-instance 'wl-compositor:global :display display :dispatch-impl 'compositor)
   (make-instance 'wl-subcompositor:global :display display :dispatch-impl 'subcompositor)
@@ -73,9 +73,8 @@
   (make-instance 'zwp-input-method-manager-v2:global :display display :dispatch-impl 'input-method-manager)
   (make-instance 'zwp-virtual-keyboard-manager-v1:global :display display :dispatch-impl 'virtual-keyboard-manager)
   (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
-  (setf (outputs display)
-	(loop for screen in screens
-	      collect (init-output display screen)))
+
+  (init-outputs)
 
   ;; TODO: Needs outputs at this point. Could be moved if i rewrite initialization
   ;; NOTE: For each screen we have available attach it to a different desktop
@@ -129,12 +128,12 @@
 ;; TODO: Suboptimal. Since it has to go through the whole list on every pointer motion event
 (defmethod bounds-check ((display display) x y)
   (let* ((likely-output (car (outputs display))))
-    (loop for screen in (outputs display)
+    (loop for output in (outputs display)
 	  ;; TODO: Weird skip of the first item
-	  unless (eq likely-output screen)
-	    when (or (> x (screen-x screen) (screen-x likely-output))
-		     (> y (screen-y screen) (screen-y likely-output)))
-	      do (setf likely-output screen))
+	  unless (eq likely-output output)
+	    when (or (> x (screen-x output) (screen-x likely-output))
+		     (> y (screen-y output) (screen-y likely-output)))
+	      do (setf likely-output output))
 
     (let ((width (screen-width likely-output))
 	  (height (screen-height likely-output)))
@@ -164,7 +163,7 @@
 ;; ┴┘└┘┴  └─┘ ┴   ┴ ┴┴ ┴┘└┘─┴┘┴─┘┴┘└┘└─┘
 (defmethod input ((display display) type event)
   (cond
-    ((configuring-neighbors? (screens display)) (process display type :screen-setup event))
+    ((configuring-neighbors? (outputs display)) (process display type :screen-setup event))
     (t (process display type :passthrough event))))
 
 (defmethod input ((display display) (type (eql :pointer-axis)) event)
@@ -216,10 +215,10 @@
   (let ((new-x (+ (cursor-x display) dx))
 	(new-y (+ (cursor-y display) dy)))
     (setf (values (cursor-x display) (cursor-y display) (cursor-screen display))
-	  (bounds-check (screens display) new-x new-y))))
+	  (bounds-check (outputs display) new-x new-y))))
 
 (defmethod orient-point ((display display) x y)
-  (let ((touch-screen (dsi-screen (screens display))))
+  (let ((touch-screen (dsi-screen display)))
     (case (orientation touch-screen)
       (:landscape (values y (+ (- (screen-height touch-screen) x) (screen-x touch-screen))))
       (:portrait (- (screen-width touch-screen) x)))))
@@ -245,13 +244,6 @@
 
 (defmethod screen-by-crtc ((display display) crtc-id)
   (find-if (lambda (screen) (eq (crtc-id (connector screen)) crtc-id)) (outputs display)))
-
-
-(defmethod cleanup-screen-tracker ((display display))
-  (stop-measuring-fps display)
-  (loop for screen in (outputs display)
-	do (cleanup-screen screen)
-	finally (setf (outputs display) nil)))
 
 (defmethod update-projections ((display display) projection)
   (mapcar (lambda (screen) (update-projections screen projection)) (outputs display)))
@@ -330,6 +322,23 @@
 (defmethod kickstart-frame-render-for-all ((display display))
   (loop for screen in (outputs display)
 	do (render-frame screen)))
+
+
+
+
+;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
+;; │  │  ├┤ ├─┤││││ │├─┘
+;; └─┘┴─┘└─┘┴ ┴┘└┘└─┘┴
+(defmethod cleanup-display ((display display))
+
+  ;; Run cleanup for all outputs
+  (stop-measuring-fps display)
+  (loop for screen in (outputs display)
+	do (cleanup-screen screen)
+	finally (setf (outputs display) nil))
+
+  ;; Close the libwayland processes and the globals from lisp end
+  (wl:destroy display))
 
 
 ;; ┌┬┐┌─┐┌─┐┬┌─┌┬┐┌─┐┌─┐┌─┐

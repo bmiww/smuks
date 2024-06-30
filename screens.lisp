@@ -8,7 +8,6 @@
 ;; TODO File could be renamed/repurposed now that screens odnt liove here any more
 (in-package :smuks)
 
-(defvar *screen-tracker* nil)
 (defvar *scenes* (list 'scene-1 'scene-2))
 (defvar *stupid-size* 150.0)
 
@@ -34,8 +33,7 @@
 
   (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
 						    :x *red-x* :y *red-y* :w 200.0 :h 50.0
-						    :color '(1.0 0.0 0.0 0.6))))
-  )
+						    :color '(1.0 0.0 0.0 0.6)))))
 
 (defvar *y-2-pos* 220.0)
 (defvar y-2-up t)

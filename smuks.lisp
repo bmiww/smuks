@@ -48,7 +48,6 @@
   (unless (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
     (error "Failed to initialize libinput"))
 
-  (setf *screen-tracker* (make-instance 'screen-tracker :drm *drm*))
 
   (setf *socket* (init-socket))
   (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
@@ -57,7 +56,6 @@
 		     ;; But it might also match main-device proper
 		     ;; It could also be interesting to have more than one dev-t.
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
-			      :screen-tracker *screen-tracker*
 			      :drm *drm*))
 
   ;; #+xwayland
@@ -65,19 +63,18 @@
 
   (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
-  (setf (egl *screen-tracker*) *egl*)
 
 
   (setf *cursor* (load-cursor-texture))
-  (prep-shaders2 *screen-tracker* :gl-version *gl-version*)
+  (prep-shaders2 *wayland* :gl-version *gl-version*)
 
   (setf *accel* (iio-accelerometer:find-accelerometer-dev))
 
   (setf *udev* (udev:udev-new))
   (setf *udev-monitor* (udev:monitor-udev *udev*))
 
-  (start-monitors *screen-tracker*)
-  (init-globals *wayland* (screens *screen-tracker*))
+  (start-monitors *wayland*)
+  (init-globals *wayland*)
 
   (cl-async:start-event-loop
    (lambda ()
@@ -121,7 +118,7 @@
 (defun recursively-render-frame ()
   (if *smuks-exit*
       (cl-async:exit-event-loop)
-      (loop for screen in (screens *screen-tracker*)
+      (loop for screen in (outputs *wayland*)
 	    do (restart-case (render-frame screen)
 		 (skip-frame ()
 		   :report "Skip frame"
@@ -133,7 +130,7 @@
 ;; This might actually need to be a hack - check if DSI or some other on-board connector is used
 (defun determine-orientation (orient)
   (print orient)
-  (let* ((dsi-screen (dsi-screen *screen-tracker*))
+  (let* ((dsi-screen (dsi-screen display))
 	 (current-orient (orientation dsi-screen)))
 
     (destructuring-bind (x y z) orient
@@ -215,7 +212,7 @@
 
 (defun handle-drm-device-event (dev)
   (declare (ignore dev))
-  (handle-drm-change *screen-tracker*))
+  (handle-drm-change display))
 
 
 (defun handle-input (event)
@@ -237,7 +234,7 @@
 (defun set-frame-ready (a b c d crtc-id f)
   "If a screen is not found - it is assumed to have been disconnected"
   (declare (ignore a b c d f))
-  (let ((screen (screen-by-crtc *screen-tracker* crtc-id)))
+  (let ((screen (screen-by-crtc display crtc-id)))
     (when screen (render-frame screen))))
 
 (defun process-added-device (dev)
@@ -328,12 +325,10 @@
   #+xwayland
   (when *xwayland-process* (uiop:terminate-process *xwayland-process*))
 
-  (when *screen-tracker* (cleanup-screen-tracker *screen-tracker*))
-
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
   (when *drm* (sdrm:close-drm *drm*))
 
-  (when *wayland* (wl:destroy *wayland*))
+  (when *wayland* (cleanup-display *wayland*))
 
   (when *seat* (libseat:close-seat *seat*))
   (when *accel* (iio-accelerometer::close-dev *accel*))
