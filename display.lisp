@@ -113,8 +113,8 @@
 				     ;; TODO: These could be determined differently\
 				     :x 0 :y 0
 				     :width width :height height
-				     :real-width width :real-height screen
-				     :refresh-rate (sdrm:vrefresh screen)
+				     :real-width width :real-height height
+				     :refresh-rate (sdrm:vrefresh connector)
 				     :make "TODO: Fill out make" :model "TODO: Fill out model")
 				(incf screen-y height))))))))
 
@@ -138,8 +138,8 @@
 		     (> y (screen-y output) (screen-y likely-output)))
 	      do (setf likely-output output))
 
-    (let ((width (screen-width likely-output))
-	  (height (screen-height likely-output)))
+    (let ((width (output-width likely-output))
+	  (height (output-height likely-output)))
       (values (min (max x (screen-x likely-output)) (+ (screen-x likely-output) width))
 	      (min (max y (screen-y likely-output)) (+ (screen-y likely-output) height))
 	      likely-output))))
@@ -223,8 +223,8 @@
 (defmethod orient-point ((display display) x y)
   (let ((touch-screen (dsi-output display)))
     (case (orientation touch-screen)
-      (:landscape (values y (+ (- (screen-height touch-screen) x) (screen-x touch-screen))))
-      (:portrait (- (screen-width touch-screen) x)))))
+      (:landscape (values y (+ (- (output-height touch-screen) x) (screen-x touch-screen))))
+      (:portrait (- (output-width touch-screen) x)))))
 
 (defmethod find-output-desktop ((display display) output)
   (find output (desktops display) :key #'output))
@@ -263,7 +263,7 @@
   (let ((screen-y 0))
     (loop for output in (outputs display)
 	  do (setf (screen-y output) screen-y)
-	     (incf screen-y (screen-height output)))))
+	     (incf screen-y (output-height output)))))
 
 (defun guess-orientation (width height)
   "Used to determine initial orientation based on the width/height of an output"
@@ -342,13 +342,13 @@
 
 (defmethod has-output ((desktop desktop) output) (eq output (output desktop)))
 
-(defmethod width ((desktop desktop)) (screen-width (output desktop)))
-(defmethod height ((desktop desktop)) (screen-height (output desktop)))
+(defmethod width ((desktop desktop)) (output-width (output desktop)))
+(defmethod height ((desktop desktop)) (output-height (output desktop)))
 
 (defmethod recalculate-layout ((desktop desktop))
   (when (windows desktop)
     (let* ((output (output desktop))
-	   (d-width (screen-width output)) (d-height (screen-height output))
+	   (d-width (output-width output)) (d-height (output-height output))
 	   (amount (length (windows desktop)))
 	   (width-per (floor (/ d-width amount))))
       (loop

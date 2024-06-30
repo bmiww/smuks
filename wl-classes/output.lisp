@@ -21,12 +21,6 @@
   ;; TODO: Thse x/y most likely mean the same as screen-x and screen-y
   ((x :initarg :x :accessor output-x)
    (y :initarg :y :accessor output-y)
-   ;; TODO: Real height/real width could be read from the connector
-   (real-height :initarg :real-height :accessor output-real-height)
-   (real-width :initarg :real-width :accessor output-real-width)
-   ;; TODO: These width/height could be read from one of the selectors (orientation aware)
-   (width :initarg :width :accessor output-width)
-   (height :initarg :height :accessor output-height)
    (refresh-rate :initarg :refresh-rate :accessor output-refresh-rate)
    (subpixel-orientation :initarg :subpixel-orientation :initform :unknown :accessor output-subpixel-orientation)
    (make :initarg :make :accessor output-make)
@@ -112,7 +106,7 @@ transform - is the output rotated? is the output flipped?
   (prep-shaders output))
 
 (defmethod update-projections ((output output) projection)
-  (let ((projection (sglutil:projection-matrix (screen-width output) (screen-height output) (shader-rot-val output))))
+  (let ((projection (sglutil:projection-matrix (output-width output) (output-height output) (shader-rot-val output))))
     (loop for shader in (shaders output)
 	  do (shaders:update-projection shader projection))))
 
@@ -183,8 +177,10 @@ transform - is the output rotated? is the output flipped?
     (wl-output:send-geometry output
 			     (output-x global)
 			     (output-y global)
-			     (output-real-width global)
-			     (output-real-height global)
+			     ;; TODO: The next two should be the real physical dimensions
+			     ;; Not just screen size
+			     (output-width global)
+			     (output-height global)
 			     (output-subpixel-orientation global)
 			     (output-make global)
 			     (output-model global)

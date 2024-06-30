@@ -19,7 +19,7 @@
   (declare (ignore usecase))
   (update-cursor display (flo (pointer-motion@-dx event)) (flo (pointer-motion@-dy event)))
   (let* ((new-x (cursor-x display)) (new-y (cursor-y display)))
-    (is-in-click-location? (screens display) new-x new-y)))
+    (is-in-click-location? (outputs display) new-x new-y)))
 
 
 

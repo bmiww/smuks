@@ -9,7 +9,6 @@
   (:use :cl :smuks-util)
   (:nicknames :sdrm)
   (:export
-   screen-width screen-height
    width height connectors fd gbm-pointer
    crtc crtcs
    close-drm
