@@ -9,7 +9,9 @@
 (defclass display (wl:display)
   ;; Not sure we need 32. That's a lot of fingers.
   ((touch-slot-interesses :initform (make-array 32 :initial-element nil) :reader touch-slot-interesses)
+   (drm :initarg :drm :accessor drm)
    (egl :initarg :egl :accessor egl)
+   (gl-version :initarg :gl-version :accessor gl-version)
    (cursor-x :initform 0 :accessor cursor-x)
    (cursor-y :initform 0 :accessor cursor-y)
    (cursor-screen :initform nil :accessor cursor-screen)
@@ -19,7 +21,6 @@
    (keyboard-focus :initform nil)
    (pointer-focus :initform nil :accessor pointer-focus)
    (pending-drag :initform nil :accessor pending-drag)
-   (screens :initarg :screen-tracker :initform nil :accessor screens)
    (desktops :initform nil :accessor desktops)
    (active-desktop :initform nil :accessor active-desktop)
    (outputs :initform nil :accessor outputs)
@@ -29,11 +30,9 @@
    (k-shift? :initform nil :accessor k-shift?)
    (k-super? :initform nil :accessor k-super?)))
 
+(defvar *framebuffer-count* 2)
 
-(defmethod initialize-instance :after ((display display) &key screen-tracker)
-  (multiple-value-bind (x y screen) (bounds-check screen-tracker (cursor-x display) (cursor-y display))
-    (declare (ignore x y))
-    (setf (cursor-screen display) screen))
+(defmethod initialize-instance :after ((display display))
 
   ;; NOTE: For now creating 10 desktops each for one number key
   (setf (desktops display)
@@ -42,10 +41,7 @@
 
   (setf (active-desktop display) (first (desktops display)))
 
-  ;; NOTE: For each screen we have available attach it to a different desktop
-  (loop for screen in (screens (screens display))
-	for desktop in (desktops display)
-	do (setf (screen desktop) screen)))
+  )
 
 
 (defgeneric input (display type event))
@@ -79,26 +75,73 @@
   (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
   (setf (outputs display)
 	(loop for screen in screens
-	      collect (init-output display screen))))
+	      collect (init-output display screen)))
 
+  ;; TODO: Needs outputs at this point. Could be moved if i rewrite initialization
+  ;; NOTE: For each screen we have available attach it to a different desktop
+  (loop for output in (outputs display)
+	for desktop in (desktops display)
+	do (setf (screen desktop) output))
 
-;; TODO: This is very incomplete.
-;; Lots of fake stuff here
-;; Real width/height are just width/height - should be mm of real screen size
-;; X/Y are just 0,0 - since i'm only handling one screen
-(defmethod init-output ((display display) screen)
-  (make-instance 'output-global :display display :dispatch-impl 'output
-		    :x 0 :y 0
-		    :width (width screen) :height (height screen)
-		    :screen screen
-		    :real-width (width screen) :real-height (height screen)
-		    :refresh-rate (sdrm:vrefresh screen)
-		    :make "TODO: Fill out make" :model "TODO: Fill out model"))
+  ;; TODO: Setting initial cursor pos. Should be part of init init. But don't have outputs at that point yet
+  (multiple-value-bind (x y screen) (bounds-check display (cursor-x display) (cursor-y display))
+    (declare (ignore x y))
+    (setf (cursor-screen display) screen)))
+
+(defmethod init-outputs ((display display))
+  (let ((connectors (connectors (drm display))))
+    ;; TODO: Don't think i really need to sort anything any more here
+    (setf connectors (sort connectors (lambda (a b)
+					(declare (ignore b))
+					(if (eq (connector-type a) :dsi) t nil))))
+
+    ;; TODO: For now stacking screens vertically only
+    (let ((screen-y 0))
+      (setf (outputs display)
+	    (loop for connector in connectors
+		  for index from 0
+		  for fb-objs = (create-connector-framebuffer (drm display) connector *framebuffer-count*)
+		  when fb-objs
+		    collect (let ((height (vdisplay connector))
+				  (width (hdisplay connector)))
+			      (prog1
+				  (make-instance 'output-global
+				     :connector connector
+				     :orientation (guess-orientation width height)
+				     :framebuffers fb-objs
+				     :scene (nth index *scenes*)
+				     :screen-y screen-y
+				     :drm (drm display)
+				     ;; NOTE: Moved from old output thing
+				     :display display :dispatch-impl 'output
+				     ;; TODO: These could be determined differently\
+				     :x 0 :y 0
+				     :width (width screen) :height (height screen)
+				     :real-width (width screen) :real-height (height screen)
+				     :refresh-rate (sdrm:vrefresh screen)
+				     :make "TODO: Fill out make" :model "TODO: Fill out model")
+				(incf screen-y height))))))))
 
 
 ;; ┌┬┐┌─┐┌─┐┬  ┌─┐
 ;;  │ │ ││ ││  └─┐
 ;;  ┴ └─┘└─┘┴─┘└─┘
+;; TODO: Suboptimal. Since it has to go through the whole list on every pointer motion event
+(defmethod bounds-check ((display display) x y)
+  (let* ((likely-output (car (outputs display))))
+    (loop for screen in (outputs display)
+	  ;; TODO: Weird skip of the first item
+	  unless (eq likely-output screen)
+	    when (or (> x (screen-x screen) (screen-x likely-output))
+		     (> y (screen-y screen) (screen-y likely-output)))
+	      do (setf likely-output screen))
+
+    (let ((width (screen-width likely-output))
+	  (height (screen-height likely-output)))
+      (values (min (max x (screen-x likely-output)) (+ (screen-x likely-output) width))
+	      (min (max y (screen-y likely-output)) (+ (screen-y likely-output) height))
+	      likely-output))))
+
 (defmethod next-serial ((display display)) (incf (display-serial display)))
 
 (defmethod (setf keyboard-focus) (focus-surface (display display))
@@ -188,6 +231,105 @@
 
 (defmethod find-screen-desktop ((display display) screen)
   (find screen (desktops display) :key #'screen))
+
+
+;; ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌┬┐  ┬ ┬┌┬┐┬┬
+;; │ ││ │ │ ├─┘│ │ │   │ │ │ ││
+;; └─┘└─┘ ┴ ┴  └─┘ ┴   └─┘ ┴ ┴┴─┘
+;; NOTE: I'll maybe use this to identify my tablet screen for the sake of associating touch or accelerometer events with it.
+(defmethod dsi-screen ((display display)) (find-if (lambda (screen) (eq (connector-type screen) :dsi)) (outputs display)))
+
+(defmethod start-monitors ((display display))
+  (loop for screen in (outputs display)
+	do (start-monitor screen)))
+
+(defmethod screen-by-crtc ((display display) crtc-id)
+  (find-if (lambda (screen) (eq (crtc-id (connector screen)) crtc-id)) (outputs display)))
+
+
+(defmethod cleanup-screen-tracker ((display display))
+  (stop-measuring-fps display)
+  (loop for screen in (outputs display)
+	do (cleanup-screen screen)
+	finally (setf (outputs display) nil)))
+
+(defmethod update-projections ((display display) projection)
+  (mapcar (lambda (screen) (update-projections screen projection)) (outputs display)))
+
+
+(defmethod prep-shaders2 ((display display) &key gl-version)
+  (when gl-version (setf (gl-version display) gl-version))
+  (loop for output in (outputs display)
+	do (prep-shaders output)))
+
+;; TODO: Suboptimal. Since this is used to check if inputs should be handled differently,
+;; This is a nasty amount of extra work that needs to be done
+(defmethod configuring-neighbors? ((display display))
+  (some (lambda (screen) (configuring-neighbors screen)) (outputs display)))
+
+;; TODO: This also needs to take into account screen positions
+;; And overall bounds when outputs are skewed from each other
+(defmethod recalculate-dimensions ((display display))
+  (let ((screen-y 0))
+    (loop for screen in (outputs display)
+	  do (setf (screen-y screen) screen-y)
+	     (incf screen-y (screen-height screen)))))
+
+(defun guess-orientation (width height)
+  "Used to determine initial orientation based on the width/height of an output"
+  (if (>= width height) :landscape :portrait))
+
+
+;; TODO: Lots of duplication befween this and initialize-instance
+(defmethod handle-drm-change ((display display))
+  (let ((connectors (sdrm::recheck-resources (drm display))))
+    (loop for connector in connectors
+	  for existing-screen = (find-if (lambda (screen) (eq (id (connector screen)) (id connector))) (outputs display))
+	  do
+	     (progn
+	       (if existing-screen
+		   (unless (connected (connector existing-screen))
+		     (cleanup-screen existing-screen)
+		     (setf (outputs display) (remove existing-screen (outputs display))))
+		   (when (connected connector)
+		     (let ((fb-objs (create-connector-framebuffer (drm display) connector *framebuffer-count*)))
+		       (when fb-objs
+			 (let ((screen (make-instance 'screen
+					  :connector connector
+					  :display display
+					  :framebuffers fb-objs
+					  :scene (nth (length (outputs display)) *scenes*)
+					  :drm (drm display))))
+			   (prep-shaders screen)
+			   (start-monitor screen)
+
+			   ;; TODO: For now disabled the fancy - Set screen scene
+			   ;; while i figure out multi screen a bit more
+			   ;; (when (> (length (outputs display)) 0)
+			     ;; ;; TODO: This shouldn't be the first screen, there can be more than two outputs overall
+			     ;; (let ((first (nth 0 (outputs display))))
+			       ;; (set-scene screen 'scene-nothing-yet)
+			       ;; (set-scene first 'scene-select-screen-pos)
+			       ;; (setf (configuring-neighbors first) t)))
+
+			   (push screen (outputs display))
+			   (render-frame screen))))))))
+    (recalculate-dimensions display)))
+
+
+;; ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌┬┐  ┌┬┐┌─┐┌┐ ┬ ┬┌─┐
+;; │ ││ │ │ ├─┘│ │ │    ││├┤ ├┴┐│ ││ ┬
+;; └─┘└─┘ ┴ ┴  └─┘ ┴   ─┴┘└─┘└─┘└─┘└─┘
+(defmethod stop-measuring-fps ((display display))
+  (loop for output in (outputs display) do (stop (frame-counter output))))
+
+(defmethod measure-fps ((display display))
+  (loop for output in (outputs display)
+	do (run (frame-counter output) (format nil "FPS:Output:~a: " output))))
+
+(defmethod kickstart-frame-render-for-all ((display display))
+  (loop for screen in (outputs display)
+	do (render-frame screen)))
 
 
 ;; ┌┬┐┌─┐┌─┐┬┌─┌┬┐┌─┐┌─┐┌─┐

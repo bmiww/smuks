@@ -36,3 +36,22 @@
 ;; (defmethod process :after ((display display) (type (eql :pointer-motion)) usecase event)
   ;; (declare (ignore usecase))
   ;; )
+
+
+
+
+
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+;; TODO: This one is definitely broken
+(defmethod is-in-click-location? ((tracker display) x y)
+  ;; TOOD: Do not use the first screen, actually refer to the screen-tracker width/height stuff
+  (let ((locations (click-locations (car (outputs tracker)) *stupid-size*))
+	(result nil))
+    (dolist (location locations)
+      (let ((x-rect (first location)) (y-rect (second location)))
+	(when (and (<= x-rect x (+ x-rect *stupid-size*))
+		   (<= y-rect y (+ y-rect *stupid-size*)))
+	  (setf result (third location)))))
+    result))
