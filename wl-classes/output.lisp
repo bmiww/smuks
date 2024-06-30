@@ -6,28 +6,46 @@
 ;; ╚██████╔╝╚██████╔╝   ██║   ██║     ╚██████╔╝   ██║
 ;;  ╚═════╝  ╚═════╝    ╚═╝   ╚═╝      ╚═════╝    ╚═╝
 ;; Announces clients of the outputs (monitors/modes)
-;; TODO: Add method to change the transform of an output
-;; TODO: Add method to change the mode (width/height/framerate) of an output
 (in-package :smuks)
 
-;; ┌─┐┬  ┌─┐┌┐ ┌─┐┬
-;; │ ┬│  │ │├┴┐├─┤│
-;; └─┘┴─┘└─┘└─┘┴ ┴┴─┘
+
+;;  ██████╗ ██╗      ██████╗ ██████╗  █████╗ ██╗
+;; ██╔════╝ ██║     ██╔═══██╗██╔══██╗██╔══██╗██║
+;; ██║  ███╗██║     ██║   ██║██████╔╝███████║██║
+;; ██║   ██║██║     ██║   ██║██╔══██╗██╔══██║██║
+;; ╚██████╔╝███████╗╚██████╔╝██████╔╝██║  ██║███████╗
+;;  ╚═════╝ ╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
 ;; TODO: This is where you probably want to fake a virtual output for use cases such as:
 ;; Video call video sharing - virtual output with fake details
 (defclass output-global (wl-output:global)
+  ;; TODO: Thse x/y most likely mean the same as screen-x and screen-y
   ((x :initarg :x :accessor output-x)
    (y :initarg :y :accessor output-y)
+   ;; TODO: Real height/real width could be read from the connector
    (real-height :initarg :real-height :accessor output-real-height)
    (real-width :initarg :real-width :accessor output-real-width)
+   ;; TODO: These width/height could be read from one of the selectors (orientation aware)
    (width :initarg :width :accessor output-width)
    (height :initarg :height :accessor output-height)
    (refresh-rate :initarg :refresh-rate :accessor output-refresh-rate)
    (subpixel-orientation :initarg :subpixel-orientation :initform :unknown :accessor output-subpixel-orientation)
    (make :initarg :make :accessor output-make)
    (model :initarg :model :accessor output-model)
-   (screen :initarg :screen :accessor output-screen)
-   (transform :initarg :transform :initform :normal :accessor output-transform))
+   ;; TODO: This transform is most likely related to orientation and could be get rid of
+   (transform :initarg :transform :initform :normal :accessor output-transform)
+   ;; NOTE: A lot of these details were migrated from the screen class
+   (connector :initarg :connector :accessor connector)
+   (drm :initarg :drm :accessor drm)
+   (shaders :initform nil :accessor shaders)
+   (framebuffers :initarg :framebuffers :initform nil :accessor framebuffers)
+   (active-framebuffer :initform nil :accessor active-framebuffer)
+   (frame-counter :initform (make-instance 'frame-counter) :accessor frame-counter)
+   (scene :initarg :scene :initform nil :accessor scene)
+   (configuring-neighbors :initform nil :accessor configuring-neighbors)
+   (orientation :initform :landscape :initarg :orientation :reader orientation)
+   (screen-x :initarg :screen-x :initform 0 :accessor screen-x)
+   (screen-y :initarg :screen-y :initform 0 :accessor screen-y)
+   (client-cursor-drawn :initform nil :accessor client-cursor-drawn))
   (:documentation "Defines a lot of details regarding a physical output.
 A physical output will mostly be a monitor/screen.
 Most slots should be self-explanatory, so i'll keep it short:
@@ -44,9 +62,116 @@ transform - is the screen rotated? is the screen flipped?
 "))
 
 
-;; ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
-;;  │││└─┐├─┘├─┤ │ │  ├─┤
-;; ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
+(defmethod render-scene ((screen screen)) (funcall (scene screen) screen))
+(defmethod prep-shaders ((output output))
+  (let ((width (output-width output)) (height (output-height output)) (rot (shader-rot-val output))
+	(gl-version (gl-version (tracker output))))
+    ;; NOTE: Binds the first framebuffer to generate the shaders. Don't think that in itself is necessary.
+    ;; But regardless, both buffer dimensions should be identical here.
+    (loop for framebuffer in (framebuffers output)
+	  do (prep-gl-implementation (framebuffer-id framebuffer) width height))
+
+    (let ((rect (shader output :rect))
+	  (texture (shader output :texture)))
+      (if (and rect texture)
+	  (progn
+	    (shaders:update-projection rect (sglutil:projection-matrix width height rot))
+	    (shaders:update-projection texture (sglutil:projection-matrix width height rot)))
+	  (setf (shaders output) `(,(shader-init:create-rect-shader width height rot gl-version)
+				   ,(restart-case (shader-init:create-texture-shader width height rot gl-version)
+				      (ignore () (nth 1 (shaders output))))))))))
+
+
+(defmethod start-monitor ((output output))
+  (loop for framebuffer in (framebuffers output)
+	do (progn
+	     (setf (framebuffer-egl-image framebuffer)
+		   (create-egl-image (egl (tracker output)) (framebuffer-buffer framebuffer) (width output) (height output)))
+	     (setf (framebuffer-gl-buffer framebuffer)
+		   (create-gl-framebuffer (framebuffer-egl-image framebuffer)))))
+
+  ;; For the first frame - we only need the first buffer
+  (let ((first (first (framebuffers output))))
+    (set-crtc! (fd (drm output))
+	       (framebuffer-id first)
+	       (connector output))))
+
+(defmethod next-framebuffer ((output output))
+  (let ((framebuffers (framebuffers output))
+	(active (active-framebuffer output)))
+    (setf (active-framebuffer output) (or (cadr (member active framebuffers)) (first framebuffers)))))
+
+
+;; ┌─┐┌─┐┌┬┐┌┬┐┌─┐┬─┐┌─┐
+;; └─┐├┤  │  │ ├┤ ├┬┘└─┐
+;; └─┘└─┘ ┴  ┴ └─┘┴└─└─┘
+(defmethod (setf orientation) (orientation (output output))
+  (unless orientation (error "Provided orientation cannot be nil."))
+  (setf (slot-value output 'orientation) orientation)
+  (recalculate-dimensions (tracker output))
+  (prep-shaders output))
+
+(defmethod update-projections ((screen screen) projection)
+  (let ((projection (sglutil:projection-matrix (screen-width screen) (screen-height screen) (shader-rot-val screen))))
+    (loop for shader in (shaders screen)
+	  do (shaders:update-projection shader projection))))
+
+(defmethod set-scene ((screen screen) scene) (setf (scene screen) scene))
+
+;; ┌─┐┌─┐┬  ┌─┐┌─┐┌┬┐┌─┐┬─┐┌─┐
+;; └─┐├┤ │  ├┤ │   │ │ │├┬┘└─┐
+;; └─┘└─┘┴─┘└─┘└─┘ ┴ └─┘┴└─└─┘
+;; NOTE: Reads nested or dependant values of an output
+(defmethod shader-rot-val ((output output))
+  "Returns the output shader rotation based on orientation and output 'physical' proportions"
+  (if (> (height output) (width output))
+      (case (orientation output) (:landscape -90) (:portrait 0) (:landscape-i 90) (:portrait-i 180))
+      ;; TODO: These are very likely wrong
+      (case (orientation output) (:landscape 0) (:portrait 90) (:landscape-i 180) (:portrait-i 270))))
+
+(defmethod output-width ((output output))
+  "Returns the output width based on orientation and output 'physical' proportions"
+  (if (> (height output) (width output))
+      (case (orientation output) ((:landscape :landscape-i) (height output)) ((:portrait :portrait-i) (width output)))
+      (case (orientation output) ((:landscape :landscape-i) (width output)) ((:portrait :portrait-i) (height output)))))
+
+(defmethod output-height ((output output))
+  "Returns the output height based on orientation and output 'physical' proportions"
+  (if (> (height output) (width output))
+      (case (orientation output) ((:landscape :landscape-i) (width output)) ((:portrait :portrait-i) (height output)))
+      (case (orientation output) ((:landscape :landscape-i) (height output)) ((:portrait :portrait-i) (width output)))))
+
+(defmethod width ((output output)) (hdisplay (connector output)))
+(defmethod height ((output output)) (vdisplay (connector output)))
+(defmethod vrefresh ((output output)) (vrefresh (connector output)))
+(defmethod connector-type ((output output)) (connector-type (connector output)))
+(defmethod shader ((output output) (type (eql :rect))) (car (shaders output)))
+(defmethod shader ((output output) (type (eql :texture))) (cadr (shaders output)))
+
+
+;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
+;; │  │  ├┤ ├─┤││││ │├─┘
+;; └─┘┴─┘└─┘┴ ┴┘└┘└─┘┴
+(defmethod cleanup-screen ((screen screen))
+  (loop for framebuffer in (framebuffers screen)
+	do (let ((egl-image (framebuffer-egl-image framebuffer))
+		 (framebuffer-id (framebuffer-id framebuffer))
+		 (framebuffer-buffer (framebuffer-buffer framebuffer)))
+	     (when egl-image
+	       (seglutil:destroy-image (egl (tracker screen)) egl-image)
+	       (setf (framebuffer-egl-image framebuffer) nil))
+	     (when (and framebuffer-id framebuffer-buffer)
+	       (sdrm:rm-framebuffer! (drm screen) framebuffer-id framebuffer-buffer)
+	       (setf (framebuffer-id framebuffer) nil
+		     (framebuffer-buffer framebuffer) nil)))))
+
+
+;; ██████╗ ██╗███████╗██████╗  █████╗ ████████╗ ██████╗██╗  ██╗
+;; ██╔══██╗██║██╔════╝██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██║  ██║
+;; ██║  ██║██║███████╗██████╔╝███████║   ██║   ██║     ███████║
+;; ██║  ██║██║╚════██║██╔═══╝ ██╔══██║   ██║   ██║     ██╔══██║
+;; ██████╔╝██║███████║██║     ██║  ██║   ██║   ╚██████╗██║  ██║
+;; ╚═════╝ ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝
 ;; TODO: Implement the release request handler
 (defclass output (wl-output:dispatch)
   ())
