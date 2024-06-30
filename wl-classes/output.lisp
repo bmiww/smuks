@@ -152,7 +152,7 @@ transform - is the screen rotated? is the screen flipped?
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘
 ;; └─┘┴─┘└─┘┴ ┴┘└┘└─┘┴
-(defmethod cleanup-screen ((output output))
+(defmethod cleanup-output ((output output))
   (loop for framebuffer in (framebuffers output)
 	do (let ((egl-image (framebuffer-egl-image framebuffer))
 		 (framebuffer-id (framebuffer-id framebuffer))
