@@ -130,8 +130,8 @@
 ;; This might actually need to be a hack - check if DSI or some other on-board connector is used
 (defun determine-orientation (orient)
   (print orient)
-  (let* ((dsi-screen (dsi-screen display))
-	 (current-orient (orientation dsi-screen)))
+  (let* ((dsi-output (dsi-output display))
+	 (current-orient (orientation dsi-output)))
 
     (destructuring-bind (x y z) orient
       (declare (ignore y))
@@ -145,8 +145,8 @@
 		 ((>= x z) :landscape-i)
 		 (t (error "Trap! This orientation check shouldn't be possible to reach")))))
 	(unless (eq current-orient new-orient)
-	  (setf (orientation dsi-screen) new-orient)
-	  (let ((related-desktop (find-screen-desktop *wayland* dsi-screen)))
+	  (setf (orientation dsi-output) new-orient)
+	  (let ((related-desktop (find-screen-desktop *wayland* dsi-output)))
 	    (recalculate-layout related-desktop)))))))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
@@ -234,7 +234,7 @@
 (defun set-frame-ready (a b c d crtc-id f)
   "If a screen is not found - it is assumed to have been disconnected"
   (declare (ignore a b c d f))
-  (let ((screen (screen-by-crtc display crtc-id)))
+  (let ((screen (output-by-crtc display crtc-id)))
     (when screen (render-frame screen))))
 
 (defun process-added-device (dev)

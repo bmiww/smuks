@@ -10,27 +10,27 @@
 ;; ┌┬┐┌─┐┬┌┐┌
 ;; │││├─┤││││
 ;; ┴ ┴┴ ┴┴┘└┘
-(defun render-frame (screen)
+(defun render-frame (output)
   (livesupport:update-repl-link)
-  (let ((desktop (find-screen-desktop *wayland* screen))
-	(framebuffer (next-framebuffer screen)))
+  (let ((desktop (find-output-desktop *wayland* output))
+	(framebuffer (next-framebuffer output)))
 
-    (sdrm::just-page-flip *drm* (framebuffer-id framebuffer) (connector screen)
-      (incr (frame-counter screen))
+    (sdrm::just-page-flip *drm* (framebuffer-id framebuffer) (connector output)
+      (incr (frame-counter output))
       (gl:bind-framebuffer :framebuffer (framebuffer-gl-buffer framebuffer))
-      (gl:viewport 0 0 (width screen) (height screen))
+      (gl:viewport 0 0 (width output) (height output))
       (gl:clear :color-buffer-bit)
 
-      (render-scene screen)
-      (render-desktop screen desktop)
+      (render-scene output)
+      (render-desktop output desktop)
 
-      (when (eq screen (cursor-screen *wayland*))
-	(unless (client-cursor-drawn screen)
-	  (shaders.texture:draw (shader screen :texture) *cursor*
-				`(,(- (cursor-x *wayland*) (screen-x screen))
-				  ,(- (cursor-y *wayland*) (screen-y screen))
+      (when (eq output (cursor-screen *wayland*))
+	(unless (client-cursor-drawn output)
+	  (shaders.texture:draw (shader output :texture) *cursor*
+				`(,(- (cursor-x *wayland*) (screen-x output))
+				  ,(- (cursor-y *wayland*) (screen-y output))
 				  36.0 36.0))))
-      (setf (client-cursor-drawn screen) nil)
+      (setf (client-cursor-drawn output) nil)
       (gl:flush)
       (gl:finish)
 
@@ -38,8 +38,8 @@
       ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
       ;; Any events or changes that i could instead attach to?
       ;; Maybe instead use per client flushes - for example when receiving commit from them
-      ;; TODO: Also a bit wasteful - clients that are on different screens might want/need different flushes
-      ;; Based on whether the screen frame was rendered
+      ;; TODO: Also a bit wasteful - clients that are on different outputs might want/need different flushes
+      ;; Based on whether the output frame was rendered
       (wl:flush-clients *wayland*))))
 
 
@@ -47,70 +47,70 @@
 ;; ├─┘├┤ ├┬┘  │ │├┴┐ │├┤ │   │
 ;; ┴  └─┘┴└─  └─┘└─┘└┘└─┘└─┘ ┴
 ;; TODO: This is almost identical to render-toplevel, with the difference being the coordinates
-(defun render-cursor (screen surface)
+(defun render-cursor (output surface)
   (let ((texture (texture surface))
 	(width (flo (width surface)))
 	(height (flo (height surface)))
-	(x (- (cursor-x *wayland*) (flo (x surface)) (screen-x screen)))
-	(y (- (cursor-y *wayland*) (flo (y surface)) (screen-y screen))))
+	(x (- (cursor-x *wayland*) (flo (x surface)) (screen-x output)))
+	(y (- (cursor-y *wayland*) (flo (y surface)) (screen-y output))))
 
-    (shaders.texture:draw (shader screen :texture) texture `(,x ,y ,width ,height))
+    (shaders.texture:draw (shader output :texture) texture `(,x ,y ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)
-    (setf (client-cursor-drawn screen) t)))
+    (setf (client-cursor-drawn output) t)))
 
-(defun render-toplevel (screen surface)
+(defun render-toplevel (output surface)
   (let ((texture (texture surface))
 	(width (flo (compo-max-width surface)))
 	(height (flo (compo-max-height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (shaders.texture:draw (shader screen :texture)
+    (shaders.texture:draw (shader output :texture)
 			  texture
-			  `(,(- x (screen-x screen)) ,(- y (screen-y screen))
+			  `(,(- x (screen-x output)) ,(- y (screen-y output))
 			    ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)))
 
-(defun render-layer-surface (screen surface)
+(defun render-layer-surface (output surface)
   (let ((texture (texture surface))
 	(width (flo (width surface)))
 	(height (flo (height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (when (< x 0) (setf x (- (/ (screen-width screen) 2) (/ width 2))))
-    (when (< y 0) (setf y (- (/ (screen-height screen) 2) (/ height 2))))
-    (shaders.texture:draw (shader screen :texture)
+    (when (< x 0) (setf x (- (/ (screen-width output) 2) (/ width 2))))
+    (when (< y 0) (setf y (- (/ (screen-height output) 2) (/ height 2))))
+    (shaders.texture:draw (shader output :texture)
 			  texture
-			  `(,(- x (screen-x screen)) ,(- y (screen-y screen))
+			  `(,(- x (screen-x output)) ,(- y (screen-y output))
 			    ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)))
 
-(defun render-popup (screen surface)
+(defun render-popup (output surface)
   (let ((texture (texture surface))
 	(width (flo (width surface)))
 	(height (flo (height surface)))
 	(x (+ (flo (x surface)) (flo (x (grab-parent surface)))))
 	(y (+ (flo (y surface)) (flo (y (grab-parent surface))))))
 
-    (shaders.texture:draw (shader screen :texture) texture `(,x ,y ,width ,height))
+    (shaders.texture:draw (shader output :texture) texture `(,x ,y ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)))
 
 
-(defun render-surface (screen surface)
+(defun render-surface (output surface)
   (typecase surface
-    (cursor (render-cursor screen surface))
+    (cursor (render-cursor output surface))
     ;; NOTE: For now - the display logic for a drag surface should be more or less the same as a cursors
-    (drag-surface (render-cursor screen surface))
-    (layer-surface (render-layer-surface screen surface))
-    (popup (render-popup screen surface))
-    (t (render-toplevel screen surface))))
+    (drag-surface (render-cursor output surface))
+    (layer-surface (render-layer-surface output surface))
+    (popup (render-popup output surface))
+    (t (render-toplevel output surface))))
 
-(defun render-desktop (screen desktop)
+(defun render-desktop (output desktop)
   (declare (ignore desktop))
-  (flet ((render (surface) (render-surface screen surface)))
+  (flet ((render (surface) (render-surface output surface)))
     (let ((clients (wl:all-clients *wayland*)))
       (flet ((render-type (type)
 	       (loop for client in clients

@@ -58,14 +58,14 @@ Unknown is also a possibility.
 make - the manufacturer of the output
 model - the model name/number
 
-transform - is the screen rotated? is the screen flipped?
+transform - is the output rotated? is the output flipped?
 "))
 
 
 (defmethod render-scene ((output output)) (funcall (scene output) output))
 (defmethod prep-shaders ((output output))
   (let ((width (output-width output)) (height (output-height output)) (rot (shader-rot-val output))
-	(gl-version (gl-version (tracker output))))
+	(gl-version (gl-version (wl:get-display output))))
     ;; NOTE: Binds the first framebuffer to generate the shaders. Don't think that in itself is necessary.
     ;; But regardless, both buffer dimensions should be identical here.
     (loop for framebuffer in (framebuffers output)
@@ -86,7 +86,7 @@ transform - is the screen rotated? is the screen flipped?
   (loop for framebuffer in (framebuffers output)
 	do (progn
 	     (setf (framebuffer-egl-image framebuffer)
-		   (create-egl-image (egl (tracker output)) (framebuffer-buffer framebuffer) (width output) (height output)))
+		   (create-egl-image (egl (wl:get-display output)) (framebuffer-buffer framebuffer) (width output) (height output)))
 	     (setf (framebuffer-gl-buffer framebuffer)
 		   (create-gl-framebuffer (framebuffer-egl-image framebuffer)))))
 
@@ -108,7 +108,7 @@ transform - is the screen rotated? is the screen flipped?
 (defmethod (setf orientation) (orientation (output output))
   (unless orientation (error "Provided orientation cannot be nil."))
   (setf (slot-value output 'orientation) orientation)
-  (recalculate-dimensions (tracker output))
+  (recalculate-dimensions (wl:get-display output))
   (prep-shaders output))
 
 (defmethod update-projections ((output output) projection)

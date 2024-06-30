@@ -221,17 +221,12 @@
 	  (bounds-check (outputs display) new-x new-y))))
 
 (defmethod orient-point ((display display) x y)
-  (let ((touch-screen (dsi-screen display)))
+  (let ((touch-screen (dsi-output display)))
     (case (orientation touch-screen)
       (:landscape (values y (+ (- (screen-height touch-screen) x) (screen-x touch-screen))))
       (:portrait (- (screen-width touch-screen) x)))))
 
-
 (defmethod find-output-desktop ((display display) output)
-  (let ((output (output-screen (wl:global output))))
-    (find-screen-desktop display output)))
-
-(defmethod find-screen-desktop ((display display) output)
   (find output (desktops display) :key #'output))
 
 
@@ -239,13 +234,13 @@
 ;; │ ││ │ │ ├─┘│ │ │   │ │ │ ││
 ;; └─┘└─┘ ┴ ┴  └─┘ ┴   └─┘ ┴ ┴┴─┘
 ;; NOTE: I'll maybe use this to identify my tablet screen for the sake of associating touch or accelerometer events with it.
-(defmethod dsi-screen ((display display)) (find-if (lambda (output) (eq (connector-type output) :dsi)) (outputs display)))
+(defmethod dsi-output ((display display)) (find-if (lambda (output) (eq (connector-type output) :dsi)) (outputs display)))
 
 (defmethod start-monitors ((display display))
   (loop for output in (outputs display)
 	do (start-monitor output)))
 
-(defmethod screen-by-crtc ((display display) crtc-id)
+(defmethod output-by-crtc ((display display) crtc-id)
   (find-if (lambda (output) (eq (crtc-id (connector output)) crtc-id)) (outputs display)))
 
 (defmethod update-projections ((display display) projection)
