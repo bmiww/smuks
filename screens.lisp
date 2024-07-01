@@ -45,17 +45,17 @@
   (incf *y-2-pos* (if y-2-up 1 -1)))
 
 
-(defun scene-2 (screen)
-  (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
+(defun scene-2 (output)
+  (shaders.rectangle:draw (shader output :rect) `(,(shaders.rectangle::make-rect
 						    :x 500.0 :y (next-y-2-pos) :w 200.0 :h 150.0
 						    :color '(0.2 0.2 0.2 1.0))))
   )
 
 ;; NOTE: Accidentally managed to draw like a laying down exclamation mark with this
-(defun scene-nothing-yet (screen)
-  (let* ((size 100.0) (width (flo (width screen))) (height (flo (height screen))) (half (/ size 2)))
+(defun scene-nothing-yet (output)
+  (let* ((size 100.0) (width (flo (width output))) (height (flo (height output))) (half (/ size 2)))
     (flet ((draw-rect (x y)
-	     (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
+	     (shaders.rectangle:draw (shader output :rect) `(,(shaders.rectangle::make-rect
 							       :x x :y y :w size :h size
 							       :color '(0.2 0.2 0.2 1.0))))))
       (draw-rect (- width size (/ width 9) 0.0) (- (/ height 2) half))
@@ -63,8 +63,8 @@
       (draw-rect (- width size (/ width 3) 50.0) (- (/ height 2) half)))))
 
 
-(defun click-locations (screen size)
-  (let ((width (flo (width screen))) (height (flo (height screen))))
+(defun click-locations (output size)
+  (let ((width (flo (width output))) (height (flo (height output))))
     (list `(0.0 0.0 :top-left)
 	  `(,(- (/ width 2) (/ size 2)) 0.0 :top-center)
 	  `(,(- width size) 0.0 :top-right)
@@ -76,11 +76,11 @@
 	  `(,(- width size) ,(- height size) :bottom-right))))
 
 
-(defun scene-select-screen-pos (screen)
+(defun scene-select-screen-pos (output)
   (let ((size *stupid-size*))
     (flet ((draw-rect (x y)
-	     (shaders.rectangle:draw (shader screen :capsule) `(,(shaders.rectangle::make-rect
+	     (shaders.rectangle:draw (shader output :capsule) `(,(shaders.rectangle::make-rect
 								:x x :y y :w size :h size
 								:color '(0.2 0.2 0.2 1.0))))))
-      (dolist (pos (click-locations screen size))
+      (dolist (pos (click-locations output size))
 	(draw-rect (first pos) (second pos))))))
