@@ -134,8 +134,8 @@ Supposed to answer with a configure event showing the new size."
   (let ((width (width toplevel))
 	(height (height toplevel)))
 
-    (when (< (compo-max-width toplevel) width) (setf width (compo-max-width toplevel)))
-    (when (< (compo-max-height toplevel) height) (setf height (compo-max-height toplevel)))
+    (when (or (< width 0) (< (compo-max-width toplevel) width)) (setf width (compo-max-width toplevel)))
+    (when (or (< height 0) (< (compo-max-height toplevel) height)) (setf height (compo-max-height toplevel)))
 
     (do-window-configure toplevel width height)))
 
