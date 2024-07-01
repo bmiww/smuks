@@ -164,7 +164,7 @@
 ;; ┴┘└┘┴  └─┘ ┴   ┴ ┴┴ ┴┘└┘─┴┘┴─┘┴┘└┘└─┘
 (defmethod input ((display display) type event)
   (cond
-    ((configuring-neighbors? (outputs display)) (process display type :screen-setup event))
+    ((configuring-neighbors? display) (process display type :screen-setup event))
     (t (process display type :passthrough event))))
 
 (defmethod input ((display display) (type (eql :pointer-axis)) event)
@@ -216,7 +216,7 @@
   (let ((new-x (+ (cursor-x display) dx))
 	(new-y (+ (cursor-y display) dy)))
     (setf (values (cursor-x display) (cursor-y display) (cursor-screen display))
-	  (bounds-check (outputs display) new-x new-y))))
+	  (bounds-check display new-x new-y))))
 
 (defmethod orient-point ((display display) x y)
   (let ((touch-screen (dsi-output display)))
