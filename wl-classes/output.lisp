@@ -149,15 +149,13 @@ transform - is the output rotated? is the output flipped?
 (defmethod cleanup-output ((output output))
   (loop for framebuffer in (framebuffers output)
 	do (let ((egl-image (framebuffer-egl-image framebuffer))
-		 (framebuffer-id (framebuffer-id framebuffer))
-		 (framebuffer-buffer (framebuffer-buffer framebuffer)))
+		 (gl-buffer (framebuffer-gl-buffer framebuffer)))
+	     (when gl-buffer (gl:delete-framebuffer gl-buffer))
 	     (when egl-image
 	       (seglutil:destroy-image (egl (wl:get-display output)) egl-image)
 	       (setf (framebuffer-egl-image framebuffer) nil))
-	     (when (and framebuffer-id framebuffer-buffer)
-	       (sdrm:rm-framebuffer! (drm output) framebuffer-id framebuffer-buffer)
-	       (setf (framebuffer-id framebuffer) nil
-		     (framebuffer-buffer framebuffer) nil)))))
+	     (sdrm:rm-framebuffer! (drm output) framebuffer)))
+  (setf (framebuffers output) nil))
 
 
 ;; ██████╗ ██╗███████╗██████╗  █████╗ ████████╗ ██████╗██╗  ██╗

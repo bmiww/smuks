@@ -167,6 +167,6 @@
 
   (when (fd-stream device) (close (fd-stream device)) (setf (fd-stream device) nil) (setf (fd device) nil)))
 
-(defun rm-framebuffer! (device fb buffer)
-  (destroy-bo buffer)
-  (check-err (drm::mode-remove-framebuffer (fd device) fb)))
+(defun rm-framebuffer! (device fb-obj)
+  (destroy-bo (framebuffer-buffer fb-obj))
+  (check-err (drm::mode-remove-framebuffer (fd device) (framebuffer-id fb-obj))))
