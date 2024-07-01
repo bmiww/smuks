@@ -71,7 +71,7 @@
   (make-instance 'zwp-virtual-keyboard-manager-v1:global :display display :dispatch-impl 'virtual-keyboard-manager)
   (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
 
-  (init-outputs)
+  (init-outputs display)
 
   ;; TODO: Needs outputs at this point. Could be moved if i rewrite initialization
   ;; NOTE: For each screen we have available attach it to a different desktop
@@ -101,7 +101,7 @@
 		    collect (let ((height (vdisplay connector))
 				  (width (hdisplay connector)))
 			      (prog1
-				  (make-instance 'output-global
+				  (make-instance 'output
 				     :connector connector
 				     :orientation (guess-orientation width height)
 				     :framebuffers fb-objs
@@ -112,8 +112,6 @@
 				     :display display :dispatch-impl 'output-dispatch
 				     ;; TODO: These could be determined differently\
 				     :x 0 :y 0
-				     :width width :height height
-				     :real-width width :real-height height
 				     :refresh-rate (sdrm:vrefresh connector)
 				     :make "TODO: Fill out make" :model "TODO: Fill out model")
 				(incf screen-y height))))))))
