@@ -66,15 +66,15 @@
 
 
   (setf *cursor* (load-cursor-texture))
-  (prep-shaders2 *wayland* :gl-version *gl-version*)
 
   (setf *accel* (iio-accelerometer:find-accelerometer-dev))
 
   (setf *udev* (udev:udev-new))
   (setf *udev-monitor* (udev:monitor-udev *udev*))
 
-  (start-monitors *wayland*)
   (init-globals *wayland*)
+  (prep-shaders2 *wayland* :gl-version *gl-version*)
+  (start-monitors *wayland*)
 
   (cl-async:start-event-loop
    (lambda ()
