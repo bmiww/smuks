@@ -59,6 +59,19 @@
     (setf (needs-redraw surface) nil)
     (setf (client-cursor-drawn output) t)))
 
+(defun render-subsurface (output surface)
+  (let ((texture (texture surface))
+	(width (flo (width surface)))
+	(height (flo (height surface)))
+	(x (flo (x surface)))
+	(y (flo (y surface))))
+    (shaders.texture:draw (shader output :texture)
+			  texture
+			  `(,(- x (screen-x output)) ,(- y (screen-y output))
+			    ,width ,height))
+    (flush-frame-callbacks surface)
+    (setf (needs-redraw surface) nil)))
+
 (defun render-toplevel (output surface)
   (let ((texture (texture surface))
 	(width (flo (compo-max-width surface)))
@@ -106,6 +119,7 @@
     (drag-surface (render-cursor output surface))
     (layer-surface (render-layer-surface output surface))
     (popup (render-popup output surface))
+    (subsurface (render-subsurface output surface))
     (t (render-toplevel output surface))))
 
 (defun render-desktop (output desktop)
