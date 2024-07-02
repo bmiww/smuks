@@ -167,7 +167,7 @@ and then clean the list out"
     (when (and (eq state :pressed) (k-super? display))
       (case key
 	;; Key p
-	(25 (uiop:launch-program "anyrun"))
+	(25 (uiop:launch-program "onagre"))
 
 	;; TODO: You want to have super-c to close the window
 	;; Key c
