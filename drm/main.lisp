@@ -47,6 +47,7 @@
 	      (error "No encoders found"))))
       (error (e)
 	(declare (ignore e))
+	(log! "Error during drm/gbm init. Closing device.")
 	(close-drm device)))))
 
 

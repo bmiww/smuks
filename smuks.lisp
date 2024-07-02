@@ -326,9 +326,9 @@
   (when *xwayland-process* (uiop:terminate-process *xwayland-process*))
 
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
-  (when *drm* (sdrm:close-drm *drm*))
 
   (when *wayland* (cleanup-display *wayland*))
+  (when *drm* (sdrm:close-drm *drm*))
 
   (when *seat* (libseat:close-seat *seat*))
   (when *accel* (iio-accelerometer::close-dev *accel*))
