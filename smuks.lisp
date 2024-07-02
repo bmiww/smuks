@@ -129,20 +129,19 @@
 ;; TODO: Add a way to check which screen belongs to the accelerometer
 ;; This might actually need to be a hack - check if DSI or some other on-board connector is used
 (defun determine-orientation (orient)
-  (print orient)
   (let* ((dsi-output (dsi-output *wayland*))
 	 (current-orient (orientation dsi-output)))
 
     (destructuring-bind (x y z) orient
-      (declare (ignore y))
-      (let* ((z-neg (<= z 0)) (x-neg (<= x 0))
-	     (x (abs x)) (z (abs z))
+      (declare (ignore z))
+      (let* ((y-neg (<= y 0)) (x-neg (<= x 0))
+	     (x (abs x)) (y (abs y))
 	     (new-orient
 	       (cond
-		 ((and z-neg (>= z x)) :portrait)
-		 ((>= z x) :portrait-i)
-		 ((and x-neg (>= x z)) :landscape)
-		 ((>= x z) :landscape-i)
+		 ((and y-neg (>= y x)) :landscape)
+		 ((>= y x) :landscape-i)
+		 ((and x-neg (>= x y)) :portrait)
+		 ((>= x y) :portrait-i)
 		 (t (error "Trap! This orientation check shouldn't be possible to reach")))))
 	(unless (eq current-orient new-orient)
 	  (setf (orientation dsi-output) new-orient)
@@ -190,8 +189,7 @@
 (defun my-accelerometer-callback (ev)
   (when (ready ev)
     (handler-case
-	;; (determine-orientation (iio-accelerometer::read-accelerometer *accel*))
-	()
+	(determine-orientation (iio-accelerometer::read-accelerometer *accel*))
       (error (e)
 	(log! "Error reading accelerometer: ~a" e)))))
 

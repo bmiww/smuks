@@ -35,7 +35,7 @@
   (unless (dev-fd dev)
     (setf (dev-fd dev) (sb-unix:unix-open (namestring (dev-path dev)) (logior #x0004) sb-unix:o_rdonly)))
   (unless (open-file dev)
-    (setf (open-file dev) (sb-sys:make-fd-stream (dev-fd dev) :input t :buffering :none :element-type '(unsigned-byte 8) :timeout 2)))
+    (setf (open-file dev) (lisp-binary:wrap-in-bit-stream (sb-sys:make-fd-stream (dev-fd dev) :input t :buffering :none :element-type '(unsigned-byte 8) :timeout 2))))
   (dev-fd dev))
 
 
@@ -56,7 +56,7 @@
    (paths :initform nil :accessor paths)))
 
 (defmethod read-initial-values ((node node))
-  (with-slots (paths enabled scale index bytes shift signed endian real-bits) node
+  (with-slots (paths enabled scale index bytes shift signed endian real-bits store-bits) node
     (with-open-file (enable-file (prop-paths-enable paths))
       (setf enabled (string= (read-line enable-file) "1")))
     (with-open-file (index-file (prop-paths-index paths))
@@ -68,6 +68,7 @@
       ;; NOTE: Some accelerometers define a common scale file for all nodes
       ;; TODO: SBCL exclusive
       (sb-ext:file-does-not-exist (e)
+	(declare (ignore e))
 	(with-open-file (scale-file (prop-paths-scale-fallback paths))
 	  (setf scale (parse-float (read-line scale-file))))))
 
@@ -156,15 +157,14 @@
   (let ((file (open-file dev))
 	(reading (list (accel-x dev) (accel-y dev) (accel-z dev))))
     (let ((latest (loop for node in reading
-			for bytes = (lisp-binary:read-integer
-				     (real-bits node)
+			for int = (lisp-binary:read-integer
+				     (bytes node)
 				     file
 				     :byte-order (case (endian node)
 						   (:big :big-endian)
 						   (:little :little-endian))
 				     :signed (signed node))
-			collect (read-node-value node bytes))))
-      (clear-input file)
+			collect (read-node-value node int))))
       latest)))
 
 
