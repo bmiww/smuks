@@ -29,15 +29,14 @@
 ;; │  │ ││││ │ ├┤ ┌┴┬┘ │
 ;; └─┘└─┘┘└┘ ┴ └─┘┴ └─ ┴
 (defun init-egl (gbm wl-display)
-  (egl:load-egl-extensions) (check-egl-error "Binding extensions")
-
   (let* ((display (egl:get-display gbm)))
     (multiple-value-bind (major minor) (egl:initialize display)
       (util:log! "EGL version: ~a.~a" major minor)
       (check-egl-error "Initializing display"))
+
     (egl:bind-wl-display display wl-display) (check-egl-error "Binding wayland")
     (egl:bind-api :opengl-es-api)            (check-egl-error "Binding api")
-
+    (egl:load-egl-extensions) (check-egl-error "Binding extensions")
 
     (let* ((context nil) (attempt (first context-attempts)))
       (flet ((try-context ()
