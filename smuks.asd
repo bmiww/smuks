@@ -101,5 +101,6 @@
 	       (:file "display")
 	       (:file "display-inputs")
 	       (:file "display-inputs-screen-setup")
+	       (:file "ioctls")
 	       (:file "smuks")
 	       (:file "render")))
