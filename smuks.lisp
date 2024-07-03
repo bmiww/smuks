@@ -249,10 +249,16 @@
   (let ((socket-path (socket-path)) (socket nil))
     (setf socket
 	  (restart-case
+	    (handler-case
 	      (progn
 		(when (probe-file socket-path)
 		  (delete-file socket-path))
 		(unix-sockets:make-unix-socket socket-path))
+	      (error (e)
+		     (progn
+		  (delete-file socket-path)
+		  (unix-sockets:make-unix-socket socket-path)
+		     )))
 	    (create-new-socket ()
 	      :report "Create new socket"
 	      (log! "Creating new socket")
