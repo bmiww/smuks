@@ -200,13 +200,15 @@
   (let* ((clients (wl:all-clients display)))
     (loop for client in clients
 	  do (let* ((compositor (compositor client))
-		    (toplevels (all-surfaces compositor))
-		    (popups (all-popups compositor)))
-	       (let ((popup (find-bounder popups x y)))
-		 (when popup (return-from surface-at-coords popup)))
+		    (toplevels (and compositor (all-surfaces compositor)))
+		    (popups (and compositor (all-popups compositor))))
+	       (when popups
+		 (let ((popup (find-bounder popups x y)))
+		   (when popup (return-from surface-at-coords popup))))
 
-	       (let ((toplevel (find-bounder toplevels x y)))
-		 (when toplevel (return-from surface-at-coords toplevel)))))))
+	       (when toplevels
+		 (let ((toplevel (find-bounder toplevels x y)))
+		   (when toplevel (return-from surface-at-coords toplevel))))))))
 
 (defun find-bounder (surfaces x y)
   (loop for surface in surfaces
