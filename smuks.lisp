@@ -138,10 +138,10 @@
 	     (x (abs x)) (y (abs y))
 	     (new-orient
 	       (cond
-		 ((and y-neg (>= y x)) :landscape)
-		 ((>= y x) :landscape-i)
-		 ((and x-neg (>= x y)) :portrait)
-		 ((>= x y) :portrait-i)
+		 ((and y-neg (>= y x)) :portrait)
+		 ((>= y x) :portrait-i)
+		 ((and x-neg (>= x y)) :landscape)
+		 ((>= x y) :landscape-i)
 		 (t (error "Trap! This orientation check shouldn't be possible to reach")))))
 	(unless (eq current-orient new-orient)
 	  (setf (orientation dsi-output) new-orient)
