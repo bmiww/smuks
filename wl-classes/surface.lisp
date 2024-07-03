@@ -225,7 +225,14 @@ This is double buffered - applied when the parent surface commits
 Buuuut subsurfaces also have the option of setting sync/desync mode"
   (log! "UNIMPLEMENTED: Set position"))
 
+;; TODO: For now not implemented
+;; In effect should make it so that any changes are applied only when the parent surface
+;; has a commit. Not too hard to implement, but lazy for now
+(defmethod wl-subsurface:set-sync ((sub subsurface))
+  (setf (sync-mode sub) :sync))
+
+;; TODO: Not implemented
+;; Should act the same as a regular surface when it comes to commits
 (defmethod wl-subsurface:set-desync ((sub subsurface))
   "Desync the subsurface from the parent surface"
-  (log! "wl-subsurface:set-desync: Sync strategies not implemented...")
   (setf (sync-mode sub) :desync))
