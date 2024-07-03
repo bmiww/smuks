@@ -8,6 +8,9 @@
 (defvar +MAX-CONSOLES+ 63)
 
 ;; TODO: SBCL exclusive
-(defun switch-vt (current-tty-fd num)
-  (unless (=< 1 num +MAX-CONSOLES+) (error "Switch VT: vt number out of range"))
-  (sb-unix:unix-ioctl current-tty-fd +VT-ACTIVATE+ num))
+(defun switch-vt (num)
+  (let* ((current-tty (open "/dev/tty0"))
+	 (current-tty-fd (sb-sys:fd-stream-fd current-tty)))
+    (unless (<= 1 num +MAX-CONSOLES+) (error "Switch VT: vt number out of range"))
+    (sb-unix:unix-ioctl current-tty-fd +VT-ACTIVATE+ num)
+    (close current-tty)))
