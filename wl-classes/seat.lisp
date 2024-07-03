@@ -55,16 +55,8 @@
   (incf (slot-value seat 'event-serial)))
 
 (defmethod wl-seat:get-keyboard ((seat seat) id)
-  (let* ((client (wl:client seat))
-	 (surface (toplevel-surface (compositor client))))
-    (setf (seat-keyboard seat) (wl:mk-if 'keyboard seat id :seat seat))
-    ;; TODO: Might not be the best idea. Basically - a new client - regardless of what they have - will get a
-    ;; Keyboard focus event. And are assumed to be the main keyboard focus.
-    ;; But all new clients would get in this method if they request keyboard capabilities - so meh?
-    ;; AAAAAAAAH - THIS THING IS HORRIBLE - different clients might initiate resources differently.
-    ;; This wont work for all clients.
-    ;; I should perform keyboard focus when BOTH TOPLEVEL and KEYBOARD are created.
-    (when surface (setf (keyboard-focus (wl:get-display surface)) surface))))
+  (setf (seat-keyboard seat) (wl:mk-if 'keyboard seat id :seat seat))
+  (finalize-toplevel (wl:get-display seat)))
 
 (defmethod keyboard-enter ((seat seat) surface keys)
   (let* ((keyboard (seat-keyboard seat)) (display (wl:get-display seat)))
@@ -128,7 +120,8 @@
 ;; ├─┘│ │││││ │ ├┤ ├┬┘
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─
 (defmethod wl-seat:get-pointer ((seat seat) id)
-  (setf (seat-mouse seat) (wl:mk-if 'pointer seat id :seat seat)))
+  (setf (seat-mouse seat) (wl:mk-if 'pointer seat id :seat seat))
+  (finalize-toplevel (wl:get-display seat)))
 
 ;; TODO: Should the x and y coordinates also set the seat pointer coords
 (defmethod pointer-enter ((seat seat) surface x y)

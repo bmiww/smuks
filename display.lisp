@@ -192,13 +192,30 @@
 
     (recalculate-layout desktop)))
 
-(defmethod finalize-toplevel ((display display) surface)
-  (with-slots (x y width height) surface
-    (when (and (<= x (cursor-x display) (+ x width)) (<= y (cursor-y display) (+ y height)))
-      ;; (setf (pointer-focus display) surface)
-      ;; (setf (keyboard-focus display) surface)
-      )))
+(defmethod finalize-toplevel ((display display) &optional toplevel)
+  (declare (ignore toplevel))
+  (focus-pointer-surface display))
 
+(defmethod focus-pointer-surface ((display display))
+  (with-accessors ((x cursor-x) (y cursor-y) (focus pointer-focus)) display
+    (let ((surface (surface-at-coords display x y)))
+      (if surface
+	  (let ((seat (seat surface)) (surf-x (- x (x surface))) (surf-y (- y (y surface))))
+	    (when seat
+	      (if (eq focus surface)
+		  ;; NOTE: If already pointer focus - return it as is
+		  surface
+		  ;; NOTE: Otherwise - switch focus to the new window
+		  (progn
+		    (when focus
+		      (pointer-leave (seat focus)))
+		    (setf (keyboard-focus display) surface)
+		    (pointer-enter seat surface surf-x surf-y)
+		    (setf focus surface)))))
+	  ;; NOTE: If no surface at coordinates - remove display pointer focus
+	  (when focus
+	    (pointer-leave (seat focus))
+	    (setf focus nil))))))
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘

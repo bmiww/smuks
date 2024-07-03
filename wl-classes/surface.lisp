@@ -31,29 +31,34 @@
 
 (defmethod (setf width) (width (surface surface))
   (setf (slot-value surface 'width) width)
-  (setf (slot-value surface 'new-dimensions?) t))
+  (setf (slot-value surface 'new-dimensions?) t)
+  (finalize-toplevel (wl:get-display surface)))
 
 (defmethod (setf height) (height (surface surface))
   (setf (slot-value surface 'height) height)
-  (setf (slot-value surface 'new-dimensions?) t))
+  (setf (slot-value surface 'new-dimensions?) t)
+  (finalize-toplevel (wl:get-display surface)))
 
 (defmethod surface-x ((surface surface) x) x)
 (defmethod surface-y ((surface surface) y) y)
+
+(defmethod seat ((surface surface)) (seat (wl:client surface)))
 
 ;; ┌─┐┌─┐┌┬┐┌┬┐┬┌┬┐
 ;; │  │ ││││││││ │
 ;; └─┘└─┘┴ ┴┴ ┴┴ ┴
 ;; https://wayland.app/protocols/wayland#wl_surface:request:commit
+;; TODO: Most of this could instead be written as methods for the specific parts
 (defmethod wl-surface:commit ((surface surface))
   (typecase surface
-    (toplevel (commit-toplevel surface))
-    (cursor (commit-toplevel surface))
-    (drag-surface (commit-toplevel surface))
-    (subsurface (commit-toplevel surface)) ;; TODO: This should have its own method - since theres very specific handling of a subsurface
+    (toplevel (commit-surface surface))
+    (cursor (commit-surface surface))
+    (drag-surface (commit-surface surface))
+    (subsurface (commit-surface surface)) ;; TODO: This should have its own method - since theres very specific handling of a subsurface
     ;; TODO: You could probably remove this since you are implementing it next to the popup class
     (t (format nil "Unsupported surface role: ~a" (type-of surface)))))
 
-(defmethod commit-toplevel ((surface surface))
+(defmethod commit-surface ((surface surface))
   (when (pending-damage surface)
     (setf (damage surface) (pending-damage surface))
     (setf (pending-damage surface) nil))
@@ -66,6 +71,11 @@
     (setf (frame-callbacks surface) (pending-frame-callbacks surface))
     (setf (pending-frame-callbacks surface) nil)
     (setf (needs-redraw surface) t)))
+
+(defmethod commit-surface :after ((surface toplevel))
+  (when (first-commit surface)
+    (setf (first-commit surface) nil)
+    (finalize-toplevel (wl:get-display surface) surface)))
 
 ;; TODO: Replace errors - with client error notification
 (defmethod wl-surface:attach ((surface surface) buffer x y)

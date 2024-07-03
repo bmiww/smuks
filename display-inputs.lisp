@@ -71,30 +71,11 @@ and then clean the list out"
 ;; ┌─┐┌─┐┬┌┐┌┌┬┐┌─┐┬─┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;; ├─┘│ │││││ │ ├┤ ├┬┘  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
-;; TODO: This is a bit shit in case if 2 windows are overlapping or next to each other
-;; If a pointer focus switches from one surface to another - then hell breaks loose
-;; TODO: Might be that leave should be called before enter
 (defmethod process ((display display) (type (eql :pointer-motion)) (usecase (eql :passthrough)) event)
   (declare (ignore usecase))
   (update-cursor display (flo (pointer-motion@-dx event)) (flo (pointer-motion@-dy event)))
-  (let* ((new-x (cursor-x display)) (new-y (cursor-y display))
-	 (surface (surface-at-coords display new-x new-y)))
-    (if surface
-	(let* ((client (wl:client surface))
-	       (seat (seat client))
-	       (surf-x (- new-x (x surface))) (surf-y (- new-y (y surface))))
-	  (when seat
-	    (if (and (active-surface seat) (eq (pointer-focus display) surface))
-		(progn
-		  (pointer-motion seat surf-x surf-y))
-		(progn
-		  (when (pointer-focus display)
-		    (pointer-leave (seat (wl:client (pointer-focus display)))))
-		  (pointer-enter seat surface surf-x surf-y)
-		  (setf (pointer-focus display) surface)))))
-	(when (pointer-focus display)
-	  (pointer-leave (seat (wl:client (pointer-focus display))))
-	  (setf (pointer-focus display) nil)))))
+  (let ((surface (focus-pointer-surface display)))
+    (when surface (pointer-motion (seat surface) (- (cursor-x display) (x surface)) (- (cursor-y display) (y surface))))))
 
 ;; NOTE: Additionally - sets display keyboard focus to the surface
 (defmethod process ((display display) (type (eql :pointer-button)) (usecase (eql :passthrough)) event)
@@ -162,7 +143,7 @@ and then clean the list out"
       ;; NOTE: Although - i don't know - this seems to be working perfectly fine
       (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key state))
     ;; super-shift-enter - Launch a terminal
-    (when (and (eq key 28) (k-super? display) (k-shift? display))
+    (when (and (eq state :pressed) (eq key 28) (k-super? display) (k-shift? display))
       (uiop:launch-program "kitty"))
     ;; Probably F12
     (when (and (eq state :pressed) (eq key 88))
