@@ -53,8 +53,9 @@
 
 (defmethod (setf active-desktop) :before (new (display display))
   (when (active-desktop display)
-    (setf (output new) (output (active-desktop display)))
-    (setf (output (active-desktop display)) nil)))
+    (unless (eq new (active-desktop display))
+      (setf (output new) (output (active-desktop display)))
+      (setf (output (active-desktop display)) nil))))
 
 
 
