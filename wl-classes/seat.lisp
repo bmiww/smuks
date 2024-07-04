@@ -49,6 +49,7 @@
    (keyboard :initform nil :accessor seat-keyboard)
    (touch :initform nil :accessor seat-touch)))
 
+(defmethod cursor-hidden ((seat seat)) (cursor-hidden (seat-mouse seat)))
 (defmethod keymap-mmap ((seat seat)) (keymap-mmap (wl:global seat)))
 
 (defmethod next-serial ((seat seat))
@@ -212,7 +213,8 @@
 ;; ├─┘│ │││││ │ ├┤ ├┬┘   │││└─┐├─┘├─┤ │ │  ├─┤
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
 (defclass pointer (wl-pointer:dispatch)
-  ((seat :initarg :seat :initform nil)))
+  ((seat :initarg :seat :initform nil)
+   (cursor-hidden :initform nil :accessor cursor-hidden)))
 
 (defmethod pointer-axis-stop ((pointer pointer) axis)
   (when (>= (wl:version-want pointer) 5) (wl-pointer:send-axis-stop pointer (get-ms) axis)))
@@ -226,7 +228,7 @@
       (progn
 	(change-class surface 'cursor)
 	(setf (x surface) hotspot-x (y surface) hotspot-y))
-      (log! "UNIMPLEMENTED: hiding cursor via set-cursor")))
+      (setf (cursor-hidden pointer) t)))
 
 
 ;; ┬┌─┌─┐┬ ┬┌┐ ┌─┐┌─┐┬─┐┌┬┐  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
