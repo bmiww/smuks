@@ -61,6 +61,18 @@
       (setf (needs-redraw surface) nil)
       (setf (client-cursor-drawn output) t))))
 
+(defun render-drag (output surface)
+  (let ((texture (texture surface))
+	(width (flo (width surface)))
+	(height (flo (height surface)))
+	(x (- (cursor-x *wayland*) (flo (x surface)) (screen-x output)))
+	(y (- (cursor-y *wayland*) (flo (y surface)) (screen-y output))))
+
+    (shaders.texture:draw (shader output :texture) texture `(,x ,y ,width ,height))
+    (flush-frame-callbacks surface)
+    (setf (needs-redraw surface) nil)
+    (setf (client-cursor-drawn output) t)))
+
 (defun render-subsurface (output surface)
   (let ((texture (texture surface))
 	(width (flo (width surface)))
@@ -117,8 +129,7 @@
 (defun render-surface (output surface)
   (typecase surface
     (cursor (render-cursor output surface))
-    ;; NOTE: For now - the display logic for a drag surface should be more or less the same as a cursors
-    (drag-surface (render-cursor output surface))
+    (drag-surface (render-drag output surface))
     (layer-surface (render-layer-surface output surface))
     (popup (render-popup output surface))
     (subsurface (render-subsurface output surface))
