@@ -16,8 +16,7 @@
    (new-dimensions? :initform t :accessor new-dimensions?)
    (width :initform -1)
    (height :initform -1)
-   (x :initform -1 :accessor x)
-   (y :initform -1 :accessor y)
+   (location :initform (make-coord) :accessor location)
    (pending-damage :initform nil :accessor pending-damage)
    (damage :initform nil :accessor damage)
    (pending-frame-callbacks :initform nil :accessor pending-frame-callbacks)
@@ -25,7 +24,10 @@
    (frame-callbacks :initform nil :accessor frame-callbacks)
    (buffer-scale :initform 1 :accessor buffer-scale)))
 
-
+(defmethod x ((surface surface)) (x (location surface)))
+(defmethod y ((surface surface)) (y (location surface)))
+(defmethod (setf x) (val (surface surface)) (setf (x (location surface)) val))
+(defmethod (setf y) (val (surface surface)) (setf (y (location surface)) val))
 (defmethod width ((surface surface)) (slot-value surface 'width))
 (defmethod height ((surface surface)) (slot-value surface 'height))
 
@@ -148,8 +150,10 @@ Or some such."
 
 ;; TODO: Might need to apply offset stuff here...
 (defmethod in-bounds ((surface surface) x y)
-  (and (<= (x surface) x (+ (x surface) (width surface)))
-       (<= (y surface) y (+ (y surface) (height surface)))))
+  (if (and (x surface) (y surface))
+      (and (<= (x surface) x (+ (x surface) (width surface)))
+	   (<= (y surface) y (+ (y surface) (height surface))))
+      nil))
 
 
 ;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─

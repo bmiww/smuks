@@ -83,6 +83,7 @@
 	       (:file "shader-init")
 	       (:file "package")
 	       (:file "dev-track")
+	       (:file "structs")
 	       (:module "wl-classes"
 		:components ((:file "output")
 			     (:file "xdg-wm-base")
