@@ -59,11 +59,6 @@
   (setf (seat-keyboard seat) (wl:mk-if 'keyboard seat id :seat seat))
   (finalize-toplevel (wl:get-display seat)))
 
-(defmethod keyboard-enter ((seat seat) surface keys)
-  (let* ((keyboard (seat-keyboard seat)) (display (wl:get-display seat)))
-    (wl-keyboard:send-enter keyboard (next-serial display) surface keys)
-    (notify-kb-modifiers seat)))
-
 (defun stupid-xkb-modifier-bitfield (display)
   (let ((mods 0))
     (when (k-shift? display) (setf mods (logior mods 1)))
@@ -218,11 +213,9 @@
 
 (defmethod pointer-axis-stop ((pointer pointer) axis)
   (when (>= (wl:version-want pointer) 5) (wl-pointer:send-axis-stop pointer (get-ms) axis)))
-
 (defmethod pointer-axis-source ((pointer pointer) axis)
   (when (>= (wl:version-want pointer) 5) (wl-pointer:send-axis-source pointer axis)))
 
-;; TODO: PROTOCOL: If surface is nil - the pointer image should be hidden
 (defmethod wl-pointer:set-cursor ((pointer pointer) serial surface hotspot-x hotspot-y)
   (if surface
       (progn
@@ -251,3 +244,12 @@
     ;; TODO: Since version 4 - until you figure out how to handle versions - disabling
     ;; (wl-keyboard:send-repeat-info keyboard *key-repeat-rate* *key-repeat-delay*)
     ))
+
+(defmethod keyboard-enter ((seat seat) surface keys)
+  (let* ((keyboard (seat-keyboard seat)) (display (wl:get-display seat)))
+    (wl-keyboard:send-enter keyboard (next-serial display) surface keys)
+    (notify-kb-modifiers seat)))
+
+(defmethod keyboard-leave ((seat seat) surface)
+  (let* ((keyboard (seat-keyboard seat)) (display (wl:get-display seat)))
+    (wl-keyboard:send-leave keyboard (next-serial display) surface)))

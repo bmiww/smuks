@@ -48,7 +48,8 @@
   (with-slots (keyboard-focus pointer-focus pending-drag) display
     (when (and pointer-focus (eq (wl:client pointer-focus) client)) (setf (pointer-focus display) nil))
     (when (and keyboard-focus (eq (wl:client keyboard-focus) client)) (setf (keyboard-focus display) nil))
-    (when (and pending-drag (eq (wl:client pending-drag) client)) (setf (pending-drag display) nil))))
+    (when (and pending-drag (eq (wl:client pending-drag) client)) (setf (pending-drag display) nil))
+    (finalize-toplevel display)))
 
 
 (defmethod (setf active-desktop) :before (new (display display))
@@ -57,7 +58,6 @@
       (setf (output new) (output (active-desktop display)))
       (setf (output (active-desktop display)) nil)
       (finalize-toplevel display))))
-
 
 ;; ┌─┐┌─┐┌┬┐┬ ┬┌─┐
 ;; └─┐├┤  │ │ │├─┘
@@ -153,16 +153,20 @@
 (defmethod next-serial ((display display)) (incf (display-serial display)))
 
 (defmethod (setf keyboard-focus) (focus-surface (display display))
-  (if focus-surface
-      (let* ((client (wl:client focus-surface)) (seat (seat client)))
-	(when seat
-	  (setf (slot-value display 'keyboard-focus) focus-surface)
-	  (keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))
+  (let ((current (keyboard-focus display)))
+    (if focus-surface
+	(let* ((client (wl:client focus-surface)) (seat (seat client)))
+	  (when seat
+	    (setf (slot-value display 'keyboard-focus) focus-surface)
+	    (keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))
 
-	  ;; TODO: You're supposed to send the actual pressed keys as last arg
-	  ;; But currently don't have a keypress manager/tracker
-	  (keyboard-enter seat focus-surface '())))
-      (setf (slot-value display 'keyboard-focus) nil)))
+	    (when current (keyboard-leave (seat current) current))
+	    ;; TODO: You're supposed to send the actual pressed keys as last arg
+	    ;; But currently don't have a keypress manager/tracker
+	    (keyboard-enter seat focus-surface '())))
+	(progn
+	  (when current (keyboard-leave (seat current) current))
+	  (setf (slot-value display 'keyboard-focus) nil)))))
 
 (defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))
 
@@ -218,28 +222,9 @@
 	  ;; NOTE: If no surface at coordinates - remove display pointer focus
 	  (when focus
 	    (pointer-leave (seat focus))
+	    (setf (keyboard-focus display) nil)
 	    (setf focus nil))))))
 
-(defmethod focus-pointer-surface ((display display))
-  (with-accessors ((x cursor-x) (y cursor-y) (focus pointer-focus)) display
-    (let ((surface (surface-at-coords display x y)))
-      (if surface
-	  (let ((seat (seat surface)) (surf-x (- x (x surface))) (surf-y (- y (y surface))))
-	    (when seat
-	      (if (eq focus surface)
-		  ;; NOTE: If already pointer focus - return it as is
-		  surface
-		  ;; NOTE: Otherwise - switch focus to the new window
-		  (progn
-		    (when focus
-		      (pointer-leave (seat focus)))
-		    (setf (keyboard-focus display) surface)
-		    (pointer-enter seat surface surf-x surf-y)
-		    (setf focus surface)))))
-	  ;; NOTE: If no surface at coordinates - remove display pointer focus
-	  (when focus
-	    (pointer-leave (seat focus))
-	    (setf focus nil))))))
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
