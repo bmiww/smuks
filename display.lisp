@@ -55,8 +55,8 @@
   (when (active-desktop display)
     (unless (eq new (active-desktop display))
       (setf (output new) (output (active-desktop display)))
-      (setf (output (active-desktop display)) nil))))
-
+      (setf (output (active-desktop display)) nil)
+      (finalize-toplevel display))))
 
 
 ;; ┌─┐┌─┐┌┬┐┬ ┬┌─┐
@@ -194,9 +194,31 @@
 
     (recalculate-layout desktop)))
 
-(defmethod finalize-toplevel ((display display) &optional toplevel)
-  (declare (ignore toplevel))
-  (focus-pointer-surface display))
+;; TODO: Possibly - this might need to be renamed from toplevel to surface
+;; TODO: Possibly - this might need to be renamed from finalize to something else
+(defmethod finalize-toplevel ((display display) &optional surface)
+  (focus-pointer-surface2 display surface))
+
+(defmethod focus-pointer-surface2 ((display display) &optional surface)
+  (with-accessors ((x cursor-x) (y cursor-y) (focus pointer-focus)) display
+    (let ((surface (or surface (surface-at-coords display x y))))
+      (if surface
+	  (let ((seat (seat surface)) (surf-x (- x (x surface))) (surf-y (- y (y surface))))
+	    (when seat
+	      (if (eq focus surface)
+		  ;; NOTE: If already pointer focus - return it as is
+		  surface
+		  ;; NOTE: Otherwise - switch focus to the new window
+		  (progn
+		    (when focus
+		      (pointer-leave (seat focus)))
+		    (setf (keyboard-focus display) surface)
+		    (pointer-enter seat surface surf-x surf-y)
+		    (setf focus surface)))))
+	  ;; NOTE: If no surface at coordinates - remove display pointer focus
+	  (when focus
+	    (pointer-leave (seat focus))
+	    (setf focus nil))))))
 
 (defmethod focus-pointer-surface ((display display))
   (with-accessors ((x cursor-x) (y cursor-y) (focus pointer-focus)) display
