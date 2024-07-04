@@ -135,6 +135,8 @@ transform - is the output rotated? is the output flipped?
       (case (orientation output) ((:landscape :landscape-i) (width output)) ((:portrait :portrait-i) (height output)))
       (case (orientation output) ((:landscape :landscape-i) (height output)) ((:portrait :portrait-i) (width output)))))
 
+(defmethod screen-x-max ((output output)) (+ (screen-x output) (width output)))
+(defmethod screen-y-max ((output output)) (+ (screen-y output) (height output)))
 (defmethod width ((output output)) (hdisplay (connector output)))
 (defmethod height ((output output)) (vdisplay (connector output)))
 (defmethod vrefresh ((output output)) (vrefresh (connector output)))

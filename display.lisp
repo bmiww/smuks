@@ -183,6 +183,7 @@
 ;; └┴┘┴┘└┘─┴┘└─┘└┴┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘┴┘└┘└─┘
 (defmethod new-toplevel ((display display) surface)
   (let* ((desktop (active-desktop display)))
+    (setf (desktop surface) desktop)
     (setf (windows desktop) (pushnew surface (windows desktop)))
     (wl:add-destroy-callback
      surface
@@ -221,22 +222,31 @@
 ;; └─┘ ┴ ┴┴─┘
 (defmethod surface-at-coords ((display display) x y)
   "Iterate all clients and their surfaces to find one that intersects with the given coordinates"
-  (let* ((clients (wl:all-clients display)))
-    (loop for client in clients
-	  do (let* ((compositor (compositor client))
-		    (toplevels (and compositor (all-surfaces compositor)))
-		    (popups (and compositor (all-popups compositor))))
-	       (when popups
-		 (let ((popup (find-bounder popups x y)))
-		   (when popup (return-from surface-at-coords popup))))
+  (let* ((clients (wl:all-clients display))
+	 (output (output-at-coords display x y))
+	 (desktop (find-output-desktop display output)))
+    (when desktop
+      (loop for client in clients
+	    do (let* ((compositor (compositor client))
+		      (toplevels (and compositor (all-surfaces compositor)))
+		      (popups (and compositor (all-popups compositor))))
+		 (when popups
+		   (let ((popup (find-bounder popups x y desktop)))
+		     (when popup (return-from surface-at-coords popup))))
 
-	       (when toplevels
-		 (let ((toplevel (find-bounder toplevels x y)))
-		   (when toplevel (return-from surface-at-coords toplevel))))))))
+		 (when toplevels
+		   (let ((toplevel (find-bounder toplevels x y desktop)))
+		     (when toplevel (return-from surface-at-coords toplevel)))))))))
 
-(defun find-bounder (surfaces x y)
+(defmethod output-at-coords ((display display) x y)
+  (loop for output in (outputs display)
+	when (and (<= (screen-x output) x (screen-x-max output))
+		  (<= (screen-y output) y (screen-y-max output)))
+	  return output))
+
+(defun find-bounder (surfaces x y desktop)
   (loop for surface in surfaces
-	when (in-bounds surface x y) return surface))
+	when (in-bounds surface x y desktop) return surface))
 
 (defmethod update-cursor ((display display) dx dy)
   (let ((new-x (+ (cursor-x display) dx))

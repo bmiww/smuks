@@ -28,6 +28,8 @@
 (defmethod y ((surface surface)) (y (location surface)))
 (defmethod (setf x) (val (surface surface)) (setf (x (location surface)) val))
 (defmethod (setf y) (val (surface surface)) (setf (y (location surface)) val))
+(defmethod desktop ((surface surface)) (desktop (location surface)))
+(defmethod (setf desktop) (val (surface surface)) (setf (desktop (location surface)) val))
 (defmethod width ((surface surface)) (slot-value surface 'width))
 (defmethod height ((surface surface)) (slot-value surface 'height))
 
@@ -149,10 +151,11 @@ Or some such."
 
 
 ;; TODO: Might need to apply offset stuff here...
-(defmethod in-bounds ((surface surface) x y)
-  (if (and (x surface) (y surface))
+(defmethod in-bounds ((surface surface) x y desktop)
+  (if (and (x surface) (y surface) (desktop surface))
       (and (<= (x surface) x (+ (x surface) (width surface)))
-	   (<= (y surface) y (+ (y surface) (height surface))))
+	   (<= (y surface) y (+ (y surface) (height surface)))
+	   (eq desktop (desktop surface)))
       nil))
 
 
