@@ -157,6 +157,12 @@ and then clean the list out"
 	;; Key p
 	(25 (uiop:launch-program "onagre"))
 
+	;; TODO: Here you wanted to add the "next"/"previous" window focus stuff
+	;; Key j
+	(36 ())
+	;; Key k
+	(37 ())
+
 	;; Numeric keys - switching desktops
 	(2 (setf (active-desktop display) (nth 0 (desktops display))))
 	(3 (setf (active-desktop display) (nth 1 (desktops display))))))))
