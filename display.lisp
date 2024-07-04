@@ -320,6 +320,11 @@
 			   (render-frame output))))))))
     (recalculate-dimensions display)))
 
+;; TODO: If multiple toplevels for one client - this should probably first kill off all toplevels and then the client?
+;; Unless we expect the client to die off itself once toplevels go away?
+(defmethod kill-focus-client ((display display))
+  (when (keyboard-focus display)
+    (wl:destroy-client (wl:client (keyboard-focus display)))))
 
 ;; ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌┬┐  ┌┬┐┌─┐┌┐ ┬ ┬┌─┐
 ;; │ ││ │ │ ├─┘│ │ │    ││├┤ ├┴┐│ ││ ┬

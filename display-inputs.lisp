@@ -142,9 +142,13 @@ and then clean the list out"
       ;; tODO: Key needs to be translated to the XKB keycode
       ;; NOTE: Although - i don't know - this seems to be working perfectly fine
       (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key state))
-    ;; super-shift-enter - Launch a terminal
-    (when (and (eq state :pressed) (eq key 28) (k-super? display) (k-shift? display))
-      (uiop:launch-program "kitty"))
+    ;; super-shift-*
+    (when (and (eq state :pressed) (k-super? display) (k-shift? display))
+      (case key
+	;; enter - Launch a terminal
+	(28 (uiop:launch-program "kitty"))
+	;; Key c - kill the currently selected window
+	(46 (kill-focus-client display))))
     ;; Probably F12
     (when (and (eq state :pressed) (eq key 88))
       (shutdown))
@@ -152,10 +156,6 @@ and then clean the list out"
       (case key
 	;; Key p
 	(25 (uiop:launch-program "onagre"))
-
-	;; TODO: You want to have super-c to close the window
-	;; Key c
-	;; (46 ())
 
 	;; Numeric keys - switching desktops
 	(2 (setf (active-desktop display) (nth 0 (desktops display))))
