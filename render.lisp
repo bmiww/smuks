@@ -23,6 +23,7 @@
 
       (render-scene output)
       (render-desktop output desktop)
+      (render-rest output desktop)
 
       (when (eq output (cursor-screen *wayland*))
 	(unless (client-cursor-drawn output)
@@ -122,7 +123,7 @@
     (subsurface (render-subsurface output surface))
     (t (render-toplevel output surface))))
 
-(defun render-desktop (output desktop)
+(defun render-rest (output desktop)
   (declare (ignore desktop))
   (flet ((render (surface) (render-surface output surface)))
     (let ((clients (wl:all-clients *wayland*)))
@@ -131,8 +132,13 @@
 		     do (let ((compositor (compositor client)))
 			(when compositor
 			  (mapcar #'render (funcall type compositor)))))))
-	(render-type #'all-toplevels)
+	;; (render-type #'all-toplevels)
 	(render-type #'all-subsurfaces)
 	(render-type #'all-popups)
 	(render-type #'all-layers)
 	(render-type #'all-cursors)))))
+
+
+(defun render-desktop (output desktop)
+  (loop for window in (windows desktop)
+	do (when (texture window) (render-surface output window))))
