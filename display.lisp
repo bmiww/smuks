@@ -48,8 +48,10 @@
   (with-slots (keyboard-focus pointer-focus pending-drag) display
     (when (and pointer-focus (eq (wl:client pointer-focus) client)) (setf (pointer-focus display) nil))
     (when (and keyboard-focus (eq (wl:client keyboard-focus) client)) (setf (keyboard-focus display) nil))
-    (when (and pending-drag (eq (wl:client pending-drag) client)) (setf (pending-drag display) nil))
-    (finalize-toplevel display)))
+    (when (and pending-drag (eq (wl:client pending-drag) client)) (setf (pending-drag display) nil))))
+
+(defmethod wl:rem-client :after ((display display) client)
+  (finalize-toplevel display))
 
 
 (defmethod (setf active-desktop) :before (new (display display))
