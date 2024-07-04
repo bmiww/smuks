@@ -68,3 +68,40 @@
 
 (defmethod wl-subcompositor:get-subsurface ((subcompositor subcompositor) id surface parent)
   (wl:up-if 'subsurface surface id :parent parent))
+
+
+
+;; ██████╗ ███████╗███████╗██╗  ██╗████████╗ ██████╗ ██████╗ ███████╗
+;; ██╔══██╗██╔════╝██╔════╝██║ ██╔╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝
+;; ██║  ██║█████╗  ███████╗█████╔╝    ██║   ██║   ██║██████╔╝███████╗
+;; ██║  ██║██╔══╝  ╚════██║██╔═██╗    ██║   ██║   ██║██╔═══╝ ╚════██║
+;; ██████╔╝███████╗███████║██║  ██╗   ██║   ╚██████╔╝██║     ███████║
+;; ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝     ╚══════╝
+;; TODO: Because of desktop - drag & drop icon surfaces aren't rendering in a desktop other than the originating desktop
+(defclass desktop ()
+  ((output :initform nil :initarg :output :accessor output)
+   (windows :initform nil :accessor windows)
+   (fullscreen-window :initform nil :accessor fullscreen-window)))
+
+(defmethod has-output ((desktop desktop) output) (eq output (output desktop)))
+
+(defmethod width ((desktop desktop)) (output-width (output desktop)))
+(defmethod height ((desktop desktop)) (output-height (output desktop)))
+
+(defmethod recalculate-layout ((desktop desktop))
+  (when (windows desktop)
+    (let* ((output (output desktop))
+	   (d-width (output-width output)) (d-height (output-height output))
+	   (amount (length (windows desktop)))
+	   (width-per (floor (/ d-width amount))))
+      (loop
+	for window in (windows desktop)
+	for i from 0
+	do (progn
+	     (setf
+	      (x window) (+ (* i width-per) (screen-x output))
+	      (y window) (screen-y output)
+	      (compo-max-width window) width-per
+	      (compo-max-height window) d-height)
+
+	     (configure-toplevel-default window))))))
