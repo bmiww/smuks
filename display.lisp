@@ -51,6 +51,13 @@
     (when (and pending-drag (eq (wl:client pending-drag) client)) (setf (pending-drag display) nil))))
 
 
+;;(defmethod (setf active-desktop) :before (new (display display))
+  ;;(when (active-desktop display)
+    ;;(setf (output new) (output (active-desktop display)))
+    ;;(setf (output (active-desktop display)) nil)))
+
+
+
 ;; ┌─┐┌─┐┌┬┐┬ ┬┌─┐
 ;; └─┐├┤  │ │ │├─┘
 ;; └─┘└─┘ ┴ └─┘┴

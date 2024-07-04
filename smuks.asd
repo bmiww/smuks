@@ -63,6 +63,7 @@
 	       #:alexandria
 	       #:bordeaux-threads
 	       #:str
+	       #:swank ;; TODO: Add for debug mode only
 	       #:parse-float
 	       #:png-read ;; TODO: Unless you decide to create screenshotting tools - remove this dependency
 	       #:3d-math
