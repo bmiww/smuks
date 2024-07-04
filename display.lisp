@@ -51,7 +51,7 @@
     (when (and pending-drag (eq (wl:client pending-drag) client)) (setf (pending-drag display) nil))))
 
 (defmethod wl:rem-client :after ((display display) client)
-  (finalize-toplevel display))
+  (handle-surface-change display))
 
 
 (defmethod (setf active-desktop) :before (new (display display))
@@ -59,7 +59,7 @@
     (unless (eq new (active-desktop display))
       (setf (output new) (output (active-desktop display)))
       (setf (output (active-desktop display)) nil)
-      (finalize-toplevel display))))
+      (handle-surface-change display))))
 
 ;; ┌─┐┌─┐┌┬┐┬ ┬┌─┐
 ;; └─┐├┤  │ │ │├─┘
@@ -200,9 +200,11 @@
 
     (recalculate-layout desktop)))
 
-;; TODO: Possibly - this might need to be renamed from toplevel to surface
-;; TODO: Possibly - this might need to be renamed from finalize to something else
-(defmethod finalize-toplevel ((display display) &optional surface)
+;; TODO: This is in essence what focus-pointer-surface2 does - and could just be combined
+(defmethod handle-surface-change ((display display) &optional surface)
+  "If a surface has had a change - it is no longer visible, has a different surface on top,
+or has a all required parameters initiated to be focusable,
+then this can be called to determine the new focus surfaces."
   (focus-pointer-surface2 display surface))
 
 (defmethod focus-pointer-surface2 ((display display) &optional surface)

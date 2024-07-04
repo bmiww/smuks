@@ -36,12 +36,12 @@
 (defmethod (setf width) (width (surface surface))
   (setf (slot-value surface 'width) width)
   (setf (slot-value surface 'new-dimensions?) t)
-  (finalize-toplevel (wl:get-display surface)))
+  (handle-surface-change (wl:get-display surface)))
 
 (defmethod (setf height) (height (surface surface))
   (setf (slot-value surface 'height) height)
   (setf (slot-value surface 'new-dimensions?) t)
-  (finalize-toplevel (wl:get-display surface)))
+  (handle-surface-change (wl:get-display surface)))
 
 (defmethod surface-x ((surface surface) x) x)
 (defmethod surface-y ((surface surface) y) y)
@@ -79,7 +79,7 @@
 (defmethod commit-surface :after ((surface toplevel))
   (when (first-commit surface)
     (setf (first-commit surface) nil)
-    (finalize-toplevel (wl:get-display surface) surface)))
+    (handle-surface-change (wl:get-display surface) surface)))
 
 ;; TODO: Replace errors - with client error notification
 (defmethod wl-surface:attach ((surface surface) buffer x y)

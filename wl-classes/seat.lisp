@@ -57,7 +57,7 @@
 
 (defmethod wl-seat:get-keyboard ((seat seat) id)
   (setf (seat-keyboard seat) (wl:mk-if 'keyboard seat id :seat seat))
-  (finalize-toplevel (wl:get-display seat)))
+  (handle-surface-change (wl:get-display seat)))
 
 (defun stupid-xkb-modifier-bitfield (display)
   (let ((mods 0))
@@ -117,7 +117,7 @@
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─
 (defmethod wl-seat:get-pointer ((seat seat) id)
   (setf (seat-mouse seat) (wl:mk-if 'pointer seat id :seat seat))
-  (finalize-toplevel (wl:get-display seat)))
+  (handle-surface-change (wl:get-display seat)))
 
 ;; TODO: Should the x and y coordinates also set the seat pointer coords
 (defmethod pointer-enter ((seat seat) surface x y)
