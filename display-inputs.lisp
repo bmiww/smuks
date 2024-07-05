@@ -74,7 +74,7 @@ and then clean the list out"
 (defmethod process ((display display) (type (eql :pointer-motion)) (usecase (eql :passthrough)) event)
   (declare (ignore usecase))
   (update-cursor display (flo (pointer-motion@-dx event)) (flo (pointer-motion@-dy event)))
-  (let ((surface (focus-pointer-surface display)))
+  (let ((surface (focus-pointer-surface2 display)))
     (when surface (pointer-motion (seat surface) (- (cursor-x display) (x surface)) (- (cursor-y display) (y surface))))))
 
 ;; NOTE: Additionally - sets display keyboard focus to the surface
