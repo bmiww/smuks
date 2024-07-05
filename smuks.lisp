@@ -43,7 +43,8 @@
     (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
   (libseat:dispatch *seat* 0)
 
-  (unless (setf *drm* (init-drm)) (error "Failed to initialize DRM"))
+  (unless (setf *drm* (init-drm 'open-device 'close-device))
+    (error "Failed to initialize DRM"))
 
   (unless (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
     (error "Failed to initialize libinput"))
@@ -57,7 +58,7 @@
 		     ;; It could also be interesting to have more than one dev-t.
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
 			      :drm *drm*
-			      :libseat seat))
+			      :libseat *seat*))
 
   ;; #+xwayland
   ;; (setf *xwayland-process* (uiop:launch-program "Xwayland"))

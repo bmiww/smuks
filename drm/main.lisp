@@ -15,6 +15,7 @@
 (defclass gbm-device ()
   ((fd :initarg :fd :accessor fd)
    (fd-stream :initarg :fd-stream :accessor fd-stream)
+   (close-device :initarg :close-device :accessor close-device)
    (resources :initarg :resources :accessor resources)
    (gbm-pointer :initarg :gbm-pointer :accessor gbm-pointer)
    ;; TODO: Unused for now? Supposed to be DRM lib framebuffers
@@ -28,27 +29,25 @@
    (capabilities :initarg :capabilities :accessor capabilities)
    (master :initform nil :accessor master)))
 
-(defmethod initialize-instance :after ((device gbm-device) &key file)
-  ;; TODO: SBCL EXCLUSIVE
-  (let ((fd (sb-sys:fd-stream-fd file)))
-    (handler-case
-	(progn
-	  (drm::set-master fd) (setf (master device) t)
-	  (setf (fd-stream device) file)
-	  (setf (fd device) fd)
-	  (setf (gbm-pointer device) (gbm:create-device fd))
-	  (let ((resources (setf (resources device) (drm:get-resources fd))))
-	    (setf (capabilities device) (drm::resources-capabilities resources))
-	    (unless (setf (crtcs device) (loop for crtc in (drm:resources-crtcs resources) collect (init-crtc crtc)))
-	      (error "No CRTCs found"))
-	    (unless (setf (encoders device) (loop for encoder in (drm:resources-encoders resources) collect (init-encoder encoder)))
-	      (error "No connectors found"))
-	    (unless (setf (connectors device) (loop for connector in (drm:resources-connectors resources) collect (init-connector connector (encoders device) (crtcs device))))
-	      (error "No encoders found"))))
-      (error (e)
-	(declare (ignore e))
-	(log! "Error during drm/gbm init. Closing device.")
-	(close-drm device)))))
+(defmethod initialize-instance :after ((device gbm-device) &key file fd)
+  (handler-case
+      (progn
+	;; (drm::set-master fd) (setf (master device) t)
+	(setf (fd-stream device) file)
+	(setf (fd device) fd)
+	(setf (gbm-pointer device) (gbm:create-device fd))
+	(let ((resources (setf (resources device) (drm:get-resources fd))))
+	  (setf (capabilities device) (drm::resources-capabilities resources))
+	  (unless (setf (crtcs device) (loop for crtc in (drm:resources-crtcs resources) collect (init-crtc crtc)))
+	    (error "No CRTCs found"))
+	  (unless (setf (encoders device) (loop for encoder in (drm:resources-encoders resources) collect (init-encoder encoder)))
+	    (error "No connectors found"))
+	  (unless (setf (connectors device) (loop for connector in (drm:resources-connectors resources) collect (init-connector connector (encoders device) (crtcs device))))
+	    (error "No encoders found"))))
+    (error (e)
+      (declare (ignore e))
+      (log! "Error during drm/gbm init. Closing device.")
+      (close-drm device))))
 
 
 (defmethod recheck-resources ((device gbm-device))
@@ -100,12 +99,21 @@
 
 ;; TODO; Perhaps have DRM control more than one card?
 ;; TODO: This is mostly smuks specific - but parts of this file could go to the lib
-(defun init-drm ()
+;; NOTE: open-func/close-func implies that we are running in libseat mode.
+;; Maybe should extract this as a separate init function instead.
+(defun init-drm (&optional open-func close-func)
   (let* ((devices (drm:get-devices))
 	 (first (first devices)))
     (unless first (error "No DRM capable graphics cards found"))
-    (let* ((fd (open (drm::device!-primary first) :direction :io :if-exists :append))
-	   (device (make-instance 'gbm-device :file fd :render-node (drm::device!-render first)))
+    (let* ((file
+	     (if open-func
+		 nil
+		 (open (drm::device!-primary first) :direction :io :if-exists :append)))
+	   (fd (if open-func
+		   (funcall open-func (drm::device!-primary first) nil nil)
+		   ;; TODO: SBCL EXCLUSIVE
+		   (sb-sys:fd-stream-fd file)))
+	   (device (make-instance 'gbm-device :file file :fd fd :close-device close-func :render-node (drm::device!-render first)))
 	   (caps (capabilities device)))
       (unless (getf caps :crtc-in-vblank-event)
 	(error "CRTC_IN_VBLANK_EVENT missing. Needed for page-flip2. Not strictly necessary, required in smuks."))
@@ -162,11 +170,14 @@
     (check-err (gbm:device-destroy (gbm-pointer device)))
     (setf (gbm-pointer device) nil))
 
-  (when (master device)
-    (check-err (drm::drop-master (fd device)))
-    (setf (master device) nil))
+  ;; (when (master device)
+    ;; (check-err (drm::drop-master (fd device)))
+    ;; (setf (master device) nil))
 
-  (when (fd-stream device) (close (fd-stream device)) (setf (fd-stream device) nil) (setf (fd device) nil)))
+  (when (fd-stream device) (close (fd-stream device)) (setf (fd-stream device) nil))
+  (when (fd device)
+    (when (close-device device) (funcall (close-device device) (fd device) nil))
+    (setf (fd device) nil)))
 
 (defun rm-framebuffer! (device fb-obj)
   (destroy-bo (framebuffer-buffer fb-obj))

@@ -74,7 +74,6 @@
 			     (:file "classes")
 			     (:file "main")
 			     (:file "scanout")))
-	       (:file "vt")
 	       (:file "accelerometer")
 	       (:file "gl-util")
 	       (:file "shaders")
@@ -83,6 +82,7 @@
 	       (:file "shader-texture")
 	       (:file "shader-init")
 	       (:file "package")
+	       (:file "vt")
 	       (:file "dev-track")
 	       (:file "structs")
 	       (:module "wl-classes"
