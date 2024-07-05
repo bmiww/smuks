@@ -168,7 +168,7 @@ and then clean the list out"
     (when (and press? (k-super? display))
       (case key
 	;; Key p
-	(25 (uiop:launch-program "onagre"))
+	(25 (uiop:launch-program "anyrun"))
 
 	;; TODO: Here you wanted to add the "next"/"previous" window focus stuff
 	;; Key j
