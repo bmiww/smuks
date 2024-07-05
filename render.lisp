@@ -11,7 +11,6 @@
 ;; │││├─┤││││
 ;; ┴ ┴┴ ┴┴┘└┘
 (defun render-frame (output)
-  (livesupport:update-repl-link)
   (let ((desktop (find-output-desktop *wayland* output))
 	(framebuffer (next-framebuffer output)))
 

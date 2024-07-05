@@ -103,7 +103,14 @@
      (udev::%monitor-enable-receiving *udev-monitor*)
      (cl-async:poll (udev:get-fd *udev-monitor*) 'udev-callback :poll-for '(:readable))
 
+     (cl-async:delay 'livesupport-recursively :time 0.016)
+
      (recursively-render-frame))))
+
+(defun livesupport-recursively ()
+  (livesupport:update-repl-link)
+  (cl-async:delay 'livesupport-recursively :time 0.016))
+
 
 (defun main ()
   (restart-case
@@ -216,8 +223,9 @@
 
 
 (defun handle-input (event)
+  ;; device removed seems to be called when switching VTs/sessions
   (if (eq (event-type event) :device-removed)
-      (rem-abandoned-device
+      (rem-device-abandoned
        *libinput*
        (merge-pathnames (format nil "/dev/input/~a"
 				(device-removed@-sys-name event))))
@@ -275,12 +283,14 @@
 ;; └─┘└─┘┴ ┴ ┴   ┴ ┴┴ ┴└─┘┴└─┘
 (defun enable-seat (seat data)
   (declare (ignore seat data))
-  (when *wayland* (resume-outputs *wayland*)))
+  (when *wayland* (resume-outputs *wayland*))
+  (when *libinput* (init-devices *libinput*)))
 
 (defun disable-seat (seat data)
   "Called when a seat is 'disabled'. One instance of this is when switching to a different VT"
   (declare (ignore seat data))
-  ;; TODO: Still don't know what to do here. Pausing outputs is a bit too late in the pipeline
+  ;; TODO: Still don't know what to do here. Pausing outputs is a bit too late in the pipeline.
+  ;; The pause is being done just before switching VTs
   ;; (pause-outputs *wayland*)
   )
 
@@ -335,6 +345,7 @@
   (when *xwayland-process* (uiop:terminate-process *xwayland-process*))
 
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
+  (when *libinput* (destroy *libinput*))
 
   (when *wayland* (cleanup-display *wayland*))
   (when *drm* (sdrm:close-drm *drm*))
@@ -346,4 +357,4 @@
     (delete-file (socket-path)))
 
   (setfnil *egl* *egl-context* *drm* *smuks-exit*
-	   *wayland* *socket* *seat* *cursor* *accel*))
+	   *wayland* *socket* *seat* *cursor* *accel* *libinput*))
