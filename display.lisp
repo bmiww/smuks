@@ -134,6 +134,16 @@
 (defmethod add-output ((display display) output)
   (push (outputs display) output))
 
+(defmethod pause-outputs ((display display))
+  (loop for output in (outputs display)
+	do (pause-output output)))
+
+(defmethod resume-outputs ((display display))
+  (loop for output in (outputs display)
+	do (resume-output output))
+  (kickstart-frame-render-for-all display))
+
+
 ;; ┌┬┐┌─┐┌─┐┬  ┌─┐
 ;;  │ │ ││ ││  └─┐
 ;;  ┴ └─┘└─┘┴─┘└─┘

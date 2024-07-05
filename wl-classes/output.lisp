@@ -37,6 +37,7 @@
    (scene :initarg :scene :initform nil :accessor scene)
    (configuring-neighbors :initform nil :accessor configuring-neighbors)
    (orientation :initform :landscape :initarg :orientation :reader orientation)
+   (paused :initform t :accessor paused)
    (screen-x :initarg :screen-x :initform 0 :accessor screen-x)
    (screen-y :initarg :screen-y :initform 0 :accessor screen-y)
    (client-cursor-drawn :initform nil :accessor client-cursor-drawn))
@@ -85,10 +86,21 @@ transform - is the output rotated? is the output flipped?
 		   (create-gl-framebuffer (framebuffer-egl-image framebuffer)))))
 
   ;; For the first frame - we only need the first buffer
-  (let ((first (first (framebuffers output))))
-    (set-crtc! (fd (drm output))
-	       (framebuffer-id first)
-	       (connector output))))
+  (resume-output output))
+
+(defmethod pause-output ((output output))
+  (unless (paused output)
+    (setf (paused output) t)
+    (unset-crtc! (fd (drm output)) (connector output))))
+
+(defmethod resume-output ((output output))
+  (when (paused output)
+    (setf (paused output) nil)
+    (let ((first (first (framebuffers output))))
+      (set-crtc! (fd (drm output))
+		 (framebuffer-id first)
+		 (connector output)))))
+
 
 (defmethod next-framebuffer ((output output))
   (let ((framebuffers (framebuffers output))

@@ -78,6 +78,15 @@
     (drm::mode-add-framebuffer fd width height depth bpp pitch handle buf-id)
     (cffi:mem-ref buf-id :uint32)))
 
+(defun unset-crtc! (fd connector)
+  (let* ((crtc (crtc connector))
+	 (result (drm:set-crtc
+		  fd (id crtc)
+		  0 0 0
+		  nil
+		  (cffi:null-pointer))))
+    (unless (eq 0 result) (error (format nil "Failed to set crtc: error ~a" result)))))
+
 (defun set-crtc! (fd fb connector)
   (let* ((crtc (crtc connector))
 	 (result (drm:set-crtc

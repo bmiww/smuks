@@ -273,13 +273,16 @@
 ;; ┌─┐┌─┐┌─┐┌┬┐  ┌┬┐┌─┐┌─┐┬┌─┐
 ;; └─┐├┤ ├─┤ │   │││├─┤│ ┬││
 ;; └─┘└─┘┴ ┴ ┴   ┴ ┴┴ ┴└─┘┴└─┘
-(defun enable-seat (seat data) (declare (ignore seat data)) (log! "SEAT ENABLED"))
-
-;; TODO: So you probably might want to kill off the whole compositor if we receive this?
-;; When exactly does this happen anyway?
-(defun disable-seat (seat data)
+(defun enable-seat (seat data)
   (declare (ignore seat data))
-  (log! "DISABLING SEAT - NOT IMPLEMENTED YET"))
+  (when *wayland* (resume-outputs *wayland*)))
+
+(defun disable-seat (seat data)
+  "Called when a seat is 'disabled'. One instance of this is when switching to a different VT"
+  (declare (ignore seat data))
+  ;; TODO: Still don't know what to do here. Pausing outputs is a bit too late in the pipeline
+  ;; (pause-outputs *wayland*)
+  )
 
 
 ;; Opening and closing restricted devices

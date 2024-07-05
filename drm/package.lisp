@@ -26,7 +26,8 @@
    height width
    vrefresh mode
 
-   set-crtc! connector-crtc
+   set-crtc! unset-crtc!
+   connector-crtc
    connector-type connected modes
    id
    hdisplay vdisplay))
