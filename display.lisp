@@ -11,6 +11,7 @@
   ((touch-slot-interesses :initform (make-array 32 :initial-element nil) :reader touch-slot-interesses)
    (drm :initarg :drm :accessor drm)
    (egl :initarg :egl :accessor egl)
+   (libseat :initarg :libseat :accessor libseat)
    (gl-version :initarg :gl-version :accessor gl-version)
    (cursor-x :initform 0 :accessor cursor-x)
    (cursor-y :initform 0 :accessor cursor-y)

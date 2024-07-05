@@ -74,6 +74,7 @@
 			     (:file "classes")
 			     (:file "main")
 			     (:file "scanout")))
+	       (:file "vt")
 	       (:file "accelerometer")
 	       (:file "gl-util")
 	       (:file "shaders")

@@ -56,7 +56,8 @@
 		     ;; But it might also match main-device proper
 		     ;; It could also be interesting to have more than one dev-t.
 			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
-			      :drm *drm*))
+			      :drm *drm*
+			      :libseat seat))
 
   ;; #+xwayland
   ;; (setf *xwayland-process* (uiop:launch-program "Xwayland"))

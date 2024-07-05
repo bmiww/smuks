@@ -137,11 +137,19 @@ and then clean the list out"
       ((29 97) (setf (k-ctrl? display) press?) t)
       (t nil)))
 
+    (print key)
+
     (when seat-keyboard
       (when mods-changed? (notify-kb-modifiers seat))
       ;; tODO: Key needs to be translated to the XKB keycode
       ;; NOTE: Although - i don't know - this seems to be working perfectly fine
       (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key state))
+
+    ;; ctrl+alt+F*
+    (when (and press? (k-alt? display) (k-ctrl? display))
+      (case key
+	(55 ())))
+
     ;; super-shift-*
     (when (and press? (k-super? display) (k-shift? display))
       (case key
@@ -165,4 +173,7 @@ and then clean the list out"
 
 	;; Numeric keys - switching desktops
 	(2 (setf (active-desktop display) (nth 0 (desktops display))))
-	(3 (setf (active-desktop display) (nth 1 (desktops display))))))))
+	(3 (setf (active-desktop display) (nth 1 (desktops display))))
+	;; TODO: Experimental key for VT switching set to number 3? or 4?
+	(4 (switch-vt (libseat display) 5))
+	))))
