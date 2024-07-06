@@ -128,14 +128,21 @@
 				(incf screen-y height))))))))
 
 
-;; TODO: Make it possible to remove outputs from display
 ;; TODO: When output is added notify each clients registry object
-;; TODO: When output is removed notify each clients registry object
 (defmethod add-output ((display display) output)
+  (prep-shaders output)
   (push output (outputs display))
   (loop for desktop in (desktops display)
 	when (null (output desktop))
-	  return (setf (output desktop) output)))
+	  return (setf (output desktop) output))
+  (start-monitor output)
+  (render-frame output))
+
+;; TODO: When output is removed notify each clients registry object
+(defmethod remove-output ((display display) output)
+  (remove-output-from-desktops display output)
+  (cleanup-output output)
+  (setf (outputs display) (remove output (outputs display))))
 
 (defmethod pause-outputs ((display display))
   (loop for output in (outputs display)
@@ -340,25 +347,19 @@ then this can be called to determine the new focus surfaces."
     (loop for connector in connectors
 	  for existing-output = (find-if (lambda (output) (eq (id (connector output)) (id connector))) (outputs display))
 	  do
-	     (progn
-	       (if existing-output
-		   (unless (connected (connector existing-output))
-		     (remove-output-from-desktops display existing-output)
-		     (cleanup-output existing-output)
-		     (setf (outputs display) (remove existing-output (outputs display))))
-		   (when (connected connector)
-		     (let ((fb-objs (create-connector-framebuffer (drm display) connector *framebuffer-count*)))
-		       (when fb-objs
-			 (let ((output (make-instance 'output
-					  :connector connector
-					  :display display
-					  :framebuffers fb-objs
-					  :scene (nth (length (outputs display)) *scenes*)
-					  :drm (drm display))))
-			   (prep-shaders output)
-			   (add-output display output)
-			   (start-monitor output)
-			   (render-frame output))))))))
+	     (if existing-output
+		 (unless (connected (connector existing-output))
+		   (remove-output display existing-output))
+		 (when (connected connector)
+		   (let ((fb-objs (create-connector-framebuffer (drm display) connector *framebuffer-count*)))
+		     (when fb-objs
+		       (add-output display
+				   (make-instance 'output
+				      :connector connector
+				      :display display
+				      :framebuffers fb-objs
+				      :scene (nth (length (outputs display)) *scenes*)
+				      :drm (drm display))))))))
     (recalculate-dimensions display)))
 
 ;; TODO: If multiple toplevels for one client - this should probably first kill off all toplevels and then the client?
