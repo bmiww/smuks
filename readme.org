@@ -8,15 +8,16 @@ https://ultralisp.org/
 http://dist.shirakumo.org/shirakumo/
 (ql-dist:install-dist "http://dist.shirakumo.org/shirakumo.txt" :prompt nil)
 
+** Libs
+*** libseat
+pacman -S seatd
+
+
 ** Udev rule for accessing iio devices
 I don't know how to use udev, so here is what i'm basing the rule file idea off of
 https://stackoverflow.com/questions/52318133/how-to-change-specific-file-permissions-using-udev-rule
 The basic idea is adding a group and then telling the installing user that they are supposed to add themselves to this group
 ?Shitty? for package manager installs though (i'm not well versed in this yet)
-
-*** TODO: connect with libseat
-Now that i've got my custom iio interaction - it should be relatively easy to use libseat open func
-to get an elevated open function
 
 ** Command to run the whole thing
 $ XDG_SESSION_ID=1 sbcl --eval "(ql:quickload :swank)" \
@@ -24,16 +25,6 @@ $ XDG_SESSION_ID=1 sbcl --eval "(ql:quickload :swank)" \
 			--eval "(ql:quickload :smuks)"
 
 Feel free to choose your own port.
-
-** Sadly - libiio seatd is a bit useless because of the udev rule that i'm adding
-In order to alleviate that - one would have to do one of the following or any unmentioned:
-*** get libiio to expose a way to replace the open function (similar to libinput) - Ask around/MR
-Potential problem with this one - libiio is in a bit of a weird version situation
-Seems that the stable version that is primarily being shipped is 0.25 (with some rc).
-While active development is happening on a 1.0 branch.
-*** find/write a libiio alternative that accepts a dropin replacement for an alleviated open function
-*** check out if theres a way extend seatd - haven't checked if one could somehow switch usage of linux open
-*** Add your own thoughts
 
 ** What is XDG_SESSION_ID
 The xdg_session bit is primarily for systemd logind - in case if you're running this process from an ssh or other not-primary session.
