@@ -215,9 +215,6 @@ For my purposes - i'm just ignoring this and giving the client the current state
 
     (setf (x popup) x (y popup) y)))
 
-(defmethod wl-surface:commit ((popup popup))
-  (commit-toplevel popup))
-
 
 ;; TODO: Seat ignored - global seat used instead.
 ;; TODO: This is supposed to check which nearest toplevel or popup has a keyboard focus on seat level - i think.

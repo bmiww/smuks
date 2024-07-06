@@ -54,15 +54,6 @@
 ;; https://wayland.app/protocols/wayland#wl_surface:request:commit
 ;; TODO: Most of this could instead be written as methods for the specific parts
 (defmethod wl-surface:commit ((surface surface))
-  (typecase surface
-    (toplevel (commit-surface surface))
-    (cursor (commit-surface surface))
-    (drag-surface (commit-surface surface))
-    (subsurface (commit-surface surface)) ;; TODO: This should have its own method - since theres very specific handling of a subsurface
-    ;; TODO: You could probably remove this since you are implementing it next to the popup class
-    (t (format nil "Unsupported surface role: ~a" (type-of surface)))))
-
-(defmethod commit-surface ((surface surface))
   (when (pending-damage surface)
     (setf (damage surface) (pending-damage surface))
     (setf (pending-damage surface) nil))
@@ -76,7 +67,7 @@
     (setf (pending-frame-callbacks surface) nil)
     (setf (needs-redraw surface) t)))
 
-(defmethod commit-surface :after ((surface toplevel))
+(defmethod wl-surface:commit :after ((surface toplevel))
   (when (first-commit surface)
     (setf (first-commit surface) nil)
     (handle-surface-change (wl:get-display surface) surface)))

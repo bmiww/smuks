@@ -35,7 +35,7 @@
    ;; TODO: For now just a quadruple - might make sense to introduce a struct for this
    (margins :initform '(0 0 0 0) :accessor margins)))
 
-(defmethod wl-surface:commit ((surface layer-surface))
+(defmethod wl-surface:commit :before ((surface layer-surface))
   ;; TODO: Maybe possible to use the surface level "new-dimensions?" flag
   (when (new-size? surface)
     (let* ((display (wl:get-display surface))
@@ -43,9 +43,7 @@
       (when (eq (width surface) 0) (setf (width surface) (width desktop)))
       (when (eq (height surface) 0) (setf (height surface) (height desktop)))
       (zwlr-layer-surface-v1:send-configure surface (incf (configure-serial surface)) (width surface) (height surface))
-      (setf (new-size? surface) nil)))
-    ;; TODO: Wonder if there is a way to force a method call with a specific signature. E.G. in this case 'surface
-  (commit-toplevel surface))
+      (setf (new-size? surface) nil))))
 
 (defmethod zwlr-layer-surface-v1:set-keyboard-interactivity ((surface layer-surface) keyboard-interactivity)
   (setf (slot-value surface 'keyboard-interactivity) keyboard-interactivity))
