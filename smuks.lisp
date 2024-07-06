@@ -52,11 +52,6 @@
 
   (setf *socket* (init-socket))
   (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
-		     ;; This dev-t is probably rather wrong - since client apps probably can't use card0/card1
-		     ;; But instead should be notified of the render nodes renderD128 and so on
-		     ;; But it might also match main-device proper
-		     ;; It could also be interesting to have more than one dev-t.
-			      :dev-t (drm::resources-dev-t (sdrm::resources *drm*))
 			      :drm *drm*
 			      :libseat *seat*))
 

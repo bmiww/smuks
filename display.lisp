@@ -16,8 +16,7 @@
    (cursor-x :initform 0 :accessor cursor-x)
    (cursor-y :initform 0 :accessor cursor-y)
    (cursor-screen :initform nil :accessor cursor-screen)
-   ;; TODO: Both of these are dumb - these should be per CRTC/monitor/whatever
-   (dev-t :initarg :dev-t :accessor dev-t)
+
    (display-serial :initform 0 :accessor display-serial)
    (keyboard-focus :initform nil)
    (pointer-focus :initform nil :accessor pointer-focus)

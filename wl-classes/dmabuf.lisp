@@ -126,14 +126,16 @@ It is mentally a bit simpler than the regular create as seen in this protocol"
 
 
 (defmethod initialize-instance :after ((feedback feedback) &key)
-  (let ((display (wl:get-display feedback)))
+  (let* ((display (wl:get-display feedback))
+	 (drm (drm display))
+	 (dev-t (dev-t drm)))
     (zwp-linux-dmabuf-feedback-v1:send-format-table feedback (mmap-pool-fd *format-table*) (mmap-pool-size *format-table*))
-    (zwp-linux-dmabuf-feedback-v1:send-main-device feedback `(,(dev-t display)))
+    (zwp-linux-dmabuf-feedback-v1:send-main-device feedback `(,dev-t))
 
     ;; TODO: For now - the scanout thing here is pretty fake.
     ;; Primarily used to see how the simple-dmabuf-feedback example from weston works
-    ;; (send-tranche feedback (dev-t display) '(0 1) :scanout t)
-    (send-tranche feedback (dev-t display) '(0 1))
+    ;; (send-tranche feedback dev-t '(0 1) :scanout t)
+    (send-tranche feedback dev-t '(0 1))
 
     (zwp-linux-dmabuf-feedback-v1:send-done feedback)))
 

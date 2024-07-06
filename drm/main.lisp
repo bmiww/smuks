@@ -22,6 +22,7 @@
    ;; Related to planes? Like cursor plane and stuff?
    (framebuffers :initarg :framebuffers :accessor framebuffers)
    (render-node :initarg :render-node :accessor render-node)
+   (dev-t :initarg :dev-t :accessor dev-t)
    (crtcs :initarg :crtcs :accessor crtcs)
    (crtc :initarg :crtc :accessor crtc)
    (connectors :initarg :connectors :accessor connectors)
@@ -43,7 +44,9 @@
 	  (unless (setf (encoders device) (loop for encoder in (drm:resources-encoders resources) collect (init-encoder encoder)))
 	    (error "No connectors found"))
 	  (unless (setf (connectors device) (loop for connector in (drm:resources-connectors resources) collect (init-connector connector (encoders device) (crtcs device))))
-	    (error "No encoders found"))))
+	    (error "No encoders found"))
+
+	  (setf (dev-t device) (drm::resources-dev-t resources))))
     (error (e)
       (declare (ignore e))
       (log! "Error during drm/gbm init. Closing device.")
