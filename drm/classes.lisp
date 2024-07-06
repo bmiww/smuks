@@ -35,13 +35,8 @@
 (defmethod connected ((connector connector)) (case (connection connector)
 					(:connected t)
 					(:disconnected nil)
-					;; TODO: Unknown connection could also mean
-					;; That it is connected
-					;; For now - don't know how to check that
 					(:unknown-connection nil)))
 
-;; TODO: Make it possible to select encoder?
-;; For now - selecting the first one - since i haven't seen connectors have more than one yet
 ;; TODO: Maybe it might be possible to remove the encoder search logic
 ;; And instead use the possible-crtcs logic.
 ;; Currently encoder crtc is prioritized over possible-crtcs

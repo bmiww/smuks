@@ -13,6 +13,9 @@
    (egl :initarg :egl :accessor egl)
    (libseat :initarg :libseat :accessor libseat)
    (gl-version :initarg :gl-version :accessor gl-version)
+
+   ;; TODO: I would like to turn this into a coord struct - but naming is weird.
+   ;; coord assumes desktop. This uses output.
    (cursor-x :initform 0 :accessor cursor-x)
    (cursor-y :initform 0 :accessor cursor-y)
    (cursor-screen :initform nil :accessor cursor-screen)
@@ -96,12 +99,10 @@
 
 (defmethod init-outputs ((display display))
   (let ((connectors (connectors (drm display))))
-    ;; TODO: Don't think i really need to sort anything any more here
+    ;; NOTE: Sort connectors so that dsi (builtin) is first
     (setf connectors (sort connectors (lambda (a b)
 					(declare (ignore b))
 					(if (eq (connector-type a) :dsi) t nil))))
-
-    ;; TODO: For now stacking screens vertically only
     (let ((screen-y 0))
       (setf (outputs display)
 	    (loop for connector in connectors
