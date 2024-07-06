@@ -152,8 +152,7 @@ For my purposes - i'm just ignoring this and giving the client the current state
 
 
 (defmethod xdg-toplevel:set-fullscreen ((toplevel toplevel) output)
-  (let* ((display (wl:get-display toplevel))
-	 (output (wl:global output))
+  (let* ((output (wl:global output))
 	 (height (compo-max-height toplevel))
 	 (width (compo-max-width toplevel)))
     (when (and (eq (output-height output) height)

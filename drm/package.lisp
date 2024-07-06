@@ -29,5 +29,5 @@
    set-crtc! unset-crtc!
    connector-crtc
    connector-type connected modes
-   id
+   id dev-t
    hdisplay vdisplay))

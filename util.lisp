@@ -86,7 +86,6 @@ declarations. Finally the result-form is returned after the iteration completes.
 You can find example error codes here:
 https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
   (case code
-    (nil (format t "No error code provided"))
     (0 nil)
     (1  "EPERM - Operation not permitted")
     (2  "ENOENT - No such file or directory")
