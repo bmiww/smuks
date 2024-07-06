@@ -206,7 +206,11 @@
 	  while dev
 	  do (cond
 	       ((string= (udev:dev-subsystem dev) "drm")
-		(when (string= (udev:dev-sys-name dev) "card0") (sleep 0.5) (handle-drm-device-event dev)))
+		;; NOTE: Only considering the drm node that was initt'd via my drm package
+		(when (string=
+		       (format nil "/dev/dri/~a" (udev:dev-sys-name dev))
+		       (sdrm:primary-node (drm *wayland*)))
+		  (sleep 0.5) (handle-drm-device-event dev)))
 	       ((string= (udev:dev-subsystem dev) "input")
 		(when (string= (udev:dev-action dev) "add")
 		  (process-added-device dev)))))))

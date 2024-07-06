@@ -132,7 +132,10 @@
 ;; TODO: When output is added notify each clients registry object
 ;; TODO: When output is removed notify each clients registry object
 (defmethod add-output ((display display) output)
-  (push (outputs display) output))
+  (push output (outputs display))
+  (loop for desktop in (desktops display)
+	when (null (output desktop))
+	  return (setf (output desktop) output)))
 
 (defmethod pause-outputs ((display display))
   (loop for output in (outputs display)
@@ -326,6 +329,10 @@ then this can be called to determine the new focus surfaces."
   "Used to determine initial orientation based on the width/height of an output"
   (if (>= width height) :landscape :portrait))
 
+(defmethod remove-output-from-desktops ((display display) output)
+  (loop for desktop in (desktops display)
+	when (eq output (output desktop))
+	  do (setf (output desktop) nil)))
 
 ;; TODO: Lots of duplication befween this and initialize-instance
 (defmethod handle-drm-change ((display display))
@@ -336,6 +343,7 @@ then this can be called to determine the new focus surfaces."
 	     (progn
 	       (if existing-output
 		   (unless (connected (connector existing-output))
+		     (remove-output-from-desktops display existing-output)
 		     (cleanup-output existing-output)
 		     (setf (outputs display) (remove existing-output (outputs display))))
 		   (when (connected connector)

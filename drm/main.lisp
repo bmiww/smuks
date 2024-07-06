@@ -21,6 +21,7 @@
    ;; TODO: Unused for now? Supposed to be DRM lib framebuffers
    ;; Related to planes? Like cursor plane and stuff?
    (framebuffers :initarg :framebuffers :accessor framebuffers)
+   (primary-node :initarg :primary-node :accessor primary-node)
    (render-node :initarg :render-node :accessor render-node)
    (dev-t :initarg :dev-t :accessor dev-t)
    (crtcs :initarg :crtcs :accessor crtcs)
@@ -125,7 +126,9 @@
 		   (funcall open-func (drm::device!-primary first) nil nil)
 		   ;; TODO: SBCL EXCLUSIVE
 		   (sb-sys:fd-stream-fd file)))
-	   (device (make-instance 'gbm-device :file file :fd fd :close-device close-func :render-node (drm::device!-render first)))
+	   (device (make-instance 'gbm-device :file file :fd fd :close-device close-func
+				  :primary-node (drm::device!-primary first)
+				  :render-node (drm::device!-render first)))
 	   (caps (capabilities device)))
       (unless (getf caps :crtc-in-vblank-event)
 	(error "CRTC_IN_VBLANK_EVENT missing. Needed for page-flip2. Not strictly necessary, required in smuks."))

@@ -30,4 +30,6 @@
    connector-crtc
    connector-type connected modes
    id dev-t
-   hdisplay vdisplay))
+   hdisplay vdisplay
+
+   primary-node render-node))

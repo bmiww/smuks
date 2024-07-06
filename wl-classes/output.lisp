@@ -57,7 +57,7 @@ transform - is the output rotated? is the output flipped?
 "))
 
 
-(defmethod render-scene ((output output)) (funcall (scene output) output))
+(defmethod render-scene ((output output)) (when (scene output) (funcall (scene output) output)))
 (defmethod prep-shaders ((output output))
   (let ((width (output-width output)) (height (output-height output)) (rot (shader-rot-val output))
 	(gl-version (gl-version (wl:get-display output))))
