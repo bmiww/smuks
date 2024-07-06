@@ -84,7 +84,7 @@
   (make-instance 'zwp-virtual-keyboard-manager-v1:global :display display :dispatch-impl 'virtual-keyboard-manager)
   (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
 
-  (init-outputs display)
+  (init-outputs2 display)
 
   ;; TODO: Needs outputs at this point. Could be moved if i rewrite initialization
   ;; NOTE: For each screen we have available attach it to a different desktop
@@ -97,41 +97,59 @@
     (declare (ignore x y))
     (setf (cursor-screen display) output)))
 
-(defmethod init-outputs ((display display))
-  (let ((connectors (connectors (drm display))))
+(defun update-existing-output (output connector)
+  (log! "Updating existing output: ~a" output))
+
+(defmethod get-highest-screen-y ((display display))
+  (let ((highest 0))
+    (loop for output in (outputs display)
+	  when (> (screen-y output) highest)
+	    do (setf highest (screen-y output)))
+    highest))
+
+
+(defmethod init-outputs2 ((display display) &optional refresh)
+  (let ((connectors (if refresh (sdrm::recheck-resources (drm display)) (connectors (drm display)))))
     ;; NOTE: Sort connectors so that dsi (builtin) is first
     (setf connectors (sort connectors (lambda (a b)
 					(declare (ignore b))
 					(if (eq (connector-type a) :dsi) t nil))))
-    (let ((screen-y 0))
-      (setf (outputs display)
-	    (loop for connector in connectors
-		  for index from 0
-		  for fb-objs = (create-connector-framebuffer (drm display) connector *framebuffer-count*)
-		  when fb-objs
-		    collect (let ((height (vdisplay connector))
-				  (width (hdisplay connector)))
-			      (prog1
-				  (make-instance 'output
-				     :connector connector
-				     :orientation (guess-orientation width height)
-				     :framebuffers fb-objs
-				     :scene (nth index *scenes*)
-				     :screen-y screen-y
-				     :drm (drm display)
-				     ;; NOTE: Moved from old output thing
-				     :display display :dispatch-impl 'output-dispatch
-				     ;; TODO: These could be determined differently\
-				     :x 0 :y 0
-				     :refresh-rate (sdrm:vrefresh connector)
-				     :make "TODO: Fill out make" :model "TODO: Fill out model")
-				(incf screen-y height))))))))
+    (let ((screen-y (get-highest-screen-y display)) (outputs nil))
+      (loop for connector in connectors
+	    for index from 0
+	    for existing-output = (find-if (lambda (output) (eq (id (connector output)) (id connector))) (outputs display))
+	    do (if existing-output
+		   ;; TODO: When an output details are updated - notify clients
+		   (if (connected (connector existing-output))
+		       (progn (update-existing-output existing-output connector) (push existing-output outputs))
+		       (remove-output display existing-output))
+
+		   ;; TODO: When output is added notify each clients registry object
+		   (when (connected connector)
+		     (let ((fb-objs (create-connector-framebuffer (drm display) connector *framebuffer-count*))
+			   (height (vdisplay connector)) (width (hdisplay connector)))
+		       (when fb-objs
+			 (let ((output (make-instance 'output
+					  :connector connector
+					  :orientation (guess-orientation width height)
+					  :framebuffers fb-objs
+					  :scene (nth index *scenes*)
+					  :screen-y screen-y
+					  :drm (drm display)
+					  ;; NOTE: Moved from old output thing
+					  :display display :dispatch-impl 'output-dispatch
+					  ;; TODO: These could be determined differently\
+					  :x 0 :y 0
+					  :refresh-rate (sdrm:vrefresh connector)
+					  :make "TODO: Fill out make" :model "TODO: Fill out model")))
+			   (pushnew output outputs)
+			   (incf screen-y height)
+			   (start-output display output)))))))
+      (setf (outputs display) outputs))))
 
 
-;; TODO: When output is added notify each clients registry object
-(defmethod add-output ((display display) output)
+(defmethod start-output ((display display) output)
   (prep-shaders output)
-  (push output (outputs display))
   (loop for desktop in (desktops display)
 	when (null (output desktop))
 	  return (setf (output desktop) output))
@@ -140,6 +158,7 @@
 
 ;; TODO: When output is removed notify each clients registry object
 (defmethod remove-output ((display display) output)
+  (log! "Removing output ~a" output)
   (remove-output-from-desktops display output)
   (cleanup-output output)
   (setf (outputs display) (remove output (outputs display))))
@@ -340,27 +359,6 @@ then this can be called to determine the new focus surfaces."
   (loop for desktop in (desktops display)
 	when (eq output (output desktop))
 	  do (setf (output desktop) nil)))
-
-;; TODO: Lots of duplication befween this and initialize-instance
-(defmethod handle-drm-change ((display display))
-  (let ((connectors (sdrm::recheck-resources (drm display))))
-    (loop for connector in connectors
-	  for existing-output = (find-if (lambda (output) (eq (id (connector output)) (id connector))) (outputs display))
-	  do
-	     (if existing-output
-		 (unless (connected (connector existing-output))
-		   (remove-output display existing-output))
-		 (when (connected connector)
-		   (let ((fb-objs (create-connector-framebuffer (drm display) connector *framebuffer-count*)))
-		     (when fb-objs
-		       (add-output display
-				   (make-instance 'output
-				      :connector connector
-				      :display display
-				      :framebuffers fb-objs
-				      :scene (nth (length (outputs display)) *scenes*)
-				      :drm (drm display))))))))
-    (recalculate-dimensions display)))
 
 ;; TODO: If multiple toplevels for one client - this should probably first kill off all toplevels and then the client?
 ;; Unless we expect the client to die off itself once toplevels go away?

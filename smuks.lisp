@@ -217,7 +217,7 @@
 
 (defun handle-drm-device-event (dev)
   (declare (ignore dev))
-  (handle-drm-change *wayland*))
+  (init-outputs2 *wayland* t))
 
 
 (defun handle-input (event)
