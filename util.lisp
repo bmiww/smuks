@@ -8,7 +8,11 @@
 (defpackage :smuks-util
   (:use :cl)
   (:nicknames :util)
-  (:export dohash log! *log-output*
+  (:export dohash
+
+	   *log-output* *warn-output*
+	   log! wrn!
+
 	   match-kernel-errcode check-err
 	   heading setfnil defnil
 	   check-gl-fb-status check-gl-error
@@ -33,7 +37,9 @@
 ;; │  │ ││ ┬│
 ;; ┴─┘└─┘└─┘o
 (defvar *log-output* *standard-output*)
+(defvar *warn-output* *standard-output*)
 (defun log! (&rest args) (format *log-output* "🎀: ~a~%" (apply #'format nil args)))
+(defun wrn! (&rest args) (format *warn-output* "⚠️: ~a~%" (apply #'format nil args)))
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┌─┐┬ ┬
 ;;  │││ │├─┤├─┤└─┐├─┤

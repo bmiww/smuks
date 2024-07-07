@@ -91,7 +91,7 @@
 		      (damage-width dmg) (damage-height dmg)
 		      :rgba :unsigned-byte
 		      pointy)
-		     (log! "⚠️:Texture damage rectangle out of bounds, skipping. Otherwise this would memory corrupt.")))
+		     (wrn! "Texture damage rectangle out of bounds, skipping. Otherwise this would memory corrupt.")))
 	;; NOTE: Full texture upload
 	(progn
 	  (gl:tex-image-2d :texture-2d 0 :rgba width height
