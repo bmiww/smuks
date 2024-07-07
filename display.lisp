@@ -322,13 +322,14 @@
   (let ((window (keyboard-focus display)))
     (when window
       (let ((old-desktop (desktop window)))
-	(setf (desktop window) desktop)
+	(unless (eq old-desktop desktop)
+	  (setf (desktop window) desktop)
 
-	(pushnew window (windows desktop))
-	(setf (windows old-desktop) (remove window (windows old-desktop)))
+	  (pushnew window (windows desktop))
+	  (setf (windows old-desktop) (remove window (windows old-desktop)))
 
-	(recalculate-layout desktop)
-	(recalculate-layout old-desktop)))))
+	  (recalculate-layout desktop)
+	  (recalculate-layout old-desktop))))))
 
 
 
