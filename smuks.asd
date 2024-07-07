@@ -27,11 +27,17 @@
   :build-pathname "smuks"
   :entry-point "smuks::main"
   :around-compile (lambda (next)
-		    (when *DEBUG_MODE*
+		    (if *DEBUG_MODE*
 		      (proclaim '(optimize
                                   (safety 3)
                                   (debug 3)
-                                  (speed 0))))
+                                  (speed 0)))
+		      (proclaim '(optimize
+				  (safety 0)
+				  (debug 0)
+				  (speed 3)
+				  (compilation-peed 0)
+				  (space 2))))
 		    (funcall next))
   :depends-on (#:cl-drm ;; TODO: Add to my own distribution
 	       #:cl-udev ;; TODO: Add to my own distribution

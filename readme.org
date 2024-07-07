@@ -53,3 +53,6 @@ in /etc/ssh/sshd_config
 Otherwise - libseat/logind won't be able to activate a session
 
 Also - archlinux seems to do something weird with the lib compilation. Setting XDG_SESSION_ID env variable doesn't help at all.
+
+* Building
+** sbcl --eval '(asdf:make :smuks)e
