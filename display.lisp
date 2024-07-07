@@ -405,6 +405,17 @@ then this can be called to determine the new focus surfaces."
   (loop for output in (outputs display)
 	do (render-frame output)))
 
+(defmethod focus-next-window ((display display))
+  (let ((windows (windows (active-desktop display))))
+    (when windows
+      (let ((index (position (keyboard-focus display) windows)))
+	(setf (keyboard-focus display) (nth (mod (+ index 1) (length windows)) windows))))))
+
+(defmethod focus-prev-window ((display display))
+  (let ((windows (windows (active-desktop display))))
+    (when windows
+      (let ((index (position (keyboard-focus display) windows)))
+	(setf (keyboard-focus display) (nth (mod (- index 1) (length windows)) windows))))))
 
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘
