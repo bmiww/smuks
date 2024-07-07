@@ -170,8 +170,16 @@ and then clean the list out"
 	      (37 ())
 
 	      ;; Numeric keys - switching desktops
-	      (2 (setf (active-desktop display) (nth 0 (desktops display))))
-	      (3 (setf (active-desktop display) (nth 1 (desktops display))))
+	      (2  (setf (active-desktop display) (nth 0 (desktops display))))
+	      (3  (setf (active-desktop display) (nth 1 (desktops display))))
+	      (4  (setf (active-desktop display) (nth 2 (desktops display))))
+	      (5  (setf (active-desktop display) (nth 3 (desktops display))))
+	      (6  (setf (active-desktop display) (nth 4 (desktops display))))
+	      (7  (setf (active-desktop display) (nth 5 (desktops display))))
+	      (8  (setf (active-desktop display) (nth 6 (desktops display))))
+	      (9  (setf (active-desktop display) (nth 7 (desktops display))))
+	      (10 (setf (active-desktop display) (nth 8 (desktops display))))
+	      (11 (setf (active-desktop display) (nth 9 (desktops display))))
 	      (t :miss))))
 
     (let* ((surface (or (exclusive-keyboard-focus display) (keyboard-focus display))))
