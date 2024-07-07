@@ -60,10 +60,12 @@
   (handle-surface-change display))
 
 
-(defmethod (setf active-desktop) :before (new (display display))
+(defmethod (setf active-desktop) :before (new-desktop (display display))
   (when (active-desktop display)
-    (unless (eq new (active-desktop display))
-      (setf (output new) (output (active-desktop display)))
+    (unless (eq new-desktop (active-desktop display))
+      (setf (output new-desktop) (output (active-desktop display)))
+      (recalculate-layout new-desktop)
+
       (setf (output (active-desktop display)) nil)
       (handle-surface-change display))))
 
