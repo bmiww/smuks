@@ -28,7 +28,7 @@
 (defvar *xwayland-process* nil)
 
 (defnil
-  *smuks-exit* *cursor*
+  *cursor*
   *egl* *egl-context*)
 
 (defun mainer ()
@@ -97,9 +97,7 @@
      (udev::%monitor-enable-receiving *udev-monitor*)
      (cl-async:poll (udev:get-fd *udev-monitor*) 'udev-callback :poll-for '(:readable))
 
-     (cl-async:delay 'livesupport-recursively :time 0.016)
-
-     (recursively-render-frame))))
+     (cl-async:delay 'livesupport-recursively :time 0.016))))
 
 (defun livesupport-recursively ()
   (livesupport:update-repl-link)
@@ -111,22 +109,6 @@
       (unwind-protect (mainer)
 	(cleanup))
     (📍start-over () (main))))
-
-
-;; ┌─┐┬─┐┌─┐┌┬┐┌─┐
-;; ├┤ ├┬┘├─┤│││├┤
-;; └  ┴└─┴ ┴┴ ┴└─┘
-;; TODO: This one doesn't make too much sense any more.
-;; Since the rendering is performed based on drm page-flips
-(defun recursively-render-frame ()
-  (if *smuks-exit*
-      (cl-async:exit-event-loop)
-      (loop for screen in (outputs *wayland*)
-	    do (restart-case (render-frame screen)
-		 (skip-frame ()
-		   :report "Skip frame"
-		   (print "Skipping frame"))))))
-
 
 
 ;; TODO: Add a way to check which screen belongs to the accelerometer
@@ -304,7 +286,9 @@
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
 ;; Can be called from repl to stop the compositor
-(defun shutdown () (setf *smuks-exit* t))
+;; TODO: Not really working though...
+(defun shutdown ()
+  (cl-async:exit-event-loop))
 
 ;; ┬ ┬┌┐┌┌─┐┌─┐┬─┐┌┬┐┌─┐┌┬┐
 ;; │ ││││└─┐│ │├┬┘ │ ├┤  ││
@@ -341,5 +325,5 @@
     (unix-sockets:close-unix-socket *socket*)
     (delete-file *socket-path*))
 
-  (setfnil *egl* *egl-context* *drm* *smuks-exit*
+  (setfnil *egl* *egl-context* *drm*
 	   *wayland* *socket* *seat* *cursor* *accel* *libinput*))
