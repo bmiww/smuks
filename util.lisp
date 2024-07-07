@@ -11,7 +11,7 @@
   (:export dohash
 
 	   *log-output* *warn-output*
-	   log! wrn!
+	   log! wrn! glg!
 
 	   match-kernel-errcode check-err
 	   heading setfnil defnil
@@ -38,6 +38,7 @@
 ;; ┴─┘└─┘└─┘o
 (defvar *log-output* *standard-output*)
 (defvar *warn-output* *standard-output*)
+(defun glg! (&rest args) (format *log-output* "🎨: ~a~%" (apply #'format nil args)))
 (defun log! (&rest args) (format *log-output* "🎀: ~a~%" (apply #'format nil args)))
 (defun wrn! (&rest args) (format *warn-output* "⚠️: ~a~%" (apply #'format nil args)))
 

@@ -62,6 +62,9 @@
   (setf (egl *wayland*) *egl*)
   (setf (gl-version *wayland*) *gl-version*)
 
+  #+smuks-debug
+  (sglutil::enable-gl-debug)
+
   (setf *cursor* (load-cursor-texture))
 
   (setf *accel* (iio-accelerometer:find-accelerometer-dev))
@@ -74,26 +77,26 @@
 
   (cl-async:start-event-loop
    (lambda ()
-     (log! "Starting DRM fd listener. Waiting for events...")
+     (log! "Starting DRM fd listener")
      (cl-async:poll (fd *drm*) 'drm-callback :poll-for '(:readable))
 
-     (log! "Starting wayland client socket listener. Waiting for clients...")
+     (log! "Starting wayland client socket listener")
      (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t)
 
-     (log! "Starting wayland event loop listener. Waiting for events...")
+     (log! "Starting wayland event loop listener")
      (cl-async:poll (wl:event-loop-fd *wayland*) 'wayland-callback :poll-for '(:readable))
 
-     (log! "Starting input event poller. Waiting for user inputs...")
+     (log! "Starting input event poller")
      (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable))
 
-     (log! "Starting the umpteenth poller. Now for seat events...")
+     (log! "Starting the umpteenth poller")
      (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable))
 
      (when *accel*
-       (log! "Starting MY accelerometer poller. Waiting for accelerometer events...")
+       (log! "Starting MY accelerometer poller")
        (cl-async:poll (iio-accelerometer::fd *accel*) 'my-accelerometer-callback :poll-for '(:readable)))
 
-     (log! "Starting the udev poller. Waiting for udev events...")
+     (log! "Starting the udev poller")
      (udev::%monitor-enable-receiving *udev-monitor*)
      (cl-async:poll (udev:get-fd *udev-monitor*) 'udev-callback :poll-for '(:readable))
 

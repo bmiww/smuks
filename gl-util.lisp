@@ -122,7 +122,7 @@
   (width 0)
   (height 0))
 
-(defstruct tex id (initd nil) format nil)
+(defstruct tex id (initd nil) (format nil))
 (defun mk-tex (&optional format)
   (prog1
       (make-tex :id (gl:gen-texture) :format (or format :argb8888))
@@ -172,3 +172,57 @@
 
 (defun translation-matrix (x y) (math:mtranslation (math:vec (flo x) (flo y))))
 (defun scaling-matrix (width height) (math:mscaling (math:vec (flo (/ 1 width)) (flo (/ 1 height)))))
+
+
+;; ┌┬┐┌─┐┌┐ ┬ ┬┌─┐
+;;  ││├┤ ├┴┐│ ││ ┬
+;; ─┴┘└─┘└─┘└─┘└─┘
+(defun get-gl-enum (num) (cffi:foreign-enum-keyword '%gl:enum num))
+
+(cffi:defcallback gl-debug-callback :void ((source :uint) (type :uint) (id %gl:uint) (severity :uint) (length %gl:sizei) (message :string) (user-param :pointer))
+  (declare (ignore user-param length id))
+  (let ((source (get-gl-enum source)) (type (get-gl-enum type))
+	(severity (get-gl-enum severity)))
+    (setf source
+	  (ecase source
+	    ((:debug-source-api-khr :debug-source-api) "API")
+	    ((:debug-source-window-system-khr :debug-source-window-system) "WIN")
+	    ((:debug-source-shader-compiler-khr :debug-source-shader-compiler) "SHADER")
+	    ((:debug-source-third-party-khr :debug-source-third-party) "3RD")
+	    ((:debug-source-application-khr :debug-source-application) "APP")
+	    ((:debug-source-other-khr :debug-source-other) "???")))
+    (setf
+     type
+     (ecase type
+       ((:debug-type-error-khr :debug-type-error) "Error")
+       ((:debug-type-deprecated-behavior-khr
+	 :debug-type-deprecated-behavior)
+	"Deprecated behaviour")
+       ((:debug-type-undefined-behavior-khr :debug-type-undefined-behavior) "Undefined behaviour")
+       ((:debug-type-portability-khr :debug-type-portability) "Portability")
+       ((:debug-type-performance-khr :debug-type-performance) "Performance")
+       ((:debug-type-marker-khr :debug-type-marker) "Marker")
+       ((:debug-type-push-group-khr :debug-type-push-group) "Push group")
+       ((:debug-type-pop-group-khr :debug-type-pop-group) "Pop group")
+       ((:debug-type-other-khr :debug-type-other) "???")))
+    (setf severity
+	  (ecase severity
+	    ((:debug-severity-high-khr :debug-severity-high) "HIGH")
+	    ((:debug-severity-medium-khr :debug-severity-medium) "MEDIUM")
+	    ((:debug-severity-low-khr :debug-severity-low) "LOW")
+	    ((:debug-severity-notification-khr :debug-severity-notification) "NOTE")))
+
+    (glg! "~a:~a:~a~%--> ~a" severity source type message)))
+
+(defun debug-output-insert (message &key (source :debug-source-application)
+                                  (type :debug-type-other)
+                                  (severity :debug-severity-notification)
+                                  (id 0))
+  (cffi:with-foreign-string ((buf len) message)
+    (%gl:debug-message-insert source type id severity len buf)))
+
+(defun enable-gl-debug ()
+  (log! "Enabling GL debug")
+  (gl:enable :debug-output)
+  (%gl:debug-message-callback (cffi:callback gl-debug-callback) (cffi:null-pointer))
+  (debug-output-insert "Hello from GL debug!"))

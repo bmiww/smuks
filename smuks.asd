@@ -13,6 +13,7 @@
 (defvar *DEBUG_MODE* (uiop/os:getenv "DEBUG_SMUKS"))
 (defvar *ENABLE_XWAYLAND* t)
 
+(when *DEBUG_MODE* (pushnew :smuks-debug *features*))
 (when *DEBUG_MODE* (pushnew :cl-opengl-no-check-error *features*))
 (when *ENABLE_XWAYLAND* (pushnew :xwayland *features*))
 
