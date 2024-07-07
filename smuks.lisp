@@ -21,12 +21,13 @@
 (defvar *seat* nil)
 (defvar *accel* nil)
 (defvar *gl-version* nil)
+(defvar *socket-path* nil)
+(defvar *socket* nil)
 
 #+xwayland
 (defvar *xwayland-process* nil)
 
 (defnil
-    *socket*
   *smuks-exit* *cursor*
   *egl* *egl-context*)
 
@@ -250,27 +251,15 @@
 ;; ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐
 ;; └─┐│ ││  ├┴┐├┤  │
 ;; └─┘└─┘└─┘┴ ┴└─┘ ┴
-(defun socket-path () (format nil "~a/~a" (uiop:getenv "XDG_RUNTIME_DIR") "wayland-0"))
+(defun socket-path (index) (format nil "~a/wayland-~a" (uiop:getenv "XDG_RUNTIME_DIR") index))
 (defun init-socket ()
-  (let ((socket-path (socket-path)) (socket nil))
-    (setf socket
-	  (restart-case
-	      (handler-case
-		  (progn
-		    (when (probe-file socket-path)
-		      (delete-file socket-path))
-		    (unix-sockets:make-unix-socket socket-path))
-		(error (e)
-		  (declare (ignore e))
-		  (progn
-		    (delete-file socket-path)
-		    (unix-sockets:make-unix-socket socket-path))))
-	    (create-new-socket ()
-	      :report "Create new socket"
-	      (log! "Creating new socket")
-	      (delete-file socket-path)
-	      (unix-sockets:make-unix-socket socket-path))))
-    (setf (uiop/os:getenv "WAYLAND_DISPLAY") socket-path)
+  (let (socket-num socket)
+    (loop for i from 0
+	  unless (probe-file (socket-path i)) return (setf socket-num i))
+
+    (setf *socket-path* (socket-path socket-num))
+    (setf socket (unix-sockets:make-unix-socket *socket-path*))
+    (setf (uiop/os:getenv "WAYLAND_DISPLAY") (format nil "wayland-~a" socket-num))
     socket))
 
 
@@ -350,7 +339,7 @@
   (when *accel* (iio-accelerometer::close-dev *accel*))
   (when *socket*
     (unix-sockets:close-unix-socket *socket*)
-    (delete-file (socket-path)))
+    (delete-file *socket-path*))
 
   (setfnil *egl* *egl-context* *drm* *smuks-exit*
 	   *wayland* *socket* *seat* *cursor* *accel* *libinput*))
