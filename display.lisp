@@ -316,6 +316,18 @@
 	     (when (eq desktop (active-desktop display))
 	       (setf (active-desktop display) (first-desktop-with-output display)))))
 
+(defmethod send-to-desktop ((display display) desktop)
+  (let ((window (keyboard-focus display)))
+    (when window
+      (let ((old-desktop (desktop window)))
+	(setf (desktop window) desktop)
+
+	(pushnew window (windows desktop))
+	(setf (windows old-desktop) (remove window (windows old-desktop)))
+
+	(recalculate-layout desktop)
+	(recalculate-layout old-desktop)))))
+
 
 
 ;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐  ┌─┐┌─┐┌─┐┬ ┬┌─┐

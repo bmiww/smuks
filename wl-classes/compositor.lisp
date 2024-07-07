@@ -89,7 +89,7 @@
 (defmethod height ((desktop desktop)) (output-height (output desktop)))
 
 (defmethod recalculate-layout ((desktop desktop))
-  (when (windows desktop)
+  (when (and (output desktop) (windows desktop))
     (let* ((output (output desktop))
 	   (d-width (output-width output)) (d-height (output-height output))
 	   (amount (length (windows desktop)))

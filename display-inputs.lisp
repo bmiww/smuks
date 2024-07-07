@@ -148,16 +148,29 @@ and then clean the list out"
 	      (t :miss))))
 
     ;; super-shift-*
-    (when (and press? (k-super? display) (k-shift? display))
+    (when (and press? (k-super? display) (k-shift? display) (eq compositor-handled :miss))
       (setf compositor-handled
 	    (case key
+	      ;; Numeric keys should send a window to the corresponding desktop
+	      (2  (send-to-desktop display (nth 0 (desktops display))))
+	      (3  (send-to-desktop display (nth 1 (desktops display))))
+	      (4  (send-to-desktop display (nth 2 (desktops display))))
+	      (5  (send-to-desktop display (nth 3 (desktops display))))
+	      (6  (send-to-desktop display (nth 4 (desktops display))))
+	      (7  (send-to-desktop display (nth 5 (desktops display))))
+	      (8  (send-to-desktop display (nth 6 (desktops display))))
+	      (9  (send-to-desktop display (nth 7 (desktops display))))
+	      (10 (send-to-desktop display (nth 8 (desktops display))))
+	      (11 (send-to-desktop display (nth 9 (desktops display))))
+
 	      ;; enter - Launch a terminal
 	      (28 (uiop:launch-program "kitty"))
 	      ;; Key c - kill the currently selected window
 	      (46 (kill-focus-client display))
 	      (t :miss))))
 
-    (when (and press? (k-super? display))
+    ;; super-*
+    (when (and press? (k-super? display) (eq compositor-handled :miss))
       (setf compositor-handled
 	    (case key
 	      ;; Key p
