@@ -46,7 +46,12 @@
       (setf (new-size? surface) nil))))
 
 (defmethod zwlr-layer-surface-v1:set-keyboard-interactivity ((surface layer-surface) keyboard-interactivity)
-  (setf (slot-value surface 'keyboard-interactivity) keyboard-interactivity))
+  (setf (slot-value surface 'keyboard-interactivity) keyboard-interactivity)
+  (when (eq keyboard-interactivity :exclusive)
+    (grab-keyboard-focus (wl:get-display surface) surface)))
+
+(defmethod zwlr-layer-surface-v1:destroy :before ((surface layer-surface))
+  (ungrab-keyboard-focus (wl:get-display surface) surface))
 
 (defmethod zwlr-layer-surface-v1:set-margin ((surface layer-surface) top right bottom left)
   (setf (margins surface) (list top right bottom left)))

@@ -245,6 +245,11 @@
     ;; (wl-keyboard:send-repeat-info keyboard *key-repeat-rate* *key-repeat-delay*)
     ))
 
+(defmethod send-key ((seat seat) key state)
+  (let ((keyboard (seat-keyboard seat)))
+    (when keyboard
+      (wl-keyboard:send-key keyboard (next-serial (wl:get-display seat)) (get-ms) key state))))
+
 (defmethod keyboard-enter ((seat seat) surface keys)
   (let* ((keyboard (seat-keyboard seat)) (display (wl:get-display seat)))
     (wl-keyboard:send-enter keyboard (next-serial display) surface keys)

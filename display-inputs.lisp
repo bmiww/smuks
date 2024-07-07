@@ -78,7 +78,7 @@ and then clean the list out"
 (defmethod process ((display display) (type (eql :pointer-motion)) (usecase (eql :passthrough)) event)
   (declare (ignore usecase))
   (update-cursor display (flo (pointer-motion@-dx event)) (flo (pointer-motion@-dy event)))
-  (let ((surface (focus-pointer-surface2 display)))
+  (let ((surface (handle-surface-change display)))
     (when surface (pointer-motion (seat surface) (- (cursor-x display) (x surface)) (- (cursor-y display) (y surface))))))
 
 ;; NOTE: Additionally - sets display keyboard focus to the surface
@@ -124,28 +124,18 @@ and then clean the list out"
 
 ;; TODO: Very annoyed by the nil checks here
 (defmethod keyboard-key ((display display) key state)
-  (let* ((surface (keyboard-focus display))
-	 (client (and surface (wl:client surface)))
-	 (seat (and client (seat client)))
-	 (seat-keyboard (and seat (seat-keyboard seat)))
-	 (mods-changed? nil)
-	 (press? (eq state :pressed)))
-    (setf mods-changed? (case key
-      ;; LEFT ALT and RIGHT ALT
-      ((56 100) (setf (k-alt? display) press?) t)
-      ;; SUPER/WINDOWS
-      (125 (setf (k-super? display) press?) t)
-      ;; LEFT SHIFT AND RIGHT SHITF
-      ((42 54) (setf (k-shift? display) press?) t)
-      ;; LEFT CTRL AND RIGHT CTRL
-      ((29 97) (setf (k-ctrl? display) press?) t)
-      (t nil)))
-
-    (when seat-keyboard
-      (when mods-changed? (notify-kb-modifiers seat))
-      ;; tODO: Key needs to be translated to the XKB keycode
-      ;; NOTE: Although - i don't know - this seems to be working perfectly fine
-      (wl-keyboard:send-key seat-keyboard (next-serial display) (get-ms) key state))
+  (let* ((mods-changed? nil) (press? (eq state :pressed)))
+    (setf mods-changed?
+	  (case key
+	    ;; LEFT ALT and RIGHT ALT
+	    ((56 100) (setf (k-alt? display) press?) t)
+	    ;; SUPER/WINDOWS
+	    (125 (setf (k-super? display) press?) t)
+	    ;; LEFT SHIFT AND RIGHT SHITF
+	    ((42 54) (setf (k-shift? display) press?) t)
+	    ;; LEFT CTRL AND RIGHT CTRL
+	    ((29 97) (setf (k-ctrl? display) press?) t)
+	    (t nil)))
 
     ;; ctrl+alt+F*
     (when (and press? (k-alt? display) (k-ctrl? display))
@@ -178,4 +168,11 @@ and then clean the list out"
 
 	;; Numeric keys - switching desktops
 	(2 (setf (active-desktop display) (nth 0 (desktops display))))
-	(3 (setf (active-desktop display) (nth 1 (desktops display))))))))
+	(3 (setf (active-desktop display) (nth 1 (desktops display))))))
+
+    ;; (if )
+
+    (let* ((surface (or (exclusive-keyboard-focus display) (keyboard-focus display))))
+      (when surface
+	(when mods-changed? (notify-kb-modifiers (seat (wl:client surface))))
+	(send-key (seat (wl:client surface)) key state)))))

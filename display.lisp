@@ -21,7 +21,10 @@
    (cursor-screen :initform nil :accessor cursor-screen)
 
    (display-serial :initform 0 :accessor display-serial)
+
    (keyboard-focus :initform nil)
+   (exclusive-keyboard-focus :initform nil :accessor exclusive-keyboard-focus)
+
    (pointer-focus :initform nil :accessor pointer-focus)
    (pending-drag :initform nil :accessor pending-drag)
    (desktops :initform nil :accessor desktops)
@@ -194,24 +197,6 @@
 
 (defmethod next-serial ((display display)) (incf (display-serial display)))
 
-(defmethod (setf keyboard-focus) (focus-surface (display display))
-  (let ((current (keyboard-focus display)))
-    (if focus-surface
-	(let* ((client (wl:client focus-surface)) (seat (seat client)))
-	  (when seat
-	    (setf (slot-value display 'keyboard-focus) focus-surface)
-	    (keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))
-
-	    (when current (keyboard-leave (seat current) current))
-	    ;; TODO: You're supposed to send the actual pressed keys as last arg
-	    ;; But currently don't have a keypress manager/tracker
-	    (keyboard-enter seat focus-surface '())))
-	(progn
-	  (when current (keyboard-leave (seat current) current))
-	  (setf (slot-value display 'keyboard-focus) nil)))))
-
-(defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))
-
 
 ;; ┬┌┐┌┌─┐┬ ┬┌┬┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┬┌┐┌┌─┐
 ;; ││││├─┘│ │ │   ├─┤├─┤│││ │││  │││││ ┬
@@ -239,35 +224,6 @@
        (recalculate-layout desktop)))
 
     (recalculate-layout desktop)))
-
-;; TODO: This is in essence what focus-pointer-surface2 does - and could just be combined
-(defmethod handle-surface-change ((display display) &optional surface)
-  "If a surface has had a change - it is no longer visible, has a different surface on top,
-or has a all required parameters initiated to be focusable,
-then this can be called to determine the new focus surfaces."
-  (focus-pointer-surface2 display surface))
-
-(defmethod focus-pointer-surface2 ((display display) &optional surface)
-  (with-accessors ((x cursor-x) (y cursor-y) (focus pointer-focus)) display
-    (let ((surface (or surface (surface-at-coords display x y))))
-      (if surface
-	  (let ((seat (seat surface)) (surf-x (- x (x surface))) (surf-y (- y (y surface))))
-	    (when seat
-	      (if (eq focus surface)
-		  ;; NOTE: If already pointer focus - return it as is
-		  surface
-		  ;; NOTE: Otherwise - switch focus to the new window
-		  (progn
-		    (when focus
-		      (pointer-leave (seat focus)))
-		    (setf (keyboard-focus display) surface)
-		    (pointer-enter seat surface surf-x surf-y)
-		    (setf focus surface)))))
-	  ;; NOTE: If no surface at coordinates - remove display pointer focus
-	  (when focus
-	    (pointer-leave (seat focus))
-	    (setf (keyboard-focus display) nil)
-	    (setf focus nil))))))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
@@ -361,11 +317,64 @@ then this can be called to determine the new focus surfaces."
 	       (setf (active-desktop display) (first-desktop-with-output display)))))
 
 
+
+;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐  ┌─┐┌─┐┌─┐┬ ┬┌─┐
+;; └─┐│ │├┬┘├┤ ├─┤│  ├┤   ├┤ │ ││  │ │└─┐
+;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘  └  └─┘└─┘└─┘└─┘
 ;; TODO: If multiple toplevels for one client - this should probably first kill off all toplevels and then the client?
 ;; Unless we expect the client to die off itself once toplevels go away?
 (defmethod kill-focus-client ((display display))
   (when (keyboard-focus display)
     (wl:destroy-client (wl:client (keyboard-focus display)))))
+
+(defmethod handle-surface-change ((display display) &optional surface)
+  "If a surface has had a change - it is no longer visible, has a different surface on top,
+or has a all required parameters initiated to be focusable,
+then this can be called to determine the new focus surfaces."
+  (with-accessors ((x cursor-x) (y cursor-y) (focus pointer-focus)) display
+    (let ((surface (or surface (surface-at-coords display x y))))
+      (if surface
+	  (let ((seat (seat surface)) (surf-x (- x (x surface))) (surf-y (- y (y surface))))
+	    (when seat
+	      (if (eq focus surface)
+		  ;; NOTE: If already pointer focus - return it as is
+		  surface
+		  ;; NOTE: Otherwise - switch focus to the new window
+		  (progn
+		    (when focus
+		      (pointer-leave (seat focus)))
+		    (setf (keyboard-focus display) surface)
+		    (pointer-enter seat surface surf-x surf-y)
+		    (setf focus surface)))))
+	  ;; NOTE: If no surface at coordinates - remove display pointer focus
+	  (when focus
+	    (pointer-leave (seat focus))
+	    (setf (keyboard-focus display) nil)
+	    (setf focus nil))))))
+
+(defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))
+(defmethod (setf keyboard-focus) (focus-surface (display display))
+  (let ((current (keyboard-focus display)))
+    (if focus-surface
+	(let* ((client (wl:client focus-surface)) (seat (seat client)))
+	  (when seat
+	    (setf (slot-value display 'keyboard-focus) focus-surface)
+	    (keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))
+
+	    (when current (keyboard-leave (seat current) current))
+	    ;; TODO: You're supposed to send the actual pressed keys as last arg
+	    ;; But currently don't have a keypress manager/tracker
+	    (keyboard-enter seat focus-surface '())))
+	(progn
+	  (when current (keyboard-leave (seat current) current))
+	  (setf (slot-value display 'keyboard-focus) nil)))))
+
+(defmethod grab-keyboard-focus ((display display) surface)
+  (setf (exclusive-keyboard-focus display) surface)
+  (keyboard-enter (seat surface) surface '()))
+
+(defmethod ungrab-keyboard-focus ((display display) surface)
+  (when (eq (exclusive-keyboard-focus display) surface) (setf (exclusive-keyboard-focus display) nil)))
 
 ;; ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌┬┐  ┌┬┐┌─┐┌┐ ┬ ┬┌─┐
 ;; │ ││ │ │ ├─┘│ │ │    ││├┤ ├┴┐│ ││ ┬
