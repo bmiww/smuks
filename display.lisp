@@ -423,6 +423,14 @@ then this can be called to determine the new focus surfaces."
 	    (rotatef (nth (1- focus-index) windows) (nth focus-index windows)))
 	(recalculate-layout (active-desktop display))))))
 
+;; tODO: It's actually a bit more painful to do window resizes. Would need to create actual layouts
+;; (defvar *resize-increment-percent* 0.05)
+;; (defmethod resize-left ((display display))
+  ;; (with-accessors ((windows windows) (output output)) (active-desktop display)
+    ;; (setf (width (car windows)) (max (width output) (+ (width (car windows)) (floor (* (width output) *resize-increment-percent*)))))
+    ;; (mapcar
+     ;; (lambda (window) (setf (width window) (min 0 (width window) (- (width output) (width (car windows))))))
+
 ;; ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌┬┐  ┌┬┐┌─┐┌┐ ┬ ┬┌─┐
 ;; │ ││ │ │ ├─┘│ │ │    ││├┤ ├┴┐│ ││ ┬
 ;; └─┘└─┘ ┴ ┴  └─┘ ┴   ─┴┘└─┘└─┘└─┘└─┘

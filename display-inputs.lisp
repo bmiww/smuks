@@ -168,6 +168,12 @@ and then clean the list out"
 	      ;; Key k
 	      (37 (shift-window-prev display))
 
+	      ;; TODO: These are supposed to resize windows left/right as in xmonad
+	      ;; Key h
+	      (35 ())
+	      ;; key l
+	      (38 ())
+
 	      ;; enter - Launch a terminal
 	      (28 (uiop:launch-program "kitty"))
 	      ;; Key c - kill the currently selected window
