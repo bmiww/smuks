@@ -103,8 +103,8 @@
 (defmethod get-highest-screen-y ((display display))
   (let ((highest 0))
     (loop for output in (outputs display)
-	  when (> (screen-y output) highest)
-	    do (setf highest (screen-y output)))
+	  when (> (screen-y-max output) highest)
+	    do (setf highest (screen-y-max output)))
     highest))
 
 
@@ -178,13 +178,12 @@
 ;;  ┴ └─┘└─┘┴─┘└─┘
 ;; TODO: Suboptimal. Since it has to go through the whole list on every pointer motion event
 (defmethod bounds-check ((display display) x y)
-  (let* ((likely-output (car (outputs display))))
-    (loop for output in (outputs display)
-	  ;; TODO: Weird skip of the first item
-	  unless (eq likely-output output)
-	    when (or (> x (screen-x output) (screen-x likely-output))
-		     (> y (screen-y output) (screen-y likely-output)))
-	      do (setf likely-output output))
+  (let* ((likely-output (cursor-screen display)))
+    (loop for output in (remove likely-output (outputs display))
+	  when (and
+		(<= (screen-x output) x (screen-x-max output))
+		(<= (screen-y output) y (screen-y-max output)))
+	    do (setf likely-output output))
 
     (let ((width (output-width likely-output))
 	  (height (output-height likely-output)))
