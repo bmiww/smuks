@@ -90,8 +90,7 @@ transform - is the output rotated? is the output flipped?
 
 (defmethod pause-output ((output output))
   (unless (paused output)
-    (setf (paused output) t)
-    (unset-crtc! (fd (drm output)) (connector output))))
+    (setf (paused output) t)))
 
 (defmethod resume-output ((output output))
   (when (paused output)
