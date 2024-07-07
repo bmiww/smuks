@@ -110,8 +110,8 @@
 
 	     ;; NOTE If the dimensions of the window are less than what is allocated
 	     ;; We center the window in the allocated space
-	     (when (< width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
-	     (when (< height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2))))
+	     (when (< 0 width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
+	     (when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2))))
 
 	     ;; TODO: This only really needs to be done when the window is resized.
 	     (configure-toplevel-default window))))))
