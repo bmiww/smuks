@@ -20,6 +20,7 @@
    (gl-buffer-array :accessor gl-buffer-array)
    (attr-vert)
    (attr-transform-scale)
+   (format)
    (vao)))
 
 
@@ -64,6 +65,18 @@ void main() {
     color = tex_color;
 }")
 
+(defparameter fragment-shader-xbgr-310-es "
+#version 310 es
+
+precision mediump float;
+uniform sampler2D sampler;
+in vec2 v_tex_coords;
+out vec4 color;
+
+void main() {
+    vec4 tex_color = vec4(texture2D(sampler, v_tex_coords).rgb, 1.0);
+    color = tex_color;
+}")
 
 (defparameter vertex-shader-texture-100 "
 #version 100
@@ -106,14 +119,21 @@ void main() {
 ;; ┌─┐┌─┐┌┬┐┌─┐
 ;; │  │ │ ││├┤
 ;; └─┘└─┘─┴┘└─┘
-(defmethod initialize-instance :before ((program shader) &key projection gl-version)
+(defmethod initialize-instance :before ((program shader) &key projection gl-version (format :argb8888))
   (setf (gl-version program) gl-version)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-transform-scale
 	       uni-translation uni-texture-scaling uni-sampler gl-buffer-array) program
 
-    (let ((fragment-shader (case gl-version
-			     (:GL-2-0 fragment-shader-abgr-100)
-			     (:GL-3-1 fragment-shader-abgr-310-es)))
+    (let ((fragment-shader
+	    (ecase gl-version
+	      (:GL-2-0
+	       (ecase format
+		 (:argb8888 fragment-shader-abgr-100)))
+	      (:GL-3-1
+	       (ecase format
+		 (:argb8888 fragment-shader-abgr-310-es)
+		 (:xrgb8888 fragment-shader-xbgr-310-es)))))
+
 	  (vertex-shader (case gl-version
 			   (:GL-2-0 vertex-shader-texture-100)
 			   (:GL-3-1 vertex-shader-texture-310-es))))

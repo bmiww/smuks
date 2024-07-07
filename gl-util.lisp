@@ -26,14 +26,12 @@
    make-damage damage-full
 
    ;; texture
-   mk-tex tex-id))
+   mk-tex tex-id tex-format))
 (in-package :smuks-gl-util)
 
 ;; ┌─┐┬    ┌─┐┬─┐┌─┐┌─┐
 ;; │ ┬│    ├─┘├┬┘├┤ ├─┘
 ;; └─┘┴─┘  ┴  ┴└─└─┘┴
-(defun new-texture ())
-
 (defun create-gl-framebuffer (image)
   (let* ((texture (gl:gen-texture))
 	 (framebuffer (gl:gen-framebuffer)))
@@ -57,50 +55,51 @@
 
     texture))
 
-;; TODO: Make this be based off of the used format
-(defvar *pixel-size* 4)
-(defun damage-pointer (ptr dmg width)
+(defun damage-pointer (ptr dmg width pixel-size)
   (cffi:inc-pointer
    ptr
    (* (+ (* (damage-y dmg) width)
 	 (damage-x dmg))
-      *pixel-size*)))
+      pixel-size)))
 
-;; TODO: Possibly move this closer to the GL code
-(defun create-texture (ptr width height stride &key damage texture)
-  (let ((texture (or texture (mk-tex)))
+(defun create-texture (ptr width height stride &key damage texture format)
+  (let* ((texture (or texture (mk-tex format)))
+	(gl-format (ecase format (:xrgb8888 :bgra-ext) (:argb8888 :bgra-ext)))
+	(pixel-size (ecase format (:xrgb8888 4) (:argb8888 4)))
 	;; TODO: This math is a bit wasteful. But without this - evil clients could crash the server
 	;; TODO: Could instead do bounds checking during the damage event. Applying (min and max)
 	;; Then wouldn't have to do this weird pointer math
-	(ptr-max (cffi:inc-pointer ptr (* height stride *pixel-size*))))
+	(ptr-max (cffi:inc-pointer ptr (* height stride pixel-size))))
     (gl:bind-texture :texture-2d (tex-id texture))
     (check-gl-error "create-texture: bind-texture")
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
     (check-gl-error "create-texture: tex-parameter wrap-s")
     (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
     (check-gl-error "create-texture: tex-parameter wrap-t")
-    (gl:pixel-store :unpack-row-length (/ stride *pixel-size*))
+    (gl:pixel-store :unpack-row-length (/ stride pixel-size))
     (check-gl-error "create-texture: pixel-store")
 
-    ;; TODO: Format is hardcoded - should be taken from the buffer values and mapped to a gl format
-    ;; Shouldn't be :rgba twice - i guess
     (if (tex-initd texture)
 	;; NOTE: Partial texture upload - only update the damaged areas
-	;; If no damage provided - assume full damage
+	;; NOTE: If no damage provided - assume full damage
 	(loop for dmg in (or damage (list (make-damage :x 0 :y 0 :width width :height height)))
-	      for pointy = (damage-pointer ptr dmg width)
+	      for pointy = (damage-pointer ptr dmg width pixel-size)
 	      do (if (< (cffi:pointer-address pointy) (cffi:pointer-address ptr-max))
-		     (gl:tex-sub-image-2d
-		      :texture-2d 0
-		      (damage-x dmg) (damage-y dmg)
-		      (damage-width dmg) (damage-height dmg)
-		      :rgba :unsigned-byte
-		      pointy)
+		     (progn
+		       (gl:tex-sub-image-2d
+			:texture-2d 0
+			(damage-x dmg) (damage-y dmg)
+			(damage-width dmg) (damage-height dmg)
+			gl-format :unsigned-byte
+			pointy)
+		       (check-gl-error "create-texture: tex-sub-image-2d"))
 		     (wrn! "Texture damage rectangle out of bounds, skipping. Otherwise this would memory corrupt.")))
 	;; NOTE: Full texture upload
 	(progn
-	  (gl:tex-image-2d :texture-2d 0 :rgba width height
-			   0 :rgba :unsigned-byte ptr)
+	  ;; TODO: Figure out the diff between internal-format and format
+	  (gl:tex-image-2d :texture-2d 0 gl-format width height
+			   0 gl-format :unsigned-byte ptr)
+	  (check-gl-error "create-texture: tex-image-2d")
 	  (setf (tex-initd texture) t)))
 
     texture))
@@ -123,10 +122,10 @@
   (width 0)
   (height 0))
 
-(defstruct tex id (initd nil))
-(defun mk-tex ()
+(defstruct tex id (initd nil) format nil)
+(defun mk-tex (&optional format)
   (prog1
-      (make-tex :id (gl:gen-texture))
+      (make-tex :id (gl:gen-texture) :format (or format :argb8888))
     (check-gl-error "mk-tex: gen-texture")))
 
 ;; ┌┬┐┌─┐┌┬┐┬─┐┬┌─┐┌─┐┌─┐

@@ -200,13 +200,14 @@ Or some such."
 
 (defmethod commit-shm-buffer ((surface surface))
   (commit-buffer surface
-    (with-slots (width height stride) (pending-buffer surface)
+    (with-slots (width height stride pixel-format) (pending-buffer surface)
       (setf (texture surface)
 	    (sglutil:create-texture
 	     (pool-ptr (pending-buffer surface))
 	     width height stride
 	     :damage (damage surface)
-	     :texture texture))
+	     :texture texture
+	     :format pixel-format))
       (setf (damage surface) nil)
       (setf (texture-type surface) :shm))))
 

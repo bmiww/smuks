@@ -67,14 +67,15 @@ transform - is the output rotated? is the output flipped?
 	  do (prep-gl-implementation (framebuffer-id framebuffer) width height))
 
     (let ((rect (shader output :rect))
-	  (texture (shader output :texture)))
-      (if (and rect texture)
-	  (progn
-	    (shaders:update-projection rect (sglutil:projection-matrix width height rot))
-	    (shaders:update-projection texture (sglutil:projection-matrix width height rot)))
+	  (texture (shader output :texture))
+	  (xrgb8888 (shader output :xrgb8888)))
+      (if (and rect texture xrgb8888)
+	  (let ((projection (sglutil:projection-matrix width height rot)))
+	    (mapcar (lambda (shader) (shaders:update-projection shader projection)) (list rect texture xrgb8888)))
 	  (setf (shaders output) `(,(shader-init:create-rect-shader width height rot gl-version)
 				   ,(restart-case (shader-init:create-texture-shader width height rot gl-version)
-				      (ignore () (nth 1 (shaders output))))))))))
+				      (ignore () (nth 1 (shaders output))))
+				   ,(shader-init:create-xrgb8888-shader width height rot gl-version)))))))
 
 
 (defmethod start-monitor ((output output))
@@ -154,7 +155,11 @@ transform - is the output rotated? is the output flipped?
 (defmethod connector-type ((output output)) (connector-type (connector output)))
 (defmethod shader ((output output) (type (eql :rect))) (car (shaders output)))
 (defmethod shader ((output output) (type (eql :texture))) (cadr (shaders output)))
-
+(defmethod shader ((output output) (type (eql :xrgb8888))) (caddr (shaders output)))
+(defmethod texture-shader ((output output) texture)
+  (ecase (tex-format texture)
+    (:argb8888 (nth 1 (shaders output)))
+    (:xrgb8888 (nth 2 (shaders output)))))
 
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘

@@ -67,7 +67,7 @@
 	(x (- (cursor-x *wayland*) (flo (x surface)) (screen-x output)))
 	(y (- (cursor-y *wayland*) (flo (y surface)) (screen-y output))))
 
-    (shaders.texture:draw (shader output :texture) texture `(,x ,y ,width ,height))
+    (shaders.texture:draw (texture-shader output texture) texture `(,x ,y ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)
     (setf (client-cursor-drawn output) t)))
@@ -78,7 +78,7 @@
 	(height (flo (height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (shaders.texture:draw (shader output :texture)
+    (shaders.texture:draw (texture-shader output texture)
 			  texture
 			  `(,(- x (screen-x output)) ,(- y (screen-y output))
 			    ,width ,height))
@@ -91,7 +91,7 @@
 	(height (flo (compo-max-height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (shaders.texture:draw (shader output :texture)
+    (shaders.texture:draw (texture-shader output texture)
 			  texture
 			  `(,(- x (screen-x output)) ,(- y (screen-y output))
 			    ,width ,height))
@@ -106,7 +106,7 @@
 	(y (flo (y surface))))
     (unless x (setf x (- (/ (output-width output) 2) (/ width 2))))
     (unless y (setf y (- (/ (output-height output) 2) (/ height 2))))
-    (shaders.texture:draw (shader output :texture)
+    (shaders.texture:draw (texture-shader output texture)
 			  texture
 			  `(,(- x (screen-x output)) ,(- y (screen-y output))
 			    ,width ,height))
@@ -120,7 +120,7 @@
 	(x (+ (flo (x surface)) (flo (x (grab-parent surface)))))
 	(y (+ (flo (y surface)) (flo (y (grab-parent surface))))))
 
-    (shaders.texture:draw (shader output :texture) texture `(,x ,y ,width ,height))
+    (shaders.texture:draw (texture-shader output texture) texture `(,x ,y ,width ,height))
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)))
 
@@ -130,7 +130,7 @@
 	(height (flo (height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (shaders.texture:draw (shader output :texture)
+    (shaders.texture:draw (texture-shader output texture)
 			  texture
 			  `(,(- x (screen-x output)) ,(- y (screen-y output))
 			    ,width ,height))

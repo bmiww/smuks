@@ -2,15 +2,22 @@
 (defpackage :shader-init
   (:use :cl :sdrm :smuks-util :sglutil)
   (:export
-   create-rect-shader create-texture-shader))
+   create-rect-shader create-texture-shader create-xrgb8888-shader))
 (in-package :shader-init)
 
 (defun create-rect-shader (width height &optional rotation gl-version)
-  (let* ((projection (sglutil:projection-matrix width height rotation))
-	 (rect-shader (make-instance 'shaders.rectangle:shader :projection projection :gl-version gl-version)))
-    rect-shader))
+  (let* ((projection (sglutil:projection-matrix width height rotation)))
+    (make-instance 'shaders.rectangle:shader :projection projection :gl-version gl-version)))
 
+;; TODO: Rename to argb8888
 (defun create-texture-shader (width height &optional rotation gl-version)
-  (let* ((projection (sglutil:projection-matrix width height rotation))
-	 (texture-shader (make-instance 'shaders.texture:shader :projection projection :gl-version gl-version)))
-    texture-shader))
+  (let* ((projection (sglutil:projection-matrix width height rotation)))
+    (make-instance 'shaders.texture:shader
+       :projection projection :gl-version gl-version
+       :format :argb8888)))
+
+(defun create-xrgb8888-shader (width height &optional rotation gl-version)
+  (let* ((projection (sglutil:projection-matrix width height rotation)))
+    (make-instance 'shaders.texture:shader
+       :projection projection :gl-version gl-version
+       :format :xrgb8888)))
