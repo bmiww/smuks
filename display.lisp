@@ -333,11 +333,6 @@ then this can be called to determine the new focus surfaces."
   (mapcar (lambda (output) (update-projections output projection)) (outputs display)))
 
 
-(defmethod prep-shaders2 ((display display) &key gl-version)
-  (when gl-version (setf (gl-version display) gl-version))
-  (loop for output in (outputs display)
-	do (prep-shaders output)))
-
 ;; TODO: Suboptimal. Since this is used to check if inputs should be handled differently,
 ;; This is a nasty amount of extra work that needs to be done
 (defmethod configuring-neighbors? ((display display))

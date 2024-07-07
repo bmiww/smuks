@@ -60,6 +60,7 @@
 
   (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
+  (setf (gl-version *wayland*) *gl-version*)
 
 
   (setf *cursor* (load-cursor-texture))
@@ -70,7 +71,6 @@
   (setf *udev-monitor* (udev:monitor-udev *udev*))
 
   (init-globals *wayland*)
-  (prep-shaders2 *wayland* :gl-version *gl-version*)
   (start-monitors *wayland*)
 
   (cl-async:start-event-loop
