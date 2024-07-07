@@ -98,7 +98,8 @@
     (setf (cursor-screen display) output)))
 
 (defun update-existing-output (output connector)
-  (log! "Updating existing output: ~a" output))
+  (declare (ignore connector))
+  (log! "Updating existing output (TODO: Implement update): ~a" output))
 
 (defmethod get-highest-screen-y ((display display))
   (let ((highest 0))
