@@ -124,19 +124,31 @@
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)))
 
-
 (defun render-surface (output surface)
+  (let ((texture (texture surface))
+	(width (flo (width surface)))
+	(height (flo (height surface)))
+	(x (flo (x surface)))
+	(y (flo (y surface))))
+    (shaders.texture:draw (shader output :texture)
+			  texture
+			  `(,(- x (screen-x output)) ,(- y (screen-y output))
+			    ,width ,height))
+    (flush-frame-callbacks surface)
+    (setf (needs-redraw surface) nil)))
+
+(defun render-type (output surface)
   (typecase surface
     (cursor (render-cursor output surface))
     (drag-surface (render-drag output surface))
     (layer-surface (render-layer-surface output surface))
     (popup (render-popup output surface))
     (subsurface (render-subsurface output surface))
-    (t (render-toplevel output surface))))
+    (t (render-surface output surface))))
 
 (defun render-rest (output desktop)
   (declare (ignore desktop))
-  (flet ((render (surface) (render-surface output surface)))
+  (flet ((render (surface) (render-type output surface)))
     (let ((clients (wl:all-clients *wayland*)))
       (flet ((render-type (type)
 	       (loop for client in clients
@@ -152,4 +164,4 @@
 
 (defun render-desktop (output desktop)
   (loop for window in (windows desktop)
-	do (when (texture window) (render-surface output window))))
+	do (when (texture window) (render-type output window))))
