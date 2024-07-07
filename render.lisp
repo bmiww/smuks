@@ -85,18 +85,23 @@
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)))
 
-(defun render-toplevel (output surface)
-  (let ((texture (texture surface))
-	(width (flo (compo-max-width surface)))
-	(height (flo (compo-max-height surface)))
-	(x (flo (x surface)))
-	(y (flo (y surface))))
-    (shaders.texture:draw (texture-shader output texture)
-			  texture
-			  `(,(- x (screen-x output)) ,(- y (screen-y output))
-			    ,width ,height))
-    (flush-frame-callbacks surface)
-    (setf (needs-redraw surface) nil)))
+(defun render-toplevel (display output surface)
+  (with-slots (x y width height compo-max-width compo-max-height texture) surface
+    (with-accessors ((x x) (y y)) surface
+      (let* ((w-exceed (> width compo-max-width))
+	     (h-exceed (> height compo-max-height))
+	     (w-low (< width compo-max-width))
+	     (h-low (< height compo-max-height))
+	     (width (if w-exceed compo-max-width width))
+	     (height (if h-exceed compo-max-height height)))
+
+	(shaders.texture:draw (texture-shader output texture)
+			      texture
+			      `(,(flo (- x (screen-x output)))
+				,(flo (- y (screen-y output)))
+				,(flo width) ,(flo height)))
+	(flush-frame-callbacks surface)
+	(setf (needs-redraw surface) nil)))))
 
 (defun render-layer-surface (output surface)
   (let ((texture (texture surface))
@@ -137,8 +142,9 @@
     (flush-frame-callbacks surface)
     (setf (needs-redraw surface) nil)))
 
-(defun render-type (output surface)
+(defun render-type (display output surface)
   (typecase surface
+    (toplevel (render-toplevel display output surface))
     (cursor (render-cursor output surface))
     (drag-surface (render-drag output surface))
     (layer-surface (render-layer-surface output surface))
@@ -148,7 +154,7 @@
 
 (defun render-rest (output desktop)
   (declare (ignore desktop))
-  (flet ((render (surface) (render-type output surface)))
+  (flet ((render (surface) (render-type *wayland* output surface)))
     (let ((clients (wl:all-clients *wayland*)))
       (flet ((render-type (type)
 	       (loop for client in clients
@@ -163,5 +169,6 @@
 
 
 (defun render-desktop (output desktop)
-  (loop for window in (windows desktop)
-	do (when (texture window) (render-type output window))))
+  (let ((display (wl:get-display output)))
+    (loop for window in (windows desktop)
+	  do (when (texture window) (render-type display output window)))))

@@ -97,12 +97,20 @@
       (loop
 	for window in (windows desktop)
 	for i from 0
-	do (progn
-	     (setf
-	      (x window) (+ (* i width-per) (screen-x output))
-	      (y window) (screen-y output)
-	      (compo-max-width window) width-per
-	      (compo-max-height window) d-height)
+	do (with-accessors
+		 ((width width) (height height)
+		  (x x) (y y)
+		  (compo-max-width compo-max-width) (compo-max-height compo-max-height)) window
+
+	     (setf compo-max-width width-per)
+	     (setf compo-max-height d-height)
+
+	     (setf x (+ (* i width-per) (screen-x output))
+		   y (screen-y output))
+
+	     ;; NOTE
+	     (when (< width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
+	     (when (< height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2))))
 
 	     ;; TODO: This only really needs to be done when the window is resized.
 	     (configure-toplevel-default window))))))
