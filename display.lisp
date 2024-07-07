@@ -350,10 +350,16 @@ then this can be called to determine the new focus surfaces."
   "Used to determine initial orientation based on the width/height of an output"
   (if (>= width height) :landscape :portrait))
 
+(defmethod first-desktop-with-output ((display display))
+  (find-if (lambda (desktop) (output desktop)) (desktops display)))
+
 (defmethod remove-output-from-desktops ((display display) output)
   (loop for desktop in (desktops display)
 	when (eq output (output desktop))
-	  do (setf (output desktop) nil)))
+	  do (setf (output desktop) nil)
+	     (when (eq desktop (active-desktop display))
+	       (setf (active-desktop display) (first-desktop-with-output display)))))
+
 
 ;; TODO: If multiple toplevels for one client - this should probably first kill off all toplevels and then the client?
 ;; Unless we expect the client to die off itself once toplevels go away?

@@ -38,7 +38,6 @@
   (setf (uiop/os:getenv "MESA_DEBUG") *enable-mesa-debug-logs*)
   (setf (uiop/os:getenv "EGL_LOG_LEVEL") *enable-egl-debug-logs*)
 
-
   (unless (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
     (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
   (libseat:dispatch *seat* 0)
@@ -61,7 +60,6 @@
   (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
   (setf (gl-version *wayland*) *gl-version*)
-
 
   (setf *cursor* (load-cursor-texture))
 
