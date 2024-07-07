@@ -78,7 +78,9 @@
 
 (defmethod keyboard-destroy-callback ((seat seat) callback)
   (let* ((keyboard (seat-keyboard seat)))
-    (wl:add-destroy-callback keyboard callback)))
+    (if keyboard
+	(wl:add-destroy-callback keyboard callback)
+	(log! "keyboard-destroy-callback: Seat does not have a keyboard... Yet??"))))
 
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
@@ -252,9 +254,14 @@
 
 (defmethod keyboard-enter ((seat seat) surface keys)
   (let* ((keyboard (seat-keyboard seat)) (display (wl:get-display seat)))
-    (wl-keyboard:send-enter keyboard (next-serial display) surface keys)
-    (notify-kb-modifiers seat)))
+    (if keyboard
+	(progn
+	  (wl-keyboard:send-enter keyboard (next-serial display) surface keys)
+	  (notify-kb-modifiers seat))
+	(log! "keyboard-enter: Seat does not have a keyboard... Yet??"))))
 
 (defmethod keyboard-leave ((seat seat) surface)
   (let* ((keyboard (seat-keyboard seat)) (display (wl:get-display seat)))
-    (wl-keyboard:send-leave keyboard (next-serial display) surface)))
+    (if keyboard
+	(wl-keyboard:send-leave keyboard (next-serial display) surface)
+	(log! "keyboard-leave: Seat does not have a keyboard... Yet??"))))
