@@ -163,6 +163,11 @@ and then clean the list out"
 	      (10 (send-to-desktop display (nth 8 (desktops display))))
 	      (11 (send-to-desktop display (nth 9 (desktops display))))
 
+	      ;; Key j
+	      (36 (shift-window-next display))
+	      ;; Key k
+	      (37 (shift-window-prev display))
+
 	      ;; enter - Launch a terminal
 	      (28 (uiop:launch-program "kitty"))
 	      ;; Key c - kill the currently selected window
@@ -176,7 +181,6 @@ and then clean the list out"
 	      ;; Key p
 	      (25 (uiop:launch-program "anyrun"))
 
-	      ;; TODO: Here you wanted to add the "next"/"previous" window focus stuff
 	      ;; Key j
 	      (36 (focus-next-window display))
 	      ;; Key k

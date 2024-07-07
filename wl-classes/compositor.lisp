@@ -104,4 +104,5 @@
 	      (compo-max-width window) width-per
 	      (compo-max-height window) d-height)
 
+	     ;; TODO: This only really needs to be done when the window is resized.
 	     (configure-toplevel-default window))))))

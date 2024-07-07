@@ -290,8 +290,7 @@
 ;; └─┘ ┴ ┴┴─┘
 ;; Can be called from repl to stop the compositor
 ;; TODO: Not really working though...
-(defun shutdown ()
-  (cl-async:exit-event-loop))
+(defun shutdown () (cl-async:exit-event-loop))
 
 ;; ┬ ┬┌┐┌┌─┐┌─┐┬─┐┌┬┐┌─┐┌┬┐
 ;; │ ││││└─┐│ │├┬┘ │ ├┤  ││
