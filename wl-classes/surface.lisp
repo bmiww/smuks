@@ -176,6 +176,7 @@ Or some such."
 
      (when (and new-dimensions? (texture ,surface))
        (gl:delete-texture (sglutil:tex-id (texture ,surface)))
+       (check-gl-error "commit-buffer: delete-texture")
        (setf (texture ,surface) nil))
 
      ;; TODO: the texture here is implied and a bit annoying

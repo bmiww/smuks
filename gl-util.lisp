@@ -51,8 +51,9 @@
 (defun create-image-texture (image &optional texture)
   (let* ((texture (or texture (mk-tex))))
     (gl:bind-texture :texture-2d (tex-id texture))
+    (check-gl-error "create-image-texture: bind")
     (%gl:egl-image-target-texture-2d-oes :texture-2d image)
-    (check-gl-error "egl-image-target-texture-2d-oes")
+    (check-gl-error "create-image-texture: egl-image-target-texture-2d-oes")
 
     texture))
 
@@ -73,9 +74,13 @@
 	;; Then wouldn't have to do this weird pointer math
 	(ptr-max (cffi:inc-pointer ptr (* height stride *pixel-size*))))
     (gl:bind-texture :texture-2d (tex-id texture))
+    (check-gl-error "create-texture: bind-texture")
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
+    (check-gl-error "create-texture: tex-parameter wrap-s")
     (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
+    (check-gl-error "create-texture: tex-parameter wrap-t")
     (gl:pixel-store :unpack-row-length (/ stride *pixel-size*))
+    (check-gl-error "create-texture: pixel-store")
 
     ;; TODO: Format is hardcoded - should be taken from the buffer values and mapped to a gl format
     ;; Shouldn't be :rgba twice - i guess
@@ -119,7 +124,10 @@
   (height 0))
 
 (defstruct tex id (initd nil))
-(defun mk-tex () (make-tex :id (gl:gen-texture)))
+(defun mk-tex ()
+  (prog1
+      (make-tex :id (gl:gen-texture))
+    (check-gl-error "mk-tex: gen-texture")))
 
 ;; ┌┬┐┌─┐┌┬┐┬─┐┬┌─┐┌─┐┌─┐
 ;; │││├─┤ │ ├┬┘││  ├┤ └─┐
