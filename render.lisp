@@ -104,8 +104,8 @@
 	(height (flo (height surface)))
 	(x (flo (x surface)))
 	(y (flo (y surface))))
-    (when (< x 0) (setf x (- (/ (output-width output) 2) (/ width 2))))
-    (when (< y 0) (setf y (- (/ (output-height output) 2) (/ height 2))))
+    (unless x (setf x (- (/ (output-width output) 2) (/ width 2))))
+    (unless y (setf y (- (/ (output-height output) 2) (/ height 2))))
     (shaders.texture:draw (shader output :texture)
 			  texture
 			  `(,(- x (screen-x output)) ,(- y (screen-y output))

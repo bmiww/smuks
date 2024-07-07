@@ -161,7 +161,9 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 ;; A util function to coerce a value to single-float
 (defun flo (num)
   "Just a shorter form to coerce a number to float"
-  (coerce num 'single-float))
+  (if num
+      (coerce num 'single-float)
+      nil))
 
 
 ;; ┌┬┐┌┬┐┌─┐┌─┐
