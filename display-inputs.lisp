@@ -124,7 +124,7 @@ and then clean the list out"
 
 ;; TODO: Very annoyed by the nil checks here
 (defmethod keyboard-key ((display display) key state)
-  (let* ((mods-changed? nil) (press? (eq state :pressed)))
+  (let* ((mods-changed? nil) (press? (eq state :pressed)) (compositor-handled :miss))
     (setf mods-changed?
 	  (case key
 	    ;; LEFT ALT and RIGHT ALT
@@ -139,40 +139,42 @@ and then clean the list out"
 
     ;; ctrl+alt+F*
     (when (and press? (k-alt? display) (k-ctrl? display))
-      (case key
-	(59 (switch-vt (libseat display) 1))
-	(60 (switch-vt (libseat display) 2))
-	(61 (switch-vt (libseat display) 3))
-	(62 (switch-vt (libseat display) 4))))
+      (setf compositor-handled
+	    (case key
+	      (59 (switch-vt (libseat display) 1))
+	      (60 (switch-vt (libseat display) 2))
+	      (61 (switch-vt (libseat display) 3))
+	      (62 (switch-vt (libseat display) 4))
+	      (t :miss))))
 
     ;; super-shift-*
     (when (and press? (k-super? display) (k-shift? display))
-      (case key
-	;; enter - Launch a terminal
-	(28 (uiop:launch-program "kitty"))
-	;; Key c - kill the currently selected window
-	(46 (kill-focus-client display))))
-    ;; Probably F12
-    (when (and press? (eq key 88))
-      (shutdown))
+      (setf compositor-handled
+	    (case key
+	      ;; enter - Launch a terminal
+	      (28 (uiop:launch-program "kitty"))
+	      ;; Key c - kill the currently selected window
+	      (46 (kill-focus-client display))
+	      (t :miss))))
+
     (when (and press? (k-super? display))
-      (case key
-	;; Key p
-	(25 (uiop:launch-program "anyrun"))
+      (setf compositor-handled
+	    (case key
+	      ;; Key p
+	      (25 (uiop:launch-program "anyrun"))
 
-	;; TODO: Here you wanted to add the "next"/"previous" window focus stuff
-	;; Key j
-	(36 ())
-	;; Key k
-	(37 ())
+	      ;; TODO: Here you wanted to add the "next"/"previous" window focus stuff
+	      ;; Key j
+	      (36 ())
+	      ;; Key k
+	      (37 ())
 
-	;; Numeric keys - switching desktops
-	(2 (setf (active-desktop display) (nth 0 (desktops display))))
-	(3 (setf (active-desktop display) (nth 1 (desktops display))))))
-
-    ;; (if )
+	      ;; Numeric keys - switching desktops
+	      (2 (setf (active-desktop display) (nth 0 (desktops display))))
+	      (3 (setf (active-desktop display) (nth 1 (desktops display))))
+	      (t :miss))))
 
     (let* ((surface (or (exclusive-keyboard-focus display) (keyboard-focus display))))
-      (when surface
+      (when (and (eq compositor-handled :miss) surface)
 	(when mods-changed? (notify-kb-modifiers (seat (wl:client surface))))
 	(send-key (seat (wl:client surface)) key state)))))
