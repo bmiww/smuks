@@ -108,7 +108,8 @@
 	     (setf x (+ (* i width-per) (screen-x output))
 		   y (screen-y output))
 
-	     ;; NOTE
+	     ;; NOTE If the dimensions of the window are less than what is allocated
+	     ;; We center the window in the allocated space
 	     (when (< width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
 	     (when (< height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2))))
 

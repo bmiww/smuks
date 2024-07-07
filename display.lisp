@@ -397,12 +397,16 @@ then this can be called to determine the new focus surfaces."
   (let ((windows (windows (active-desktop display))))
     (when windows
       (let ((index (position (keyboard-focus display) windows)))
+	;; TODO: This index hack is needed for when the keyboard-focus wasn't properly set after a window was removed
+	(unless index (setf index 0))
 	(setf (keyboard-focus display) (nth (mod (+ index 1) (length windows)) windows))))))
 
 (defmethod focus-prev-window ((display display))
   (let ((windows (windows (active-desktop display))))
     (when windows
       (let ((index (position (keyboard-focus display) windows)))
+	;; TODO: This index hack is needed for when the keyboard-focus wasn't properly set after a window was removed
+	(unless index (setf index 0))
 	(setf (keyboard-focus display) (nth (mod (- index 1) (length windows)) windows))))))
 
 (defmethod shift-window-next ((display display))
