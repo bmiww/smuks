@@ -102,6 +102,7 @@
 
      (cl-async:delay 'livesupport-recursively :time 0.016))))
 
+;; TODO: This thing might be blocking all kinds of exit signals.
 (defun livesupport-recursively ()
   (livesupport:update-repl-link)
   (cl-async:delay 'livesupport-recursively :time 0.016))
