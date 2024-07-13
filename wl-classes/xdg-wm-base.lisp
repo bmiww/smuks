@@ -26,7 +26,12 @@
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
 (defclass xdg-surface (xdg-surface:dispatch surface)
   ((xdg-x-offset :initform 0 :accessor xdg-x-offset)
-   (xdg-y-offset :initform 0 :accessor xdg-y-offset)))
+   (xdg-y-offset :initform 0 :accessor xdg-y-offset)
+   (grab-child :initform nil :accessor grab-child)
+   (grab-parent :initarg :grab-parent :initform nil :accessor grab-parent))
+  (:documentation
+   "An xdg surface identifies a toplevel or a popup surface.
+The main purpose here is to define that child/parent relationships between the former."))
 
 
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
@@ -56,21 +61,10 @@
   )
 
 
-;; ┌─┐┬─┐┌─┐┌┐ ┌┐ ┌─┐┌┐ ┬  ┌─┐
-;; │ ┬├┬┘├─┤├┴┐├┴┐├─┤├┴┐│  ├┤
-;; └─┘┴└─┴ ┴└─┘└─┘┴ ┴└─┘┴─┘└─┘
-;; TODO: This could also just be part of xdg-surface probably
-(defclass grabbable ()
-  ((grab-child :initform nil :accessor grab-child)
-   (grab-parent :initarg :grab-parent :initform nil :accessor grab-parent))
-  (:documentation "A grabbable object is an object that can have a grab child
-Destroying the grabbable object will also destroy the grab child"))
-
-
 ;; ┌┬┐┌─┐┌─┐┬  ┌─┐┬  ┬┌─┐┬
 ;;  │ │ │├─┘│  ├┤ └┐┌┘├┤ │
 ;;  ┴ └─┘┴  ┴─┘└─┘ └┘ └─┘┴─┘
-(defclass toplevel (xdg-toplevel:dispatch xdg-surface grabbable)
+(defclass toplevel (xdg-toplevel:dispatch xdg-surface)
   ((title :initform nil :accessor title)
    (app-id :initform nil :accessor app-id)
    (parent :initform nil :accessor parent)
@@ -189,7 +183,7 @@ For my purposes - i'm just ignoring this and giving the client the current state
 ;; ┴  └─┘┴  └─┘┴
 ;; TODO: As far as i can understand the positioner is transient and used only for the duration of the popup creation
 ;; Will have dangling references here possibly
-(defclass popup (xdg-popup:dispatch xdg-surface grabbable)
+(defclass popup (xdg-popup:dispatch xdg-surface)
   ((positioner :initarg :positioner :accessor positioner)))
 
 ;; TODO: Check if the shared initialize here is dangerous.

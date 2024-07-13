@@ -34,7 +34,6 @@
       (gl:flush)
       (gl:finish)
 
-
       ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
       ;; Any events or changes that i could instead attach to?
       ;; Maybe instead use per client flushes - for example when receiving commit from them
@@ -92,6 +91,7 @@
 	    (height surface))))
 
 (defun render-popup (output surface)
+  (declare (ignore output))
   (values (+ (x surface) (x (grab-parent surface)))
 	  (+ (y surface) (y (grab-parent surface)))
 	  (width surface)
