@@ -40,7 +40,8 @@
    (paused :initform t :accessor paused)
    (screen-x :initarg :screen-x :initform 0 :accessor screen-x)
    (screen-y :initarg :screen-y :initform 0 :accessor screen-y)
-   (client-cursor-drawn :initform nil :accessor client-cursor-drawn))
+   (client-cursor-drawn :initform nil :accessor client-cursor-drawn)
+   (accelerometer :initform nil :accessor accelerometer))
   (:documentation "Defines a lot of details regarding a physical output.
 A physical output will mostly be a monitor/screen.
 Most slots should be self-explanatory, so i'll keep it short:
@@ -55,6 +56,18 @@ model - the model name/number
 
 transform - is the output rotated? is the output flipped?
 "))
+
+
+(defmethod initialize-instance :after ((output output) &key)
+  ;; NOTE: We try to find an accelerometer if the connector is a builtin one
+  ;; For now i don't have a smarter way to determine drm dev and iio dev relationships
+  (when (eq (connector-type) :dsi)
+    (setf (accelerometer output) (iio-accelerometer:find-accelerometer-dev))
+    (when (accelerometer output)
+      (pollr "accelerometer"
+	     (iio-accelerometer::fd (accelerometer *display*))
+	     (cb (determine-orientation (iio-accelerometer::read-accelerometer (accelerometer *display*))))))))
+
 
 
 (defmethod render-scene ((output output)) (when (scene output) (funcall (scene output) output)))
@@ -161,19 +174,42 @@ transform - is the output rotated? is the output flipped?
     (:argb8888 (nth 1 (shaders output)))
     (:xrgb8888 (nth 2 (shaders output)))))
 
+(defmethod determine-orientation ((output output) display accel)
+  (with-slots (orientation accelerometer) output
+    (unless accelerometer (error "No accelerometer connected to output."))
+    (let* ((current-orient orientation))
+      (destructuring-bind (x y z) accel
+	(declare (ignore z))
+	(let* ((y-neg (<= y 0)) (x-neg (<= x 0))
+	       (x (abs x)) (y (abs y))
+	       (new-orient
+		 (cond
+		   ((and y-neg (>= y x)) :portrait)
+		   ((>= y x) :portrait-i)
+		   ((and x-neg (>= x y)) :landscape)
+		   ((>= x y) :landscape-i))))
+	  (unless (eq current-orient new-orient)
+	    (setf orientation new-orient)
+	    (let ((related-desktop (find-output-desktop display output)))
+	      (recalculate-layout related-desktop))))))))
+
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘
 ;; └─┘┴─┘└─┘┴ ┴┘└┘└─┘┴
 (defmethod cleanup-output ((output output))
-  (loop for framebuffer in (framebuffers output)
-	do (let ((egl-image (framebuffer-egl-image framebuffer))
-		 (gl-buffer (framebuffer-gl-buffer framebuffer)))
-	     (when gl-buffer (gl:delete-framebuffer gl-buffer))
-	     (when egl-image
-	       (seglutil:destroy-image (egl (wl:get-display output)) egl-image)
-	       (setf (framebuffer-egl-image framebuffer) nil))
-	     (sdrm:rm-framebuffer! (drm output) framebuffer)))
-  (setf (framebuffers output) nil))
+  (with-slots (framebuffers accelerometer drm) output
+    (loop for framebuffer in framebuffers
+	  do (let ((egl-image (framebuffer-egl-image framebuffer))
+		   (gl-buffer (framebuffer-gl-buffer framebuffer)))
+	       (when gl-buffer (gl:delete-framebuffer gl-buffer))
+	       (when egl-image
+		 (seglutil:destroy-image (egl (wl:get-display output)) egl-image)
+		 (setf (framebuffer-egl-image framebuffer) nil))
+	       (sdrm:rm-framebuffer! drm framebuffer)))
+
+    (when accelerometer (iio-accelerometer::close-dev accelerometer))
+
+    (setfnil framebuffers accelerometer)))
 
 
 ;; ██████╗ ██╗███████╗██████╗  █████╗ ████████╗ ██████╗██╗  ██╗

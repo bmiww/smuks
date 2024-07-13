@@ -13,12 +13,16 @@
 	   *log-output* *warn-output*
 	   log! wrn! glg!
 
+	   cb pollr
+
 	   match-kernel-errcode check-err
-	   heading setfnil defnil
 	   check-gl-fb-status check-gl-error
+
+	   heading setfnil defnil flo
+
 	   flatten get-ms
 	   with-xdg-mem-file
-	   flo
+
 	   make-mmap-pool mmap-pool-fd mmap-pool-size mmap-pool-ptr munmap
 	   frame-counter incr run stop enabled))
 (in-package :smuks-util)
@@ -206,6 +210,16 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 						    :size (file-length stream) :mmap '(:private))
 
 	(make-mmap-pool :ptr ptr :fd fd :size size :file stream)))))
+
+
+;; ┌─┐┌─┐┬  ┬  ┬┌┐┌┌─┐
+;; ├─┘│ ││  │  │││││ ┬
+;; ┴  └─┘┴─┘┴─┘┴┘└┘└─┘
+(defmacro cb (&body func) `(lambda (event) (when (member :readable event) (funcall (lambda () ,@func)))))
+
+(defun pollr (message fd callback &rest args)
+  (log! "Starting ~a poll" message)
+  (apply 'cl-async:poll fd callback :poll-for '(:readable) args))
 
 
 ;; ┌─┐┬─┐┌─┐┌┬┐┌─┐  ┌─┐┌─┐┬ ┬┌┐┌┌┬┐┌─┐┬─┐

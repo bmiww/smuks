@@ -17,13 +17,13 @@
 (defvar *udev* nil)
 (defvar *udev-monitor* nil)
 (defvar *libinput* nil)
-(defvar *accel* nil)
 (defvar *gl-version* nil)
 (defvar *socket-path* nil)
 (defvar *socket* nil)
 (defvar *cursor* nil)
 (defvar *egl* nil)
 (defvar *egl-context* nil)
+(defvar *running* nil)
 
 #+xwayland
 (defvar *xwayland-process* nil)
@@ -54,65 +54,46 @@
     (unless (drm *display*) (error "Failed to initialize DRM"))
     (unless (libseat *display*) (error "Failed to open seat."))
 
+    (libseat:dispatch libseat 0)
 
-  (libseat:dispatch libseat 0)
+    ;; #+xwayland
+    ;; (setf *xwayland-process* (uiop:launch-program "Xwayland"))
 
-  ;; #+xwayland
-  ;; (setf *xwayland-process* (uiop:launch-program "Xwayland"))
+    (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer drm) (wl:display-ptr *display*)))
+    (setf (egl *display*) *egl*)
+    (setf (gl-version *display*) *gl-version*)
 
-  (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer drm) (wl:display-ptr *display*)))
-  (setf (egl *display*) *egl*)
-  (setf (gl-version *display*) *gl-version*)
+    #+smuks-debug
+    (sglutil::enable-gl-debug)
 
-  #+smuks-debug
-  (sglutil::enable-gl-debug)
+    (setf *cursor* (load-cursor-texture))
 
-  (setf *cursor* (load-cursor-texture))
+    (cl-async:start-event-loop
+     (lambda ()
+       (setf *udev* (udev:udev-new))
+       (setf *udev-monitor* (udev:monitor-udev *udev*))
+       (udev::%monitor-enable-receiving *udev-monitor*)
 
-  (setf *accel* (iio-accelerometer:find-accelerometer-dev))
+       (init-globals *display*)
+       (start-monitors *display*)
 
-  (setf *udev* (udev:udev-new))
-  (setf *udev-monitor* (udev:monitor-udev *udev*))
-  (udev::%monitor-enable-receiving *udev-monitor*)
+       (pollr "drm"            (fd drm)                     (cb (drm:handle-event (fd (drm *display*)) :page-flip2 'set-frame-ready)))
+       (pollr "wayland events" (wl:event-loop-fd *display*) (cb (handle-wayland-event)))
+       (pollr "input event"    (context-fd *libinput*)      (cb (smuks::dispatch *libinput* 'handle-input)))
+       (pollr "seat/session"   (libseat:get-fd libseat)     (cb (libseat:dispatch (libseat *display*) 0)))
+       (pollr "udev"           (udev:get-fd *udev-monitor*) (cb (handle-device-changes *udev-monitor*)))
+       (pollr "wayland client"
+	      (unix-sockets::fd *socket*)
+	      (cb (wl:create-client *display* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client) 'client-cb)
+	      :socket t)
 
-  (init-globals *display*)
-  (start-monitors *display*)
-
-  (cl-async:start-event-loop
-   (lambda ()
-     (pollr "drm"            (fd drm)                     'drm-cb)
-     (pollr "wayland client" (unix-sockets::fd *socket*)  'client-cb :socket t)
-     (pollr "wayland events" (wl:event-loop-fd *display*) 'wayland-cb)
-     (pollr "input event"    (context-fd *libinput*)      'input-cb)
-     (pollr "seat/session"   (libseat:get-fd libseat)     'seat-cb)
-     (pollr "udev"           (udev:get-fd *udev-monitor*) 'udev-cb)
-
-     (when *accel* (pollr "accelerometer" (iio-accelerometer::fd *accel*) 'accelerometer-cb))
-
-     (cl-async:delay 'livesupport-recursively :time 0.016)))))
+       (cl-async:delay 'livesupport-recursively :time 0.016)
+       (setf *running* t))))
 
 ;; TODO: This thing might be blocking all kinds of exit signals.
 (defun livesupport-recursively ()
   (livesupport:update-repl-link)
   (cl-async:delay 'livesupport-recursively :time 0.016))
-
-(defun pollr (message fd callback &rest args)
-  (log! "Starting ~a poll" message)
-  (apply 'cl-async:poll fd callback :poll-for '(:readable) args))
-
-
-;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─┌─┐
-;; │  ├─┤│  │  ├┴┐├─┤│  ├┴┐└─┐
-;; └─┘┴ ┴┴─┘┴─┘└─┘┴ ┴└─┘┴ ┴└─┘
-(defmacro defcb (name &body body) `(defun ,name (event) (when (member :readable event) ,@body)))
-(defcb wayland-cb       (handle-wayland-event))
-(defcb input-cb         (smuks::dispatch *libinput* 'handle-input))
-(defcb drm-cb           (drm:handle-event (fd (drm *display*)) :page-flip2 'set-frame-ready))
-(defcb seat-cb          (libseat:dispatch (libseat *display*) 0))
-(defcb client-cb        (wl:create-client *display* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client))
-(defcb udev-cb          (handle-device-changes *udev-monitor*))
-(defcb accelerometer-cb (determine-orientation (iio-accelerometer::read-accelerometer *accel*)))
-
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;; ├┤ └┐┌┘├┤ │││ │   ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
@@ -133,7 +114,7 @@
 
 (defun handle-drm-device-event (dev)
   (declare (ignore dev))
-  (init-outputs2 *display* t))
+  (init-outputs *display* t))
 
 
 (defun handle-input (event)
@@ -189,7 +170,6 @@
   "Called when a seat is 'disabled'. One instance of this is when switching to a different VT"
   (declare (ignore seat data)))
 
-
 ;; Opening and closing restricted devices
 (defvar *fd-id* (make-hash-table :test 'equal))
 (defun open-device (path flags user-data)
@@ -209,13 +189,12 @@
   (remhash fd *fd-id*))
 
 
-
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
 ;; Can be called from repl to stop the compositor
 ;; TODO: Not really working though...
-(defun shutdown () (cl-async:exit-event-loop))
+(defun shutdown () (cl-async:exit-event-loop) (setf *running* nil))
 
 ;; ┬ ┬┌┐┌┌─┐┌─┐┬─┐┌┬┐┌─┐┌┬┐
 ;; │ ││││└─┐│ │├┬┘ │ ├┤  ││
@@ -245,10 +224,9 @@
 
   (when *display* (cleanup-display *display*))
 
-  (when *accel* (iio-accelerometer::close-dev *accel*))
   (when *socket*
     (unix-sockets:close-unix-socket *socket*)
     (delete-file *socket-path*))
 
   (setfnil *egl* *egl-context*
-	   *display* *socket* *cursor* *accel* *libinput*))
+	   *display* *socket* *cursor* *libinput*))

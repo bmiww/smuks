@@ -89,7 +89,7 @@
   (make-instance 'zwp-virtual-keyboard-manager-v1:global :display display :dispatch-impl 'virtual-keyboard-manager)
   (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
 
-  (init-outputs2 display)
+  (init-outputs display)
 
   ;; TODO: Needs outputs at this point. Could be moved if i rewrite initialization
   ;; NOTE: For each screen we have available attach it to a different desktop
@@ -114,7 +114,7 @@
     highest))
 
 
-(defmethod init-outputs2 ((display display) &optional refresh)
+(defmethod init-outputs ((display display) &optional refresh)
   (let ((connectors (if refresh (sdrm::recheck-resources (drm display)) (connectors (drm display)))))
     ;; NOTE: Sort connectors so that dsi (builtin) is first
     (setf connectors (sort connectors (lambda (a b)
@@ -198,27 +198,6 @@
 	      likely-output))))
 
 (defmethod next-serial ((display display)) (incf (display-serial display)))
-
-;; TODO: Add a way to check which screen belongs to the accelerometer
-;; This might actually need to be a hack - check if DSI or some other on-board connector is used
-(defun determine-orientation (orient)
-  (let* ((dsi-output (dsi-output *display*))
-	 (current-orient (orientation dsi-output)))
-
-    (destructuring-bind (x y z) orient
-      (declare (ignore z))
-      (let* ((y-neg (<= y 0)) (x-neg (<= x 0))
-	     (x (abs x)) (y (abs y))
-	     (new-orient
-	       (cond
-		 ((and y-neg (>= y x)) :portrait)
-		 ((>= y x) :portrait-i)
-		 ((and x-neg (>= x y)) :landscape)
-		 ((>= x y) :landscape-i))))
-	(unless (eq current-orient new-orient)
-	  (setf (orientation dsi-output) new-orient)
-	  (let ((related-desktop (find-output-desktop *display* dsi-output)))
-	    (recalculate-layout related-desktop)))))))
 
 ;; ┬┌┐┌┌─┐┬ ┬┌┬┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┬┌┐┌┌─┐
 ;; ││││├─┘│ │ │   ├─┤├─┤│││ │││  │││││ ┬
@@ -488,4 +467,4 @@ then this can be called to determine the new focus surfaces."
     (when drm     (sdrm:close-drm drm))
     (when libseat (libseat:close-seat libseat))
 
-    (setf drm nil libseat nil)))
+    (setfnil drm libseat)))
