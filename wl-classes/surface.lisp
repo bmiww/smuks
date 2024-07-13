@@ -5,6 +5,7 @@
 ;; ╚════██║██║   ██║██╔══██╗██╔══╝  ██╔══██║██║     ██╔══╝
 ;; ███████║╚██████╔╝██║  ██║██║     ██║  ██║╚██████╗███████╗
 ;; ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝
+;; NOTE: https://wayland.app/protocols/wayland#wl_surface
 (in-package :smuks)
 
 (defclass surface (wl-surface:dispatch)
@@ -45,7 +46,6 @@
 
 (defmethod surface-x ((surface surface) x) x)
 (defmethod surface-y ((surface surface) y) y)
-
 (defmethod seat ((surface surface)) (seat (wl:client surface)))
 
 ;; ┌─┐┌─┐┌┬┐┌┬┐┬┌┬┐
@@ -82,44 +82,27 @@
   (setf (frame-callbacks surface) nil))
 
 (defmethod wl-surface:damage ((surface surface) x y width height)
-  "Notify the compositor of a an area that needs to be redrawn.
-This request seems to be deprecated in favor of the damage-buffer request."
+  "DEPRECATED: in favor of damage-buffer."
   (wl-surface:damage-buffer surface x y width height))
 
 (defmethod wl-surface:damage-buffer ((surface surface) x y width height)
-  "This damage method is the same as wl-surface:damage - with one difference.
-The damage coordinates are in buffer coordinates, not surface coordinates."
+  "The damage coordinates are in buffer coordinates, not surface coordinates."
   ;; NOTE: Full denotes that we received a max-int value which opengl doesn't like
   ;; This is often used in the protocol to denote that the whole buffer is damaged.
   (push (sglutil:make-damage :x x :y y :width width :height height
 			     :full (or (> x 2147483646) (> y 2147483646)))
 	(pending-damage surface)))
 
-(defmethod wl-surface:set-opaque-region ((surface surface) region)
-  "A hint to the region which should be considered more carefully for repaints.
-Unimportant if there are no alpha < 1 pixels.
-Can help to identify that theres no point in rendering something behind this region.
-This hint could perhaps ignore the alpha channel.
-SMUKS: I'm not going to consider it for now, since i'm building tiling, and overlaps shouldn't be a focus."
-  )
+(defmethod wl-surface:set-opaque-region ((surface surface) region))
 
 ;; TODO: This one is meaningful for me - for now i'm sending all events to the client
-(defmethod wl-surface:set-input-region ((surface surface) region)
-  "Sets the region which should be considered for input events.
-A coordinate falling outside of this region
-means the client doesn't have to receive that touch/pointer event."
-  )
+(defmethod wl-surface:set-input-region ((surface surface) region))
 
 ;; TODO: Implement to support clients setting higher/lower "dpi"
 (defmethod wl-surface:set-buffer-scale ((surface surface) scale)
-  "Sets the scale for the surface buffer.
-This is one of the double buffered actions - so applied only after next commit"
   (setf (buffer-scale surface) scale))
 
 (defmethod wl-surface:set-buffer-transform ((surface surface) transform)
-  "Sets the transform for the surface buffer. This is an optimization thing if the client is made aware
-of the screen rotation - it can rotate the buffer itself and save the compositor from doing it.
-Or some such."
   (log! "UNIMPLEMENTED: Set buffer transform"))
 
 ;; TODO: Implement set offset
@@ -170,7 +153,6 @@ Or some such."
 
      (when (and new-dimensions? (texture ,surface))
        (gl:delete-texture (sglutil:tex-id (texture ,surface)))
-       (check-gl-error "commit-buffer: delete-texture")
        (setf (texture ,surface) nil))
 
      ;; TODO: the texture here is implied and a bit annoying
@@ -217,6 +199,7 @@ Or some such."
 ;; ╚════██║██║   ██║██╔══██╗╚════██║██║   ██║██╔══██╗██╔══╝  ██╔══██║██║     ██╔══╝
 ;; ███████║╚██████╔╝██████╔╝███████║╚██████╔╝██║  ██║██║     ██║  ██║╚██████╗███████╗
 ;; ╚══════╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝
+;; NOTE: https://wayland.app/protocols/wayland#wl_subsurface
 (defclass subsurface (wl-subsurface:dispatch surface)
   ((surface :initarg :surface)
    (parent :initarg :parent)

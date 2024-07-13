@@ -22,7 +22,6 @@
 ;; ┌─┐┬ ┬┌┬┐
 ;; └─┐├─┤│││
 ;; └─┘┴ ┴┴ ┴
-;; TODO: When a pool gets destroyed, it should also be removed from shm here
 (defclass shm (wl-shm:dispatch)
   ((pools :initform (make-hash-table :test 'equal) :accessor pools)))
 
@@ -60,6 +59,7 @@
 	(wl:mk-if 'buffer pool id :offset offset :width width :height height
 				  :stride stride :pixel-format pixel-format
 				  :mmap-pool (mmap-pool pool))))
+
 
 ;; ┌┐ ┬ ┬┌─┐┌─┐┌─┐┬─┐
 ;; ├┴┐│ │├┤ ├┤ ├┤ ├┬┘
