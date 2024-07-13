@@ -89,6 +89,7 @@
 			     (:file "shader-rect")
 			     (:file "shader-texture")
 			     (:file "shader-init")))
+
 	       (:file "package")
 	       (:file "vt")
 	       (:file "dev-track")
@@ -108,6 +109,7 @@
 			     (:file "input-method")
 			     (:file "virtual-keyboard")
 			     (:file "xwayland")))
+
 	       (:file "scenes")
 	       (:module "display"
 		:components ((:file "main")
@@ -117,6 +119,7 @@
 					   (:file "pointer")
 					   (:file "keyboard")
 					   (:file "output-calibration")))))
+
 	       (:file "client")
 	       (:file "smuks")
 	       (:file "render")))

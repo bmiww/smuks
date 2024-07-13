@@ -469,18 +469,23 @@ then this can be called to determine the new focus surfaces."
 
 (defmethod kickstart-frame-render-for-all ((display display))
   (loop for output in (outputs display)
-	do (render-frame output)))
+	do (render-frame display output)))
 
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘
 ;; └─┘┴─┘└─┘┴ ┴┘└┘└─┘┴
 (defmethod cleanup-display ((display display))
+  (with-slots (drm libseat outputs) display
+    ;; NOTE: Run cleanup for all outputs
+    (stop-measuring-fps display)
+    (loop for output in (outputs display)
+	  do (cleanup-output output)
+	  finally (setf (outputs display) nil))
 
-  ;; Run cleanup for all outputs
-  (stop-measuring-fps display)
-  (loop for output in (outputs display)
-	do (cleanup-output output)
-	finally (setf (outputs display) nil))
+    ;; Close the libwayland processes and the globals from lisp end
+    (wl:destroy display)
 
-  ;; Close the libwayland processes and the globals from lisp end
-  (wl:destroy display))
+    (when drm     (sdrm:close-drm drm))
+    (when libseat (libseat:close-seat libseat))
+
+    (setf drm nil libseat nil)))

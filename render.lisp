@@ -10,11 +10,11 @@
 ;; ┌┬┐┌─┐┬┌┐┌
 ;; │││├─┤││││
 ;; ┴ ┴┴ ┴┴┘└┘
-(defun render-frame (output)
+(defun render-frame (display output)
   (let ((desktop (find-output-desktop *wayland* output))
 	(framebuffer (next-framebuffer output)))
 
-    (sdrm::just-page-flip *drm* (framebuffer-id framebuffer) (connector output)
+    (sdrm::just-page-flip (drm display) (framebuffer-id framebuffer) (connector output)
       (incr (frame-counter output))
       (gl:bind-framebuffer :framebuffer (framebuffer-gl-buffer framebuffer))
       (gl:viewport 0 0 (width output) (height output))

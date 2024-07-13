@@ -13,12 +13,10 @@
 (defvar *enable-mesa-debug-logs* "")
 (defvar *enable-egl-debug-logs* "fatal") ;; "debug"
 
-(defvar *drm* nil)
 (defvar *wayland* nil)
 (defvar *udev* nil)
 (defvar *udev-monitor* nil)
 (defvar *libinput* nil)
-(defvar *seat* nil)
 (defvar *accel* nil)
 (defvar *gl-version* nil)
 (defvar *socket-path* nil)
@@ -42,23 +40,25 @@
   (setf (uiop/os:getenv "MESA_DEBUG") *enable-mesa-debug-logs*)
   (setf (uiop/os:getenv "EGL_LOG_LEVEL") *enable-egl-debug-logs*)
 
-  (unless (setf *seat* (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
-    (error "Failed to open seat. If you're like me - SSH sessions do not have a seat assigned."))
-  (libseat:dispatch *seat* 0)
 
-  (unless (setf *drm* (init-drm 'open-device 'close-device))
-    (error "Failed to initialize DRM"))
 
   (unless (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
     (error "Failed to initialize libinput"))
 
   (setf *socket* (init-socket))
-  (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*) :drm *drm* :libseat *seat*))
+  (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
+			      :drm (init-drm 'open-device 'close-device)
+			      :libseat (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t)))
+
+  (unless (drm *wayland*) (error "Failed to initialize DRM"))
+  (unless (libseat *wayland*) (error "Failed to open seat."))
+
+  (libseat:dispatch (libseat *wayland*) 0)
 
   ;; #+xwayland
   ;; (setf *xwayland-process* (uiop:launch-program "Xwayland"))
 
-  (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer *drm*) (wl:display-ptr *wayland*)))
+  (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer (drm *wayland*)) (wl:display-ptr *wayland*)))
   (setf (egl *wayland*) *egl*)
   (setf (gl-version *wayland*) *gl-version*)
 
@@ -78,12 +78,12 @@
 
   (cl-async:start-event-loop
    (lambda ()
-     (pollr "drm"            (fd *drm*)                   'drm-cb)
-     (pollr "wayland client" (unix-sockets::fd *socket*)  'client-cb :socket t)
-     (pollr "wayland events" (wl:event-loop-fd *wayland*) 'wayland-cb)
-     (pollr "input event"    (context-fd *libinput*)      'input-cb)
-     (pollr "seat/session"   (libseat:get-fd *seat*)      'seat-cb)
-     (pollr "udev"           (udev:get-fd *udev-monitor*) 'udev-cb)
+     (pollr "drm"            (fd (drm *wayland*))                 'drm-cb)
+     (pollr "wayland client" (unix-sockets::fd *socket*)          'client-cb :socket t)
+     (pollr "wayland events" (wl:event-loop-fd *wayland*)         'wayland-cb)
+     (pollr "input event"    (context-fd *libinput*)              'input-cb)
+     (pollr "seat/session"   (libseat:get-fd (libseat *wayland*)) 'seat-cb)
+     (pollr "udev"           (udev:get-fd *udev-monitor*)         'udev-cb)
 
      (when *accel* (pollr "accelerometer" (iio-accelerometer::fd *accel*) 'accelerometer-cb))
 
@@ -105,8 +105,8 @@
 (defmacro defcb (name &body body) `(defun ,name (event) (when (member :readable event) ,@body)))
 (defcb wayland-cb       (handle-wayland-event))
 (defcb input-cb         (smuks::dispatch *libinput* 'handle-input))
-(defcb drm-cb           (drm:handle-event (fd *drm*) :page-flip2 'set-frame-ready))
-(defcb seat-cb          (libseat:dispatch *seat* 0))
+(defcb drm-cb           (drm:handle-event (fd (drm *wayland*)) :page-flip2 'set-frame-ready))
+(defcb seat-cb          (libseat:dispatch (libseat *wayland*) 0))
 (defcb client-cb        (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client))
 (defcb udev-cb          (handle-device-changes *udev-monitor*))
 (defcb accelerometer-cb (determine-orientation (iio-accelerometer::read-accelerometer *accel*)))
@@ -149,12 +149,10 @@
     (when (< result 0)
       (error "Error in wayland event loop dispatch: ~A" result))))
 
-
 (defun set-frame-ready (a b c d crtc-id f)
-  "If a screen is not found - it is assumed to have been disconnected"
   (declare (ignore a b c d f))
-  (let ((screen (output-by-crtc *wayland* crtc-id)))
-    (when screen (render-frame screen))))
+  (let ((output (output-by-crtc *wayland* crtc-id)))
+    (when output (render-frame *wayland* output))))
 
 (defun process-added-device (dev)
   (when (str:contains? "event" (udev:dev-sys-name dev))
@@ -202,14 +200,14 @@
   ;; At least as far as logind is concerned. Not sure about seatd.
   ;; For now leaving as is - since it's not really a problem.
   (let ((id nil) (fd nil))
-    (setf (values id fd) (libseat:open-device *seat* path))
+    (setf (values id fd) (libseat:open-device (libseat *wayland*) path))
     (unless id (error "Failed to open device. No ID: ~A" path))
     (unless fd (error "Failed to open device. No FD: ~A" path))
     (setf (gethash fd *fd-id*) id)))
 
 (defun close-device (fd data)
   (declare (ignore data))
-  (libseat:close-device *seat* (gethash fd *fd-id*))
+  (libseat:close-device (libseat *wayland*) (gethash fd *fd-id*))
   (remhash fd *fd-id*))
 
 
@@ -248,13 +246,11 @@
   (when *libinput* (destroy *libinput*))
 
   (when *wayland* (cleanup-display *wayland*))
-  (when *drm* (sdrm:close-drm *drm*))
 
-  (when *seat* (libseat:close-seat *seat*))
   (when *accel* (iio-accelerometer::close-dev *accel*))
   (when *socket*
     (unix-sockets:close-unix-socket *socket*)
     (delete-file *socket-path*))
 
-  (setfnil *egl* *egl-context* *drm*
-	   *wayland* *socket* *seat* *cursor* *accel* *libinput*))
+  (setfnil *egl* *egl-context*
+	   *wayland* *socket* *cursor* *accel* *libinput*))
