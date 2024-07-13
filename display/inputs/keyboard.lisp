@@ -29,10 +29,10 @@
     (when (and press? (k-alt? display) (k-ctrl? display))
       (setf compositor-handled
 	    (case key
-	      (59 (switch-vt (libseat display) 1))
-	      (60 (switch-vt (libseat display) 2))
-	      (61 (switch-vt (libseat display) 3))
-	      (62 (switch-vt (libseat display) 4))
+	      (59 (switch-vt display (libseat display) 1))
+	      (60 (switch-vt display (libseat display) 2))
+	      (61 (switch-vt display (libseat display) 3))
+	      (62 (switch-vt display (libseat display) 4))
 	      (t :miss))))
 
     ;; super-shift-*
