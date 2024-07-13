@@ -43,114 +43,88 @@
       (wl:flush-clients *wayland*))))
 
 
-;; ┌─┐┌─┐┬─┐  ┌─┐┌┐  ┬┌─┐┌─┐┌┬┐
-;; ├─┘├┤ ├┬┘  │ │├┴┐ │├┤ │   │
-;; ┴  └─┘┴└─  └─┘└─┘└┘└─┘└─┘ ┴
-;; TODO: This is almost identical to render-toplevel, with the difference being the coordinates
+;; ┌─┐┌─┐┬─┐┌┬┐┬┌┬┐┌─┐
+;; │  │ │├┬┘ ││││││└─┐
+;; └─┘└─┘┴└──┴┘┴┴ ┴└─┘
 (defun render-cursor (output surface)
   (unless (cursor-hidden (seat (wl:client surface)))
-    (let ((texture (texture surface))
-	  (width (flo (width surface)))
-	  (height (flo (height surface)))
-	  (x (- (cursor-x *wayland*) (flo (x surface)) (screen-x output)))
-	  (y (- (cursor-y *wayland*) (flo (y surface)) (screen-y output))))
+    (setf (client-cursor-drawn output) t)
+    (values (- (cursor-x *wayland*) (x surface) (screen-x output))
+	    (- (cursor-y *wayland*) (y surface) (screen-y output))
+	    (width surface)
+	    (height surface))))
 
-      (shaders.texture:draw (shader output :texture) texture `(,x ,y ,width ,height))
-      (flush-frame-callbacks surface)
-      (setf (needs-redraw surface) nil)
-      (setf (client-cursor-drawn output) t))))
 
 (defun render-drag (output surface)
-  (let ((texture (texture surface))
-	(width (flo (width surface)))
-	(height (flo (height surface)))
-	(x (- (cursor-x *wayland*) (flo (x surface)) (screen-x output)))
-	(y (- (cursor-y *wayland*) (flo (y surface)) (screen-y output))))
-
-    (shaders.texture:draw (texture-shader output texture) texture `(,x ,y ,width ,height))
-    (flush-frame-callbacks surface)
-    (setf (needs-redraw surface) nil)
-    (setf (client-cursor-drawn output) t)))
+  (setf (client-cursor-drawn output) t)
+  (values (- (cursor-x *wayland*) (x surface) (screen-x output))
+	  (- (cursor-y *wayland*) (y surface) (screen-y output))
+	  (width surface)
+	  (height surface)))
 
 (defun render-subsurface (output surface)
-  (let ((texture (texture surface))
-	(width (flo (width surface)))
-	(height (flo (height surface)))
-	(x (flo (x surface)))
-	(y (flo (y surface))))
-    (shaders.texture:draw (texture-shader output texture)
-			  texture
-			  `(,(- x (screen-x output)) ,(- y (screen-y output))
-			    ,width ,height))
-    (flush-frame-callbacks surface)
-    (setf (needs-redraw surface) nil)))
+  (values (- (x surface) (screen-x output))
+	  (- (y surface) (screen-y output))
+	  (width surface)
+	  (height surface)))
 
 (defun render-toplevel (display output surface)
   (with-slots (x y width height compo-max-width compo-max-height texture) surface
-    (with-accessors ((x x) (y y)) surface
-      (let* ((w-exceed (> width compo-max-width))
-	     (h-exceed (> height compo-max-height))
-	     (w-low (< width compo-max-width))
-	     (h-low (< height compo-max-height))
-	     (width (if w-exceed compo-max-width width))
-	     (height (if h-exceed compo-max-height height)))
+    ;; TODO: Probably can just do max or min func
+    (let* ((w-exceed (> width compo-max-width))
+	   (h-exceed (> height compo-max-height)))
 
-	(shaders.texture:draw (texture-shader output texture)
-			      texture
-			      `(,(flo (- x (screen-x output)))
-				,(flo (- y (screen-y output)))
-				,(flo width) ,(flo height)))
-	(flush-frame-callbacks surface)
-	(setf (needs-redraw surface) nil)))))
+      (values (- x (screen-x output))
+	      (- y (screen-y output))
+	      (if w-exceed compo-max-width width)
+	      (if h-exceed compo-max-height height)))))
+
 
 (defun render-layer-surface (output surface)
-  (let ((texture (texture surface))
-	(width (flo (width surface)))
-	(height (flo (height surface)))
-	(x (flo (x surface)))
-	(y (flo (y surface))))
-    (unless x (setf x (- (/ (output-width output) 2) (/ width 2))))
-    (unless y (setf y (- (/ (output-height output) 2) (/ height 2))))
-    (shaders.texture:draw (texture-shader output texture)
-			  texture
-			  `(,(- x (screen-x output)) ,(- y (screen-y output))
-			    ,width ,height))
-    (flush-frame-callbacks surface)
-    (setf (needs-redraw surface) nil)))
+  (let ((x (x surface))
+	(y (y surface)))
+    (unless x (setf x (- (/ (output-width output) 2) (/ (width surface) 2))))
+    (unless y (setf y (- (/ (output-height output) 2) (/ (height surface) 2))))
+
+    (values (- x (screen-x output))
+	    (- y (screen-y output))
+	    (width surface)
+	    (height surface))))
 
 (defun render-popup (output surface)
-  (let ((texture (texture surface))
-	(width (flo (width surface)))
-	(height (flo (height surface)))
-	(x (+ (flo (x surface)) (flo (x (grab-parent surface)))))
-	(y (+ (flo (y surface)) (flo (y (grab-parent surface))))))
-
-    (shaders.texture:draw (texture-shader output texture) texture `(,x ,y ,width ,height))
-    (flush-frame-callbacks surface)
-    (setf (needs-redraw surface) nil)))
+  (values (+ (x surface) (x (grab-parent surface)))
+	  (+ (y surface) (y (grab-parent surface)))
+	  (width surface)
+	  (height surface)))
 
 (defun render-surface (output surface)
-  (let ((texture (texture surface))
-	(width (flo (width surface)))
-	(height (flo (height surface)))
-	(x (flo (x surface)))
-	(y (flo (y surface))))
-    (shaders.texture:draw (texture-shader output texture)
-			  texture
-			  `(,(- x (screen-x output)) ,(- y (screen-y output))
-			    ,width ,height))
-    (flush-frame-callbacks surface)
-    (setf (needs-redraw surface) nil)))
+  (values (- (x surface) (screen-x output))
+	  (- (y surface) (screen-y output))
+	  (width surface)
+	  (height surface)))
 
+
+;; ┌─┐┌┐  ┬┌─┐┌─┐┌┬┐  ┬─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐
+;; │ │├┴┐ │├┤ │   │   ├┬┘├┤ │││ ││├┤ ├┬┘
+;; └─┘└─┘└┘└─┘└─┘ ┴   ┴└─└─┘┘└┘─┴┘└─┘┴└─
 (defun render-type (display output surface)
-  (typecase surface
-    (toplevel (render-toplevel display output surface))
-    (cursor (render-cursor output surface))
-    (drag-surface (render-drag output surface))
-    (layer-surface (render-layer-surface output surface))
-    (popup (render-popup output surface))
-    (subsurface (render-subsurface output surface))
-    (t (render-surface output surface))))
+  (let ((texture (texture surface))
+	(coordim
+	  (typecase surface
+	    (toplevel (render-toplevel display output surface))
+	    (cursor (render-cursor output surface))
+	    (drag-surface (render-drag output surface))
+	    (layer-surface (render-layer-surface output surface))
+	    (popup (render-popup output surface))
+	    (subsurface (render-subsurface output surface))
+	    (t (render-surface output surface)))))
+    (when coordim
+      (multiple-value-bind (x y width height) coordim
+	(shaders.texture:draw (texture-shader output texture) texture
+			      `(,(flo x) ,(flo y) ,(flo width) ,(flo height)))
+
+	(flush-frame-callbacks surface)
+	(setf (needs-redraw surface) nil)))))
 
 (defun render-rest (output desktop)
   (declare (ignore desktop))
