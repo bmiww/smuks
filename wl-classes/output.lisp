@@ -177,7 +177,7 @@ transform - is the output rotated? is the output flipped?
     (:xrgb8888 (nth 2 (shaders output)))))
 
 (defmethod determine-orientation ((output output) display accel)
-  (with-slots (orientation accelerometer) output
+  (with-accessors ((orientation orientation) (accelerometer accelerometer)) output
     (unless accelerometer (error "No accelerometer connected to output."))
     (let* ((current-orient orientation))
       (destructuring-bind (x y z) accel
