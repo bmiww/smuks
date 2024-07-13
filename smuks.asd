@@ -115,6 +115,6 @@
 					   (:file "touch")
 					   (:file "pointer")
 					   (:file "keyboard")
-					   (:file "output-calibration.lisp")))))
+					   (:file "output-calibration")))))
 	       (:file "smuks")
 	       (:file "render")))
