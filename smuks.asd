@@ -107,7 +107,7 @@
 			     (:file "input-method")
 			     (:file "virtual-keyboard")
 			     (:file "xwayland")))
-	       (:file "screens")
+	       (:file "scenes")
 	       (:module "display"
 		:components ((:file "main")
 			     (:module "inputs"
