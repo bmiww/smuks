@@ -211,6 +211,13 @@ transform - is the output rotated? is the output flipped?
 
     (setfnil framebuffers accelerometer)))
 
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+(defun guess-orientation (width height)
+  "Used to determine initial orientation based on the width/height of an output"
+  (if (>= width height) :landscape :portrait))
+
 
 ;; ██████╗ ██╗███████╗██████╗  █████╗ ████████╗ ██████╗██╗  ██╗
 ;; ██╔══██╗██║██╔════╝██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██║  ██║

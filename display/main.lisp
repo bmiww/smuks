@@ -113,7 +113,6 @@
 	    do (setf highest (screen-y-max output)))
     highest))
 
-
 (defmethod init-outputs ((display display) &optional refresh)
   (let ((connectors (if refresh (sdrm::recheck-resources (drm display)) (connectors (drm display)))))
     ;; NOTE: Sort connectors so that dsi (builtin) is first
@@ -283,21 +282,13 @@
 ;; NOTE: I'll maybe use this to identify my tablet screen for the sake of associating touch or accelerometer events with it.
 (defmethod dsi-output ((display display)) (find-if (lambda (output) (eq (connector-type output) :dsi)) (outputs display)))
 
-(defmethod start-monitors ((display display))
-  (loop for output in (outputs display)
-	do (start-monitor output)))
-
-(defmethod output-by-crtc ((display display) crtc-id)
-  (find-if (lambda (output) (eq (crtc-id (connector output)) crtc-id)) (outputs display)))
-
-(defmethod update-projections ((display display) projection)
-  (mapcar (lambda (output) (update-projections output projection)) (outputs display)))
-
-
 ;; TODO: Suboptimal. Since this is used to check if inputs should be handled differently,
 ;; This is a nasty amount of extra work that needs to be done
-(defmethod configuring-neighbors? ((display display))
-  (some (lambda (output) (configuring-neighbors output)) (outputs display)))
+(defmethod configuring-neighbors? ((display display)) (some (lambda (output) (configuring-neighbors output)) (outputs display)))
+
+(defmethod output-by-crtc ((display display) crtc-id) (find-if (lambda (output) (eq (crtc-id (connector output)) crtc-id)) (outputs display)))
+(defmethod update-projections ((display display) projection) (mapcar (lambda (output) (update-projections output projection)) (outputs display)))
+(defmethod start-monitors ((display display)) (mapcar (lambda (out) (start-monitor out)) (outputs display)))
 
 ;; TODO: This also needs to take into account screen positions
 ;; And overall bounds when outputs are skewed from each other
@@ -306,10 +297,6 @@
     (loop for output in (outputs display)
 	  do (setf (screen-y output) screen-y)
 	     (incf screen-y (output-height output)))))
-
-(defun guess-orientation (width height)
-  "Used to determine initial orientation based on the width/height of an output"
-  (if (>= width height) :landscape :portrait))
 
 (defmethod first-desktop-with-output ((display display))
   (find-if (lambda (desktop) (output desktop)) (desktops display)))
@@ -333,7 +320,6 @@
 
 	  (recalculate-layout desktop)
 	  (recalculate-layout old-desktop))))))
-
 
 
 ;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐  ┌─┐┌─┐┌─┐┬ ┬┌─┐
@@ -436,6 +422,7 @@ then this can be called to determine the new focus surfaces."
     ;; (mapcar
      ;; (lambda (window) (setf (width window) (min 0 (width window) (- (width output) (width (car windows))))))
 
+
 ;; ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌┬┐  ┌┬┐┌─┐┌┐ ┬ ┬┌─┐
 ;; │ ││ │ │ ├─┘│ │ │    ││├┤ ├┴┐│ ││ ┬
 ;; └─┘└─┘ ┴ ┴  └─┘ ┴   ─┴┘└─┘└─┘└─┘└─┘
@@ -449,6 +436,7 @@ then this can be called to determine the new focus surfaces."
 (defmethod kickstart-frame-render-for-all ((display display))
   (loop for output in (outputs display)
 	do (render-frame display output)))
+
 
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘
