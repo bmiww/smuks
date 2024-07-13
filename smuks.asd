@@ -116,5 +116,6 @@
 					   (:file "pointer")
 					   (:file "keyboard")
 					   (:file "output-calibration")))))
+	       (:file "client")
 	       (:file "smuks")
 	       (:file "render")))

@@ -23,13 +23,16 @@
 (defvar *gl-version* nil)
 (defvar *socket-path* nil)
 (defvar *socket* nil)
+(defvar *cursor* nil)
+(defvar *egl* nil)
+(defvar *egl-context* nil)
 
 #+xwayland
 (defvar *xwayland-process* nil)
 
-(defnil
-  *cursor*
-  *egl* *egl-context*)
+(defun main ()
+  (unwind-protect (mainer)
+    (cleanup)))
 
 (defun mainer ()
   (setf *log-output* *standard-output*)
@@ -94,45 +97,9 @@
   (livesupport:update-repl-link)
   (cl-async:delay 'livesupport-recursively :time 0.016))
 
-
-(defun main ()
-  (restart-case
-      (unwind-protect (mainer)
-	(cleanup))
-    (📍start-over () (main))))
-
-
 (defun pollr (message fd callback &rest args)
   (log! "Starting ~a poll" message)
   (apply 'cl-async:poll fd callback :poll-for '(:readable) args))
-
-;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
-;; │  │  │├┤ │││ │
-;; └─┘┴─┘┴└─┘┘└┘ ┴
-(defclass client (wl:client)
-  ((compositor :initform nil :accessor compositor)
-   (seat :initform nil :accessor seat)
-   (dd-manager :initform nil :accessor dd-manager)))
-
-(defmethod (setf wl::iface) :after ((iface compositor) (client client) id)
-  (declare (ignore id))
-  (setf (compositor client) iface))
-
-(defmethod (setf wl::iface) :after ((iface seat) (client client) id)
-  (declare (ignore id))
-  (setf (seat client) iface))
-
-(defmethod (setf wl::iface) :after ((iface dd-manager) (client client) id)
-  (declare (ignore id))
-  (setf (dd-manager client) iface))
-
-(defmethod print-object ((client client) stream)
-  (print-unreadable-object (client stream :type t)
-    (let* ((compositor (compositor client))
-	   (surfaces (when compositor (surfaces compositor)))
-	   (toplevel (when surfaces (loop for surface being the hash-values of surfaces
-					  when (typep surface 'toplevel) return surface))))
-      (when toplevel (format stream "Client: ~a:::~a" (title toplevel) (app-id toplevel))))))
 
 
 ;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─┌─┐
