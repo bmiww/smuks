@@ -160,7 +160,7 @@
 	when (null (output desktop))
 	  return (setf (output desktop) output))
   (start-monitor output)
-  (render-frame output))
+  (render-frame display output))
 
 ;; TODO: When output is removed notify each clients registry object
 (defmethod remove-output ((display display) output)
@@ -202,7 +202,7 @@
 ;; TODO: Add a way to check which screen belongs to the accelerometer
 ;; This might actually need to be a hack - check if DSI or some other on-board connector is used
 (defun determine-orientation (orient)
-  (let* ((dsi-output (dsi-output *wayland*))
+  (let* ((dsi-output (dsi-output *display*))
 	 (current-orient (orientation dsi-output)))
 
     (destructuring-bind (x y z) orient
@@ -217,7 +217,7 @@
 		 ((>= x y) :landscape-i))))
 	(unless (eq current-orient new-orient)
 	  (setf (orientation dsi-output) new-orient)
-	  (let ((related-desktop (find-output-desktop *wayland* dsi-output)))
+	  (let ((related-desktop (find-output-desktop *display* dsi-output)))
 	    (recalculate-layout related-desktop)))))))
 
 ;; ┬┌┐┌┌─┐┬ ┬┌┬┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┬┌┐┌┌─┐

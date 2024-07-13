@@ -13,7 +13,7 @@
 (defvar *enable-mesa-debug-logs* "")
 (defvar *enable-egl-debug-logs* "fatal") ;; "debug"
 
-(defvar *wayland* nil)
+(defvar *display* nil)
 (defvar *udev* nil)
 (defvar *udev-monitor* nil)
 (defvar *libinput* nil)
@@ -46,21 +46,23 @@
     (error "Failed to initialize libinput"))
 
   (setf *socket* (init-socket))
-  (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
+  (setf *display* (make-instance 'display :fd (unix-sockets::fd *socket*)
 			      :drm (init-drm 'open-device 'close-device)
 			      :libseat (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t)))
 
-  (unless (drm *wayland*) (error "Failed to initialize DRM"))
-  (unless (libseat *wayland*) (error "Failed to open seat."))
+  (with-slots (libseat drm) *display*
+    (unless (drm *display*) (error "Failed to initialize DRM"))
+    (unless (libseat *display*) (error "Failed to open seat."))
 
-  (libseat:dispatch (libseat *wayland*) 0)
+
+  (libseat:dispatch libseat 0)
 
   ;; #+xwayland
   ;; (setf *xwayland-process* (uiop:launch-program "Xwayland"))
 
-  (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer (drm *wayland*)) (wl:display-ptr *wayland*)))
-  (setf (egl *wayland*) *egl*)
-  (setf (gl-version *wayland*) *gl-version*)
+  (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer drm) (wl:display-ptr *display*)))
+  (setf (egl *display*) *egl*)
+  (setf (gl-version *display*) *gl-version*)
 
   #+smuks-debug
   (sglutil::enable-gl-debug)
@@ -73,21 +75,21 @@
   (setf *udev-monitor* (udev:monitor-udev *udev*))
   (udev::%monitor-enable-receiving *udev-monitor*)
 
-  (init-globals *wayland*)
-  (start-monitors *wayland*)
+  (init-globals *display*)
+  (start-monitors *display*)
 
   (cl-async:start-event-loop
    (lambda ()
-     (pollr "drm"            (fd (drm *wayland*))                 'drm-cb)
-     (pollr "wayland client" (unix-sockets::fd *socket*)          'client-cb :socket t)
-     (pollr "wayland events" (wl:event-loop-fd *wayland*)         'wayland-cb)
-     (pollr "input event"    (context-fd *libinput*)              'input-cb)
-     (pollr "seat/session"   (libseat:get-fd (libseat *wayland*)) 'seat-cb)
-     (pollr "udev"           (udev:get-fd *udev-monitor*)         'udev-cb)
+     (pollr "drm"            (fd drm)                     'drm-cb)
+     (pollr "wayland client" (unix-sockets::fd *socket*)  'client-cb :socket t)
+     (pollr "wayland events" (wl:event-loop-fd *display*) 'wayland-cb)
+     (pollr "input event"    (context-fd *libinput*)      'input-cb)
+     (pollr "seat/session"   (libseat:get-fd libseat)     'seat-cb)
+     (pollr "udev"           (udev:get-fd *udev-monitor*) 'udev-cb)
 
      (when *accel* (pollr "accelerometer" (iio-accelerometer::fd *accel*) 'accelerometer-cb))
 
-     (cl-async:delay 'livesupport-recursively :time 0.016))))
+     (cl-async:delay 'livesupport-recursively :time 0.016)))))
 
 ;; TODO: This thing might be blocking all kinds of exit signals.
 (defun livesupport-recursively ()
@@ -105,9 +107,9 @@
 (defmacro defcb (name &body body) `(defun ,name (event) (when (member :readable event) ,@body)))
 (defcb wayland-cb       (handle-wayland-event))
 (defcb input-cb         (smuks::dispatch *libinput* 'handle-input))
-(defcb drm-cb           (drm:handle-event (fd (drm *wayland*)) :page-flip2 'set-frame-ready))
-(defcb seat-cb          (libseat:dispatch (libseat *wayland*) 0))
-(defcb client-cb        (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client))
+(defcb drm-cb           (drm:handle-event (fd (drm *display*)) :page-flip2 'set-frame-ready))
+(defcb seat-cb          (libseat:dispatch (libseat *display*) 0))
+(defcb client-cb        (wl:create-client *display* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client))
 (defcb udev-cb          (handle-device-changes *udev-monitor*))
 (defcb accelerometer-cb (determine-orientation (iio-accelerometer::read-accelerometer *accel*)))
 
@@ -123,7 +125,7 @@
 		;; NOTE: Only considering the drm node that was initt'd via my drm package
 		(when (string=
 		       (format nil "/dev/dri/~a" (udev:dev-sys-name dev))
-		       (sdrm:primary-node (drm *wayland*)))
+		       (sdrm:primary-node (drm *display*)))
 		  (sleep 0.5) (handle-drm-device-event dev)))
 	       ((string= (udev:dev-subsystem dev) "input")
 		(when (string= (udev:dev-action dev) "add")
@@ -131,7 +133,7 @@
 
 (defun handle-drm-device-event (dev)
   (declare (ignore dev))
-  (init-outputs2 *wayland* t))
+  (init-outputs2 *display* t))
 
 
 (defun handle-input (event)
@@ -141,18 +143,18 @@
        *libinput*
        (merge-pathnames (format nil "/dev/input/~a"
 				(device-removed@-sys-name event))))
-      (restart-case (input *wayland* (event-type event) event)
+      (restart-case (input *display* (event-type event) event)
 	(abandon-event () :report "Abandoning event"))))
 
 (defun handle-wayland-event ()
-  (let ((result (wl:dispatch-event-loop *wayland*)))
+  (let ((result (wl:dispatch-event-loop *display*)))
     (when (< result 0)
       (error "Error in wayland event loop dispatch: ~A" result))))
 
 (defun set-frame-ready (a b c d crtc-id f)
   (declare (ignore a b c d f))
-  (let ((output (output-by-crtc *wayland* crtc-id)))
-    (when output (render-frame *wayland* output))))
+  (let ((output (output-by-crtc *display* crtc-id)))
+    (when output (render-frame *display* output))))
 
 (defun process-added-device (dev)
   (when (str:contains? "event" (udev:dev-sys-name dev))
@@ -180,16 +182,12 @@
 ;; └─┘└─┘┴ ┴ ┴   ┴ ┴┴ ┴└─┘┴└─┘
 (defun enable-seat (seat data)
   (declare (ignore seat data))
-  (when *wayland* (resume-outputs *wayland*))
+  (when *display* (resume-outputs *display*))
   (when *libinput* (init-devices *libinput*)))
 
 (defun disable-seat (seat data)
   "Called when a seat is 'disabled'. One instance of this is when switching to a different VT"
-  (declare (ignore seat data))
-  ;; TODO: Still don't know what to do here. Pausing outputs is a bit too late in the pipeline.
-  ;; The pause is being done just before switching VTs
-  ;; (pause-outputs *wayland*)
-  )
+  (declare (ignore seat data)))
 
 
 ;; Opening and closing restricted devices
@@ -200,14 +198,14 @@
   ;; At least as far as logind is concerned. Not sure about seatd.
   ;; For now leaving as is - since it's not really a problem.
   (let ((id nil) (fd nil))
-    (setf (values id fd) (libseat:open-device (libseat *wayland*) path))
+    (setf (values id fd) (libseat:open-device (libseat *display*) path))
     (unless id (error "Failed to open device. No ID: ~A" path))
     (unless fd (error "Failed to open device. No FD: ~A" path))
     (setf (gethash fd *fd-id*) id)))
 
 (defun close-device (fd data)
   (declare (ignore data))
-  (libseat:close-device (libseat *wayland*) (gethash fd *fd-id*))
+  (libseat:close-device (libseat *display*) (gethash fd *fd-id*))
   (remhash fd *fd-id*))
 
 
@@ -242,10 +240,10 @@
   #+xwayland
   (when *xwayland-process* (uiop:terminate-process *xwayland-process*))
 
-  (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *wayland*) *egl-context*))
+  (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *display*) *egl-context*))
   (when *libinput* (destroy *libinput*))
 
-  (when *wayland* (cleanup-display *wayland*))
+  (when *display* (cleanup-display *display*))
 
   (when *accel* (iio-accelerometer::close-dev *accel*))
   (when *socket*
@@ -253,4 +251,4 @@
     (delete-file *socket-path*))
 
   (setfnil *egl* *egl-context*
-	   *wayland* *socket* *cursor* *accel* *libinput*))
+	   *display* *socket* *cursor* *accel* *libinput*))
