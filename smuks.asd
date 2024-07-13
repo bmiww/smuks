@@ -110,7 +110,11 @@
 	       (:file "screens")
 	       (:module "display"
 		:components ((:file "main")
-			     (:file "display-inputs")
+			     (:module "inputs"
+			      :components ((:file "main")
+					   (:file "touch")
+					   (:file "pointer")
+					   (:file "keyboard")))
 			     (:file "display-inputs-screen-setup")))
 	       (:file "smuks")
 	       (:file "render")))
