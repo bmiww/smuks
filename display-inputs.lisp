@@ -10,10 +10,6 @@
 (defmethod process ((display display) type (usecase (eql :passthrough)) event)
   (log! "No :passthrough handler for input event: ~a" (event-type event)))
 
-;; NOTE: We ignore the device-added event, since we are using libinput path based contexts
-(defmethod process ((display display) (type (eql :device-added)) (usecase (eql :passthrough)) event)
-  ())
-
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;;  │ │ ││ ││  ├─┤  ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;;  ┴ └─┘└─┘└─┘┴ ┴  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘

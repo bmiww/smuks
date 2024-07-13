@@ -199,6 +199,26 @@
 
 (defmethod next-serial ((display display)) (incf (display-serial display)))
 
+;; TODO: Add a way to check which screen belongs to the accelerometer
+;; This might actually need to be a hack - check if DSI or some other on-board connector is used
+(defun determine-orientation (orient)
+  (let* ((dsi-output (dsi-output *wayland*))
+	 (current-orient (orientation dsi-output)))
+
+    (destructuring-bind (x y z) orient
+      (declare (ignore z))
+      (let* ((y-neg (<= y 0)) (x-neg (<= x 0))
+	     (x (abs x)) (y (abs y))
+	     (new-orient
+	       (cond
+		 ((and y-neg (>= y x)) :portrait)
+		 ((>= y x) :portrait-i)
+		 ((and x-neg (>= x y)) :landscape)
+		 ((>= x y) :landscape-i))))
+	(unless (eq current-orient new-orient)
+	  (setf (orientation dsi-output) new-orient)
+	  (let ((related-desktop (find-output-desktop *wayland* dsi-output)))
+	    (recalculate-layout related-desktop)))))))
 
 ;; ┬┌┐┌┌─┐┬ ┬┌┬┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┬┌┐┌┌─┐
 ;; ││││├─┘│ │ │   ├─┤├─┤│││ │││  │││││ ┬
@@ -211,6 +231,8 @@
 (defmethod input ((display display) (type (eql :pointer-axis)) event)
   "This is deprecated in libinput >1.19. Therefore ignorable.")
 
+(defmethod input ((display display) (type (eql :device-added)) event)
+  "We ignore the device-added event, since we are using libinput path based contexts")
 
 ;; ┬ ┬┬┌┐┌┌┬┐┌─┐┬ ┬  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┬┌┐┌┌─┐
 ;; │││││││ │││ ││││  ├─┤├─┤│││ │││  │││││ ┬
