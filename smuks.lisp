@@ -52,11 +52,8 @@
   (unless (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
     (error "Failed to initialize libinput"))
 
-
   (setf *socket* (init-socket))
-  (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*)
-			      :drm *drm*
-			      :libseat *seat*))
+  (setf *wayland* (make-instance 'display :fd (unix-sockets::fd *socket*) :drm *drm* :libseat *seat*))
 
   ;; #+xwayland
   ;; (setf *xwayland-process* (uiop:launch-program "Xwayland"))
