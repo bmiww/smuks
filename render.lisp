@@ -68,7 +68,10 @@
 	  (height surface)))
 
 (defun render-toplevel (output surface)
-  (with-slots (x y width height compo-max-width compo-max-height texture) surface
+  (with-accessors ((x x) (y y) (width width) (height height)
+		   (compo-max-width compo-max-width)
+		   (compo-max-height compo-max-height)
+		   (texture texture)) surface
     ;; TODO: Probably can just do max or min func
     (let* ((w-exceed (> width compo-max-width))
 	   (h-exceed (> height compo-max-height)))
@@ -108,8 +111,8 @@
 ;; │ │├┴┐ │├┤ │   │   ├┬┘├┤ │││ ││├┤ ├┬┘
 ;; └─┘└─┘└┘└─┘└─┘ ┴   ┴└─└─┘┘└┘─┴┘└─┘┴└─
 (defun render-type (display output surface)
-  (let ((texture (texture surface))
-	(coordim
+  (let ((texture (texture surface)) x y width height)
+    (setf (values x y width height)
 	  (typecase surface
 	    (toplevel (render-toplevel output surface))
 	    (cursor (render-cursor display output surface))
@@ -117,14 +120,13 @@
 	    (layer-surface (render-layer-surface output surface))
 	    (popup (render-popup output surface))
 	    (subsurface (render-subsurface output surface))
-	    (t (render-surface output surface)))))
-    (when coordim
-      (multiple-value-bind (x y width height) coordim
-	(shaders.texture:draw (texture-shader output texture) texture
-			      `(,(flo x) ,(flo y) ,(flo width) ,(flo height)))
+	    (t (render-surface output surface))))
+    (when (and x y width height)
+      (shaders.texture:draw (texture-shader output texture) texture
+			    `(,(flo x) ,(flo y) ,(flo width) ,(flo height)))
 
-	(flush-frame-callbacks surface)
-	(setf (needs-redraw surface) nil)))))
+      (flush-frame-callbacks surface)
+      (setf (needs-redraw surface) nil))))
 
 (defun render-rest (display output desktop)
   (declare (ignore desktop))
