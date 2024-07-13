@@ -77,26 +77,26 @@
 
   (cl-async:start-event-loop
    (lambda ()
-     (log! "Starting DRM fd listener")
+     (log! "Starting DRM poll")
      (cl-async:poll (fd *drm*) 'drm-callback :poll-for '(:readable))
 
-     (log! "Starting wayland client socket listener")
+     (log! "Starting wayland client socket poll")
      (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t)
 
-     (log! "Starting wayland event loop listener")
+     (log! "Starting wayland event loop poll")
      (cl-async:poll (wl:event-loop-fd *wayland*) 'wayland-callback :poll-for '(:readable))
 
-     (log! "Starting input event poller")
+     (log! "Starting input event poll")
      (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable))
 
-     (log! "Starting the umpteenth poller")
+     (log! "Starting seat/session status poll")
      (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable))
 
      (when *accel*
-       (log! "Starting MY accelerometer poller")
+       (log! "Starting accelerometer poll")
        (cl-async:poll (iio-accelerometer::fd *accel*) 'my-accelerometer-callback :poll-for '(:readable)))
 
-     (log! "Starting the udev poller")
+     (log! "Starting udev poll")
      (udev::%monitor-enable-receiving *udev-monitor*)
      (cl-async:poll (udev:get-fd *udev-monitor*) 'udev-callback :poll-for '(:readable))
 
