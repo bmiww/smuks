@@ -28,7 +28,11 @@
   ((xdg-x-offset :initform 0 :accessor xdg-x-offset)
    (xdg-y-offset :initform 0 :accessor xdg-y-offset)
    (grab-child :initform nil :accessor grab-child)
-   (grab-parent :initarg :grab-parent :initform nil :accessor grab-parent))
+   (grab-parent :initarg :grab-parent :initform nil :accessor grab-parent)
+
+   ;; These are so far only used for toplevels
+   (new-x? :initform nil :accessor new-x?)
+   (new-y? :initform nil :accessor new-y?))
   (:documentation
    "An xdg surface identifies a toplevel or a popup surface.
 The main purpose here is to define that child/parent relationships between the former."))
@@ -48,6 +52,10 @@ The main purpose here is to define that child/parent relationships between the f
   (xdg-surface:send-configure xdg (incf (configure-serial xdg))))
 
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
+  (with-accessors ((new-x? new-x?) (new-y? new-y?) (x x) (y y)) xdg
+    (when new-x? (setf x (+ x (/ (- compo-max-width width) 2))))
+    (when new-y? (setf y (+ y (/ (- compo-max-height height) 2)))))
+
   (unless (and (eq width (width xdg)) (eq height (height xdg)))
     (setf (xdg-x-offset xdg) x
 	  (xdg-y-offset xdg) y
