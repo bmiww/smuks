@@ -71,34 +71,21 @@
 
   (setf *udev* (udev:udev-new))
   (setf *udev-monitor* (udev:monitor-udev *udev*))
+  (udev::%monitor-enable-receiving *udev-monitor*)
 
   (init-globals *wayland*)
   (start-monitors *wayland*)
 
   (cl-async:start-event-loop
    (lambda ()
-     (log! "Starting DRM poll")
-     (cl-async:poll (fd *drm*) 'drm-callback :poll-for '(:readable))
+     (pollr "drm"            (fd *drm*)                   'drm-cb)
+     (pollr "wayland client" (unix-sockets::fd *socket*)  'client-cb :socket t)
+     (pollr "wayland events" (wl:event-loop-fd *wayland*) 'wayland-cb)
+     (pollr "input event"    (context-fd *libinput*)      'input-cb)
+     (pollr "seat/session"   (libseat:get-fd *seat*)      'seat-cb)
+     (pollr "udev"           (udev:get-fd *udev-monitor*) 'udev-cb)
 
-     (log! "Starting wayland client socket poll")
-     (cl-async:poll (unix-sockets::fd *socket*) 'client-callback :poll-for '(:readable) :socket t)
-
-     (log! "Starting wayland event loop poll")
-     (cl-async:poll (wl:event-loop-fd *wayland*) 'wayland-callback :poll-for '(:readable))
-
-     (log! "Starting input event poll")
-     (cl-async:poll (context-fd *libinput*) 'input-callback :poll-for '(:readable))
-
-     (log! "Starting seat/session status poll")
-     (cl-async:poll (libseat:get-fd *seat*) 'seat-callback :poll-for '(:readable))
-
-     (when *accel*
-       (log! "Starting accelerometer poll")
-       (cl-async:poll (iio-accelerometer::fd *accel*) 'my-accelerometer-callback :poll-for '(:readable)))
-
-     (log! "Starting udev poll")
-     (udev::%monitor-enable-receiving *udev-monitor*)
-     (cl-async:poll (udev:get-fd *udev-monitor*) 'udev-callback :poll-for '(:readable))
+     (when *accel* (pollr "accelerometer" (iio-accelerometer::fd *accel*) 'accelerometer-cb))
 
      (cl-async:delay 'livesupport-recursively :time 0.016))))
 
@@ -114,6 +101,10 @@
 	(cleanup))
     (📍start-over () (main))))
 
+
+(defun pollr (message fd callback &rest args)
+  (log! "Starting ~a poll" message)
+  (apply 'cl-async:poll fd callback :poll-for '(:readable) args))
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
 ;; │  │  │├┤ │││ │
@@ -144,29 +135,24 @@
       (when toplevel (format stream "Client: ~a:::~a" (title toplevel) (app-id toplevel))))))
 
 
-;; ┌─┐┌─┐┬  ┬  ┬┌┐┌┌─┐
-;; ├─┘│ ││  │  │││││ ┬
-;; ┴  └─┘┴─┘┴─┘┴┘└┘└─┘
-;; Slightly annoying callbacks
-(defun ready (ev) (member :readable ev))
-(defun wayland-callback (ev) (when (ready ev) (handle-wayland-event)))
-(defun input-callback (ev) (when (ready ev) (smuks::dispatch *libinput* 'handle-input)))
-(defun drm-callback (ev) (when (ready ev) (drm:handle-event (fd *drm*) :page-flip2 'set-frame-ready)))
-(defun seat-callback (ev) (when (ready ev) (libseat:dispatch *seat* 0)))
-(defun my-accelerometer-callback (ev)
-  (when (ready ev)
-    (handler-case
-	(determine-orientation (iio-accelerometer::read-accelerometer *accel*))
-      (error (e)
-	(log! "Error reading accelerometer: ~a" e)))))
+;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─┌─┐
+;; │  ├─┤│  │  ├┴┐├─┤│  ├┴┐└─┐
+;; └─┘┴ ┴┴─┘┴─┘└─┘┴ ┴└─┘┴ ┴└─┘
+(defmacro defcb (name &body body) `(defun ,name (event) (when (member :readable event) ,@body)))
+(defcb wayland-cb       (handle-wayland-event))
+(defcb input-cb         (smuks::dispatch *libinput* 'handle-input))
+(defcb drm-cb           (drm:handle-event (fd *drm*) :page-flip2 'set-frame-ready))
+(defcb seat-cb          (libseat:dispatch *seat* 0))
+(defcb client-cb        (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client))
+(defcb udev-cb          (handle-device-changes *udev-monitor*))
+(defcb accelerometer-cb (determine-orientation (iio-accelerometer::read-accelerometer *accel*)))
 
-(defun client-callback (ev)
-  (when (ready ev)
-    (wl:create-client *wayland* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)))
 
-(defun udev-callback (ev)
-  (when (ready ev)
-    (loop for dev = (udev:receive-device *udev-monitor*)
+;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
+;; ├┤ └┐┌┘├┤ │││ │   ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
+;; └─┘ └┘ └─┘┘└┘ ┴   ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
+(defun handle-device-changes (monitor)
+  (loop for dev = (udev:receive-device monitor)
 	  while dev
 	  do (cond
 	       ((string= (udev:dev-subsystem dev) "drm")
@@ -177,7 +163,7 @@
 		  (sleep 0.5) (handle-drm-device-event dev)))
 	       ((string= (udev:dev-subsystem dev) "input")
 		(when (string= (udev:dev-action dev) "add")
-		  (process-added-device dev)))))))
+		  (process-added-device dev))))))
 
 (defun handle-drm-device-event (dev)
   (declare (ignore dev))
@@ -194,7 +180,6 @@
       (restart-case (input *wayland* (event-type event) event)
 	(abandon-event () :report "Abandoning event"))))
 
-;; Unorganized handlers
 (defun handle-wayland-event ()
   (let ((result (wl:dispatch-event-loop *wayland*)))
     (when (< result 0)
