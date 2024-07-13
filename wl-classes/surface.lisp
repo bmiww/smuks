@@ -52,7 +52,6 @@
 ;; │  │ ││││││││ │
 ;; └─┘└─┘┴ ┴┴ ┴┴ ┴
 ;; https://wayland.app/protocols/wayland#wl_surface:request:commit
-;; TODO: Most of this could instead be written as methods for the specific parts
 (defmethod wl-surface:commit ((surface surface))
   (when (pending-damage surface)
     (setf (damage surface) (pending-damage surface))
@@ -66,11 +65,6 @@
     (setf (frame-callbacks surface) (pending-frame-callbacks surface))
     (setf (pending-frame-callbacks surface) nil)
     (setf (needs-redraw surface) t)))
-
-(defmethod wl-surface:commit :after ((surface toplevel))
-  (when (first-commit surface)
-    (setf (first-commit surface) nil)
-    (handle-surface-change (wl:get-display surface) surface)))
 
 ;; TODO: Replace errors - with client error notification
 (defmethod wl-surface:attach ((surface surface) buffer x y)

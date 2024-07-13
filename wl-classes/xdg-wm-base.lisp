@@ -81,13 +81,18 @@ The main purpose here is to define that child/parent relationships between the f
 (defmethod surface-x ((toplevel toplevel) x) (+ x (xdg-x-offset toplevel)))
 (defmethod surface-y ((toplevel toplevel) y) (+ y (xdg-y-offset toplevel)))
 
+(defmethod wl-surface:commit :after ((surface toplevel))
+  (when (first-commit surface)
+    (setf (first-commit surface) nil)
+    (handle-surface-change (wl:get-display surface) surface)))
+
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
   (setf (title toplevel) title))
 
 (defmethod xdg-toplevel:set-app-id ((toplevel toplevel) app-id)
   (setf (app-id toplevel) app-id))
 
-;; TODO: For now keeping the move request empty
+;; NOTE: For now keeping the move request empty
 ;; Since you probably want tiling - this will mostly be ignored
 ;; But - could introduce specific states/flags
 (defmethod xdg-toplevel:move ((toplevel toplevel) seat serial)
@@ -108,7 +113,6 @@ The main purpose here is to define that child/parent relationships between the f
   (setf (max-width toplevel) width)
   (setf (max-height toplevel) height))
 
-;; TODO: Integrate better with the sizing/positioning once you figure that out
 (defmethod xdg-toplevel:set-maximized ((toplevel toplevel))
   "A client wants to maximize their window to maximum size.
 For tiling managers - i think i'll just resend the original configure event.
@@ -181,13 +185,9 @@ For my purposes - i'm just ignoring this and giving the client the current state
 ;; ┌─┐┌─┐┌─┐┬ ┬┌─┐
 ;; ├─┘│ │├─┘│ │├─┘
 ;; ┴  └─┘┴  └─┘┴
-;; TODO: As far as i can understand the positioner is transient and used only for the duration of the popup creation
-;; Will have dangling references here possibly
 (defclass popup (xdg-popup:dispatch xdg-surface)
-  ((positioner :initarg :positioner :accessor positioner)))
+  ())
 
-;; TODO: Check if the shared initialize here is dangerous.
-;; Might be fine - worst case scenario - scope it to run only when an ACTUAL popup is being created
 (defmethod shared-initialize :after ((popup popup) slot-names &key positioner)
   (declare (ignore slot-names))
   (setup-from-positioner popup positioner))
@@ -208,10 +208,6 @@ For my purposes - i'm just ignoring this and giving the client the current state
 
     (setf (x popup) x (y popup) y)))
 
-
-;; TODO: Seat ignored - global seat used instead.
-;; TODO: This is supposed to check which nearest toplevel or popup has a keyboard focus on seat level - i think.
-;; Since for now i don't do explicit keyboard focus on seat level (i should) - we can try using the active-surface instead
 (defmethod xdg-popup:grab ((popup popup) seat serial)
   "Grab here implies keyboard focus. If keyboard focus is lost - TODO"
   (let ((active-surface (active-surface seat)))
@@ -229,7 +225,6 @@ For my purposes - i'm just ignoring this and giving the client the current state
 ;; ┌─┐┌─┐┌─┐┬┌┬┐┬┌─┐┌┐┌┌─┐┬─┐
 ;; ├─┘│ │└─┐│ │ ││ ││││├┤ ├┬┘
 ;; ┴  └─┘└─┘┴ ┴ ┴└─┘┘└┘└─┘┴└─
-;; TODO: The initforms for some of these things should probably be keywords rather than symbols
 (defclass positioner (xdg-positioner:dispatch)
   ((x :initform 0 :accessor x)
    (y :initform 0 :accessor y)
@@ -240,7 +235,7 @@ For my purposes - i'm just ignoring this and giving the client the current state
    (a-width :initform 0 :accessor a-width)
    (a-height :initform 0 :accessor a-height)
    (anchor :initform :bottom-left :accessor anchor)
-   (gravity :initform 'top :accessor gravity)
+   (gravity :initform :top :accessor gravity)
    (constraint :initform '() :accessor constraint)))
 
 ;; TODO: Not really doing anything with this yet.
