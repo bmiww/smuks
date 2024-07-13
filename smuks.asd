@@ -108,8 +108,9 @@
 			     (:file "virtual-keyboard")
 			     (:file "xwayland")))
 	       (:file "screens")
-	       (:file "display")
-	       (:file "display-inputs")
-	       (:file "display-inputs-screen-setup")
+	       (:module "display"
+		:components ((:file "main")
+			     (:file "display-inputs")
+			     (:file "display-inputs-screen-setup")))
 	       (:file "smuks")
 	       (:file "render")))
