@@ -40,21 +40,19 @@
   (setf (uiop/os:getenv "MESA_DEBUG") *enable-mesa-debug-logs*)
   (setf (uiop/os:getenv "EGL_LOG_LEVEL") *enable-egl-debug-logs*)
 
-
-
-  (unless (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
-    (error "Failed to initialize libinput"))
-
   (setf *socket* (init-socket))
-  (setf *display* (make-instance 'display :fd (unix-sockets::fd *socket*)
-			      :drm (init-drm 'open-device 'close-device)
-			      :libseat (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t)))
+  (setf *display* (make-instance 'display :fd (unix-sockets::fd *socket*)))
 
-  (with-slots (libseat drm) *display*
-    (unless (drm *display*) (error "Failed to initialize DRM"))
-    (unless (libseat *display*) (error "Failed to open seat."))
-
+  (with-accessors ((libseat libseat) (drm drm)) *display*
+    (unless (setf libseat (libseat:open-seat :enable-seat 'enable-seat :disable-seat 'disable-seat :log-handler t))
+      (error "Failed to open seat."))
     (libseat:dispatch libseat 0)
+
+    (unless (setf drm (init-drm 'open-device 'close-device))
+      (error "Failed to initialize DRM"))
+
+    (unless (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
+      (error "Failed to initialize libinput"))
 
     ;; #+xwayland
     ;; (setf *xwayland-process* (uiop:launch-program "Xwayland"))
