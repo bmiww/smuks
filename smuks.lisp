@@ -88,7 +88,7 @@
 	      :socket t)
 
        (cl-async:delay 'livesupport-recursively :time 0.016)
-       (setf *running* t))))
+       (setf *running* t)))))
 
 ;; TODO: This thing might be blocking all kinds of exit signals.
 (defun livesupport-recursively ()

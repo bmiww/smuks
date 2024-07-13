@@ -21,8 +21,8 @@
       (gl:clear :color-buffer-bit)
 
       (render-scene output)
-      (render-desktop output desktop)
-      (render-rest output desktop)
+      (render-desktop display output desktop)
+      (render-rest display output desktop)
 
       (when (eq output (cursor-screen display))
 	(unless (client-cursor-drawn output)

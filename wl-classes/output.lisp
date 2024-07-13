@@ -61,12 +61,14 @@ transform - is the output rotated? is the output flipped?
 (defmethod initialize-instance :after ((output output) &key)
   ;; NOTE: We try to find an accelerometer if the connector is a builtin one
   ;; For now i don't have a smarter way to determine drm dev and iio dev relationships
-  (when (eq (connector-type) :dsi)
+  (when (eq (connector-type output) :dsi)
     (setf (accelerometer output) (iio-accelerometer:find-accelerometer-dev))
     (when (accelerometer output)
       (pollr "accelerometer"
-	     (iio-accelerometer::fd (accelerometer *display*))
-	     (cb (determine-orientation (iio-accelerometer::read-accelerometer (accelerometer *display*))))))))
+	     (iio-accelerometer::fd (accelerometer output))
+	     (cb (determine-orientation output
+					(wl:get-display output)
+					(iio-accelerometer::read-accelerometer (accelerometer output))))))))
 
 
 
