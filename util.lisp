@@ -272,7 +272,7 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 (defun ensure-class-slot (class slot-name)
   (let ((class-name (class-name class)))
     ;; finalize it before calling CLOS:CLASS-SLOTS
-    (make-instance class-name)
+    (clos:ensure-finalized class)
     (unless (find slot-name (clos:class-slots class) :key (function clos:slot-definition-name))
       (clos:ensure-class
        class-name
@@ -322,32 +322,10 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
     (eval before-method)
     nil))
 
+;; TODO: You had to remove the compile time checks cause they didn't make sense
+;; Maybe you can still add back in runtime checks if safety or debug compile values are high enough
 (defmacro after (method instance callback)
-  (let* ((class (class-of (symbol-value instance)))
-	 (existing (find-if (lambda (meth)
-			      (clos:generic-function-name
-			       (clos:method-generic-function meth)))
-			    (clos:specializer-direct-methods class))))
-    (unless existing (error "Given method not found"))
-
-    (let ((expected-lambda-list (clos:method-lambda-list existing)))
-      (unless (equal expected-lambda-list (cadr callback))
-	(error (format nil "Callback lambda list does not match method lambda list:~%Expected: ~a~%Given: ~a"
-		       expected-lambda-list (cadr callback))))
-
-      `(push ,callback (slot-value ,instance ',(intern (format nil "after~a" method)))))))
+  `(push ,callback (slot-value ,instance ',(intern (format nil "after~a" method)))))
 
 (defmacro before (method instance callback)
-  (let* ((class (class-of (symbol-value instance)))
-	 (existing (find-if (lambda (meth)
-			      (clos:generic-function-name
-			       (clos:method-generic-function meth)))
-			    (clos:specializer-direct-methods class))))
-    (unless existing (error "Given method not found"))
-
-    (let ((expected-lambda-list (clos:method-lambda-list existing)))
-      (unless (equal expected-lambda-list (cadr callback))
-	(error (format nil "Callback lambda list does not match method lambda list:~%Expected: ~a~%Given: ~a"
-		       expected-lambda-list (cadr callback))))
-
-      `(push ,callback (slot-value ,instance ',(intern (format nil "before~a" method)))))))
+  `(push ,callback (slot-value ,instance ',(intern (format nil "before~a" method)))))

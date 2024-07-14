@@ -98,9 +98,7 @@
 	for window in (windows desktop)
 	for i from 0
 	do (with-accessors
-		 ((width width) (height height)
-		  (x x) (y y) (new-x? new-x?) (new-y? new-y?)
-		  (compo-max-width compo-max-width) (compo-max-height compo-max-height)) window
+		 ((x x) (y y) (compo-max-width compo-max-width) (compo-max-height compo-max-height)) window
 
 	     (setf compo-max-width  width-per
 		   compo-max-height d-height)
@@ -108,10 +106,15 @@
 	     (setf x (+ (* i width-per) (screen-x output))
 		   y (screen-y output))
 
-	     ;; NOTE If the dimensions of the window are less than what is allocated
-	     ;; We set up flags to center the window in the allocated space after client confirms/denies the new dimensions
-	     (when (< 0 width compo-max-width)   (setf new-x? t))
-	     (when (< 0 height compo-max-height) (setf new-y? t))
 
 	     ;; TODO: This only really needs to be done when the window is resized.
-	     (configure-toplevel-default window))))))
+	     (configure-toplevel-default window)
+
+	     ;; NOTE If the dimensions of the window are less than what is allocated
+	     ;; This should only be done after the client notifies their dimensions
+	     (after xdg-surface:set-window-geometry window
+		    (lambda (xdg x y width height)
+		      (declare (ignore x y))
+		      (with-accessors ((x x) (y y)) xdg
+			(when (< 0 width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
+			(when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2))))))))))))

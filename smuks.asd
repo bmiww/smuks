@@ -96,8 +96,8 @@
 	       (:file "structs")
 	       (:module "wl-classes"
 		:components ((:file "output")
-			     (:file "xdg-wm-base")
 			     (:file "surface")
+			     (:file "xdg-wm-base")
 			     (:file "compositor")
 			     (:file "shm")
 			     (:file "seat")
