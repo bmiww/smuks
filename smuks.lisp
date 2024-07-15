@@ -85,13 +85,23 @@
 	      (cb (wl:create-client *display* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client) 'client-cb)
 	      :socket t)
 
-       (cl-async:delay 'livesupport-recursively :time 0.016)
-       (setf *running* t)))))
+       (run-user-setup)
 
-;; TODO: This thing might be blocking all kinds of exit signals.
+       (setf *running* t)
+       (cl-async:delay 'livesupport-recursively :time 0.016)))))
+
 (defun livesupport-recursively ()
   (livesupport:update-repl-link)
-  (cl-async:delay 'livesupport-recursively :time 0.016))
+  (when *running*
+    (cl-async:delay 'livesupport-recursively :time 0.016)))
+
+
+;; ┬ ┬┌─┐┌─┐┬─┐  ┌─┐┌─┐┌┬┐┬ ┬┌─┐
+;; │ │└─┐├┤ ├┬┘  └─┐├┤  │ │ │├─┘
+;; └─┘└─┘└─┘┴└─  └─┘└─┘ ┴ └─┘┴
+(defun run-user-setup ()
+  (load (merge-pathnames "user-setup.lisp" (asdf:system-source-directory :smuks))))
+
 
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐  ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;; ├┤ └┐┌┘├┤ │││ │   ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
@@ -190,9 +200,8 @@
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
-;; Can be called from repl to stop the compositor
-;; TODO: Not really working though...
 (defun shutdown () (cl-async:exit-event-loop) (setf *running* nil))
+
 
 ;; ┬ ┬┌┐┌┌─┐┌─┐┬─┐┌┬┐┌─┐┌┬┐
 ;; │ ││││└─┐│ │├┬┘ │ ├┤  ││
