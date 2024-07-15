@@ -23,7 +23,7 @@
    (of-fullname :initarg :of-fullname :accessor of-fullname)
    (path :initarg :path :accessor path)
    (dev-path :initarg :dev-path :accessor dev-path)
-   (open-file :initform nil :accessor open-file)
+   (file-stream :initform nil :accessor file-stream)
    (dev-fd :initform nil :accessor dev-fd)))
 
 (defmethod initialize-instance :after ((dev dev) &key path)
@@ -34,8 +34,8 @@
 (defmethod fd ((dev dev))
   (unless (dev-fd dev)
     (setf (dev-fd dev) (sb-unix:unix-open (namestring (dev-path dev)) (logior #x0004) sb-unix:o_rdonly)))
-  (unless (open-file dev)
-    (setf (open-file dev) (lisp-binary:wrap-in-bit-stream (sb-sys:make-fd-stream (dev-fd dev) :input t :buffering :none :element-type '(unsigned-byte 8) :timeout 2))))
+  (unless (file-stream dev)
+    (setf (file-stream dev) (lisp-binary:wrap-in-bit-stream (sb-sys:make-fd-stream (dev-fd dev) :input t :buffering :none :element-type '(unsigned-byte 8) :timeout 2))))
   (dev-fd dev))
 
 
@@ -120,9 +120,9 @@
     (disable-accelerometer dev)
     (setf (enabled dev) nil))
 
-  (when (open-file dev)
-    (close (open-file dev))
-    (setf (open-file dev) nil))
+  (when (file-stream dev)
+    (close (file-stream dev))
+    (setf (file-stream dev) nil))
 
   (when (dev-fd dev)
     (sb-unix:unix-close (dev-fd dev))
@@ -154,7 +154,7 @@
 
 ;; TODO: Values might not be in order depicted here.
 (defmethod read-accelerometer ((dev iio-dev))
-  (let ((file (open-file dev))
+  (let ((file (file-stream dev))
 	(reading (list (accel-x dev) (accel-y dev) (accel-z dev))))
     (let ((latest (loop for node in reading
 			for int = (lisp-binary:read-integer
