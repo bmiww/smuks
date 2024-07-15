@@ -180,7 +180,7 @@
 
 ;; Opening and closing restricted devices
 (defvar *fd-id* (make-hash-table :test 'equal))
-(defun open-device (path flags user-data)
+(defun open-device (path &optional flags user-data)
   (declare (ignore flags user-data))
   ;; TODO: Although apparently id and fd are the same
   ;; At least as far as logind is concerned. Not sure about seatd.
@@ -191,7 +191,7 @@
     (unless fd (error "Failed to open device. No FD: ~A" path))
     (setf (gethash fd *fd-id*) id)))
 
-(defun close-device (fd data)
+(defun close-device (fd &optional data)
   (declare (ignore data))
   (libseat:close-device (libseat *display*) (gethash fd *fd-id*))
   (remhash fd *fd-id*))
