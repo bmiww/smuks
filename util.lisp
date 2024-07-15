@@ -24,6 +24,7 @@
 	   flatten get-ms
 	   with-xdg-mem-file
 
+	   ensure-class-slot
 	   defcontinue after before
 
 	   make-mmap-pool mmap-pool-fd mmap-pool-size mmap-pool-ptr munmap
@@ -294,15 +295,12 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 ;; ┌┬┐┌─┐┌┬┐┬ ┬┌─┐┌┬┐  ┌─┐┌─┐┌┐┌┌┬┐┬┌┐┌┬ ┬┌─┐┌┬┐┬┌─┐┌┐┌┌─┐
 ;; │││├┤  │ ├─┤│ │ ││  │  │ ││││ │ │││││ │├─┤ │ ││ ││││└─┐
 ;; ┴ ┴└─┘ ┴ ┴ ┴└─┘─┴┘  └─┘└─┘┘└┘ ┴ ┴┘└┘└─┘┴ ┴ ┴ ┴└─┘┘└┘└─┘
-;; TODO: As macro - this is a bit annoying
-;; in that it doesn't return the method sexps
 ;; TODO: This assumes that the first arg is the class
 ;; And will die otherwise
 ;; TODO: Throw if a method with :after or :before is given
+;; TODO: Maybe can somehow directly reference the freshly created method for ensure-class-slot?
 (defmacro defcontinue (name &rest args)
   (let* ((method-declaration `(defmethod ,name ,@args))
-	 (method (eval method-declaration))
-	 (specializer (car (clos:method-specializers method)))
 	 (after-slot (intern (format nil "after~a" name)))
 	 (before-slot (intern (format nil "before~a" name)))
 	 (arg-list (car args))
@@ -315,12 +313,14 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 				 do (funcall cb ,@(args-from-arglist arg-list)))
 			   (setf (slot-value ,(caar arg-list) ',before-slot) nil))))
 
-    (ensure-class-slot specializer after-slot)
-    (ensure-class-slot specializer before-slot)
-
-    (eval after-method)
-    (eval before-method)
-    nil))
+    `(progn
+       ,method-declaration
+       ,after-method
+       ,before-method
+       (let* ((class-name (cadar ',arg-list))
+	      (class (find-class class-name)))
+	 (util:ensure-class-slot class ',after-slot)
+	 (util:ensure-class-slot class ',before-slot)))))
 
 ;; TODO: You had to remove the compile time checks cause they didn't make sense
 ;; Maybe you can still add back in runtime checks if safety or debug compile values are high enough
@@ -329,3 +329,15 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 
 (defmacro before (method instance callback)
   `(push ,callback (slot-value ,instance ',(intern (format nil "before~a" method)))))
+
+
+;; ┬ ┬┌┐┌┌─┐┌─┐┬─┐┌┬┐┌─┐┌┬┐
+;; │ ││││└─┐│ │├┬┘ │ ├┤  ││
+;; └─┘┘└┘└─┘└─┘┴└─ ┴ └─┘─┴┘
+(defun list-package-classes (package)
+  "Utility function to list all classes in a package"
+  (let (classes (package (find-package package)))
+    (do-symbols (s package)
+      (when (find-class s nil)
+        (push s classes)))
+    classes))

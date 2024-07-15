@@ -8,13 +8,12 @@
 ;; TODO: Getting warnings about
 ;; "Computing just-done stamp in plan NIL for action"
 ;; Don't know yet what it means completely - happened after introducing the custom cl-drm package
-;; NOTE: Disable cl-opengl error checking to shave off some runtime
 
 (defvar *DEBUG_MODE* (uiop/os:getenv "DEBUG_SMUKS"))
 (defvar *ENABLE_XWAYLAND* t)
 
 (when *DEBUG_MODE* (pushnew :smuks-debug *features*))
-(when *DEBUG_MODE* (pushnew :cl-opengl-no-check-error *features*))
+(when *DEBUG_MODE* (pushnew :cl-opengl-no-check-error *features*)) ;; NOTE: Disable cl-opengl error checking to shave off some runtime
 (when *ENABLE_XWAYLAND* (pushnew :xwayland *features*))
 
 (asdf:defsystem #:smuks

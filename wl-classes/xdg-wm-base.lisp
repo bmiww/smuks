@@ -33,6 +33,16 @@
    "An xdg surface identifies a toplevel or a popup surface.
 The main purpose here is to define that child/parent relationships between the former."))
 
+
+(defcontinue xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
+  (unless (and (eq width (width xdg)) (eq height (height xdg)))
+    (setf (xdg-x-offset xdg) x
+	  (xdg-y-offset xdg) y
+	  (width xdg) width
+	  (height xdg) height
+	  (new-dimensions? xdg) t)))
+
+
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((display (wl:get-display xdg)))
     (wl:up-if 'toplevel xdg id)
@@ -46,13 +56,6 @@ The main purpose here is to define that child/parent relationships between the f
   (xdg-popup:send-configure xdg (x positioner) (y positioner) (width positioner) (height positioner))
   (xdg-surface:send-configure xdg (incf (configure-serial xdg))))
 
-(defcontinue xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
-  (unless (and (eq width (width xdg)) (eq height (height xdg)))
-    (setf (xdg-x-offset xdg) x
-	  (xdg-y-offset xdg) y
-	  (width xdg) width
-	  (height xdg) height
-	  (new-dimensions? xdg) t)))
 
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
 ;; The configuration sequence. Applying pending state or whatnot. Not sure
