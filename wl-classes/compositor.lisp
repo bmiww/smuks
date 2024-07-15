@@ -95,7 +95,7 @@
 	   (amount (length (windows desktop)))
 	   (width-per (floor (/ d-width amount))))
       (loop
-	for window in (windows desktop)
+	for window in (remove-if (lambda (window) (not (typep window 'toplevel))) (windows desktop))
 	for i from 0
 	do (with-accessors
 		 ((x x) (y y) (compo-max-width compo-max-width) (compo-max-height compo-max-height)) window
@@ -105,7 +105,6 @@
 
 	     (setf x (+ (* i width-per) (screen-x output))
 		   y (screen-y output))
-
 
 	     ;; TODO: This only really needs to be done when the window is resized.
 	     (configure-toplevel-default window)
