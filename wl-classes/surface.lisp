@@ -9,8 +9,7 @@
 (in-package :smuks)
 
 (defclass surface (wl-surface:dispatch)
-  ((configure-serial :initform 0 :accessor configure-serial)
-   (pending-buffer :initform nil :accessor pending-buffer)
+  ((pending-buffer :initform nil :accessor pending-buffer)
    (needs-redraw :initform nil :accessor needs-redraw)
    (texture :initform nil :accessor texture)
    (texture-type :initform nil :accessor texture-type)
@@ -52,7 +51,7 @@
 ;; │  │ ││││││││ │
 ;; └─┘└─┘┴ ┴┴ ┴┴ ┴
 ;; https://wayland.app/protocols/wayland#wl_surface:request:commit
-(defmethod wl-surface:commit ((surface surface))
+(defcontinue wl-surface:commit ((surface surface))
   (when (pending-damage surface)
     (setf (damage surface) (pending-damage surface))
     (setf (pending-damage surface) nil))

@@ -64,12 +64,12 @@
 
 (defun create-texture (ptr width height stride &key damage texture format)
   (let* ((texture (or texture (mk-tex format)))
-	(gl-format (ecase format (:xrgb8888 :bgra-ext) (:argb8888 :bgra-ext)))
-	(pixel-size (ecase format (:xrgb8888 4) (:argb8888 4)))
-	;; TODO: This math is a bit wasteful. But without this - evil clients could crash the server
-	;; TODO: Could instead do bounds checking during the damage event. Applying (min and max)
-	;; Then wouldn't have to do this weird pointer math
-	(ptr-max (cffi:inc-pointer ptr (* height stride pixel-size))))
+	 (gl-format (ecase format (:xrgb8888 :bgra-ext) (:argb8888 :bgra-ext)))
+	 (pixel-size (ecase format (:xrgb8888 4) (:argb8888 4)))
+	 ;; TODO: This math is a bit wasteful. But without this - evil clients could crash the server
+	 ;; TODO: Could instead do bounds checking during the damage event. Applying (min and max)
+	 ;; Then wouldn't have to do this weird pointer math
+	 (ptr-max (cffi:inc-pointer ptr (* height stride pixel-size))))
     (gl:bind-texture :texture-2d (tex-id texture))
     (check-gl-error "create-texture: bind-texture")
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
@@ -93,12 +93,21 @@
 			gl-format :unsigned-byte
 			pointy)
 		       (check-gl-error "create-texture: tex-sub-image-2d"))
-		     (wrn! "Texture damage rectangle out of bounds, skipping. Otherwise this would memory corrupt.")))
+		     (progn
+		       (wrn! "Texture damage rectangle out of bounds. This would memory corrupt.")
+		       (error "Sub texture upload out of bounds"))))
 	;; NOTE: Full texture upload
 	(progn
+	  (when (>= (cffi:pointer-address ptr) (cffi:pointer-address ptr-max))
+	    (wrn! "Texture rectangle out of bounds. This would memory corrupt.")
+	    (error "Texture upload out of bounds"))
+
+	  ;; (print "TEX 2Ding")
+	  ;; (print ptr)
 	  ;; TODO: Figure out the diff between internal-format and format
 	  (gl:tex-image-2d :texture-2d 0 gl-format width height
 			   0 gl-format :unsigned-byte ptr)
+	  ;; (print "DONE 2Ding")
 	  (check-gl-error "create-texture: tex-image-2d")
 	  (setf (tex-initd texture) t)))
 

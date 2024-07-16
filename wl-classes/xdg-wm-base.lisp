@@ -25,14 +25,18 @@
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
 (defclass xdg-surface (xdg-surface:dispatch surface)
-  ((xdg-x-offset :initform 0 :accessor xdg-x-offset)
+  ((configure-serial :initform 0)
+   (xdg-x-offset :initform 0 :accessor xdg-x-offset)
    (xdg-y-offset :initform 0 :accessor xdg-y-offset)
+   (awaiting-ack :initform nil :accessor awaiting-ack)
    (grab-child :initform nil :accessor grab-child)
    (grab-parent :initarg :grab-parent :initform nil :accessor grab-parent))
   (:documentation
    "An xdg surface identifies a toplevel or a popup surface.
 The main purpose here is to define that child/parent relationships between the former."))
 
+(defmethod configure-serial ((surface xdg-surface)) (incf (slot-value surface 'configure-serial)))
+(defmethod last-serial ((surface xdg-surface)) (slot-value surface 'configure-serial))
 
 (defcontinue xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (unless (and (eq width (width xdg)) (eq height (height xdg)))
@@ -50,17 +54,21 @@ The main purpose here is to define that child/parent relationships between the f
     (add-state xdg :maximized)
     (configure-toplevel-default xdg)))
 
+;; TODO: Unify this configure with the one that toplevel uses to some extent?
+;; At lest the surface:send-configure should be the same.
 (defmethod xdg-surface:get-popup ((xdg xdg-surface) id parent positioner)
   (wl:up-if 'popup xdg id :positioner positioner :grab-parent parent)
   (setf (grab-child parent) xdg)
   (xdg-popup:send-configure xdg (x positioner) (y positioner) (width positioner) (height positioner))
-  (xdg-surface:send-configure xdg (incf (configure-serial xdg))))
+  (xdg-surface:send-configure xdg (configure-serial xdg)))
 
 
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
 ;; The configuration sequence. Applying pending state or whatnot. Not sure
 (defmethod xdg-surface:ack-configure ((xdg xdg-surface) serial)
-  )
+  (if (eq serial (awaiting-ack xdg))
+      (setf (awaiting-ack xdg) nil)
+      (error (format nil "Configure serial out of sync. Expected ~a, got ~a" (awaiting-ack xdg) serial))))
 
 
 ;; ┌┬┐┌─┐┌─┐┬  ┌─┐┬  ┬┌─┐┬
@@ -78,8 +86,10 @@ The main purpose here is to define that child/parent relationships between the f
    (compo-max-height :initform 0 :accessor compo-max-height)
    (desktop :initform nil :accessor desktop)
    (states :initform nil :accessor states)
+   (new-states? :initform nil :accessor new-states?)
    (first-commit :initform t :accessor first-commit)))
 
+(defmethod (setf states) :after (states (toplevel toplevel)) (setf (new-states? toplevel) t))
 (defmethod surface-x ((toplevel toplevel) x) (+ x (xdg-x-offset toplevel)))
 (defmethod surface-y ((toplevel toplevel) y) (+ y (xdg-y-offset toplevel)))
 
@@ -173,9 +183,24 @@ For my purposes - i'm just ignoring this and giving the client the current state
   (do-window-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel)))
 
 
-(defmethod do-window-configure ((toplevel toplevel) width height)
-  (xdg-toplevel:send-configure toplevel width height (apply 'configure-states (states toplevel)))
-  (xdg-surface:send-configure toplevel (incf (configure-serial toplevel))))
+(defmethod do-window-configure ((toplevel toplevel) width height &optional serial)
+  (unless (and (eq (width toplevel) width)
+	       (eq (height toplevel) height)
+	       (not (new-states? toplevel)))
+    (with-accessors ((awaiting-ack awaiting-ack) (states states)) toplevel
+      (let ((new-serial (or serial (configure-serial toplevel))) (old-serial (awaiting-ack toplevel)))
+	(if awaiting-ack
+	    (after wl-surface:commit toplevel
+		   (lambda (toplevel)
+		     (if (awaiting-ack toplevel) :keep
+			 (unless (> (last-serial toplevel) new-serial)
+			   (do-window-configure toplevel width height new-serial)))))
+	    (progn
+	      (setf (new-states? toplevel) nil)
+	      (setf (awaiting-ack toplevel) new-serial)
+	      (xdg-toplevel:send-configure toplevel width height (apply 'configure-states states))
+	      (xdg-surface:send-configure toplevel new-serial)))))))
+
 
 
 (defmethod add-state ((toplevel toplevel) state)

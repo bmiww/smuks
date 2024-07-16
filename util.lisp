@@ -105,6 +105,7 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
     (1  "EPERM - Operation not permitted")
     (2  "ENOENT - No such file or directory")
     (9  "EBADF - Bad file descriptor number")
+    (11 "EAGAIN - Try again")
     (12 "ENOMEM - Out of memory")
     (13 "EACCESS - Permission denied")
     (16 "EBUSY - Device or resource busy")
@@ -295,23 +296,27 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 ;; ┌┬┐┌─┐┌┬┐┬ ┬┌─┐┌┬┐  ┌─┐┌─┐┌┐┌┌┬┐┬┌┐┌┬ ┬┌─┐┌┬┐┬┌─┐┌┐┌┌─┐
 ;; │││├┤  │ ├─┤│ │ ││  │  │ ││││ │ │││││ │├─┤ │ ││ ││││└─┐
 ;; ┴ ┴└─┘ ┴ ┴ ┴└─┘─┴┘  └─┘└─┘┘└┘ ┴ ┴┘└┘└─┘┴ ┴ ┴ ┴└─┘┘└┘└─┘
-;; TODO: This assumes that the first arg is the class
-;; And will die otherwise
+;; TODO: This assumes that the first arg is the class, and will die otherwise
 ;; TODO: Throw if a method with :after or :before is given
 ;; TODO: Maybe can somehow directly reference the freshly created method for ensure-class-slot?
+;; TODO: The :keep list might need to be reversed
 (defmacro defcontinue (name &rest args)
   (let* ((method-declaration `(defmethod ,name ,@args))
 	 (after-slot (intern (format nil "after~a" name)))
 	 (before-slot (intern (format nil "before~a" name)))
 	 (arg-list (car args))
 	 (after-method `(defmethod ,name :after ,(car args)
-			  (loop for cb in (slot-value ,(caar arg-list) ',after-slot)
-				do (funcall cb ,@(args-from-arglist arg-list)))
-			  (setf (slot-value ,(caar arg-list) ',after-slot) nil)))
+			  (let ((keep nil))
+			    (loop for cb in (slot-value ,(caar arg-list) ',after-slot)
+				  do (let ((result (funcall cb ,@(args-from-arglist arg-list))))
+				       (when (eq result :keep) (push cb keep))))
+			    (setf (slot-value ,(caar arg-list) ',after-slot) keep))))
 	 (before-method `(defmethod ,name :before ,(car args)
-			   (loop for cb in (slot-value ,(caar arg-list) ',before-slot)
-				 do (funcall cb ,@(args-from-arglist arg-list)))
-			   (setf (slot-value ,(caar arg-list) ',before-slot) nil))))
+			   (let ((keep nil))
+			     (loop for cb in (slot-value ,(caar arg-list) ',before-slot)
+				   do (let ((result (funcall cb ,@(args-from-arglist arg-list))))
+					(when (eq result :keep) (push cb keep))))
+			     (setf (slot-value ,(caar arg-list) ',before-slot) keep)))))
 
     `(progn
        ,method-declaration

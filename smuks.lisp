@@ -82,7 +82,16 @@
        (pollr "udev"           (udev:get-fd *udev-monitor*) (cb (handle-device-changes *udev-monitor*)))
        (pollr "wayland client"
 	      (unix-sockets::fd *socket*)
-	      (cb (wl:create-client *display* (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client) 'client-cb)
+	      (cb
+		(handler-case
+		    (wl:create-client
+		     *display*
+		     (unix-sockets::fd (unix-sockets:accept-unix-socket *socket*)) :class 'client)
+		  (unix-sockets:unix-socket-error (e)
+		    (if (eql (unix-sockets::get-errno e) 11)
+			(wrn! "Ignoring an EAGAIN error on accept")
+			(signal e))))
+		'client-cb)
 	      :socket t)
 
        (run-user-setup)

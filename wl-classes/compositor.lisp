@@ -88,6 +88,24 @@
 (defmethod width ((desktop desktop)) (output-width (output desktop)))
 (defmethod height ((desktop desktop)) (output-height (output desktop)))
 
+(defun recalculate-toplevel (toplevel width height new-x new-y)
+  (with-accessors ((x x) (y y) (compo-max-width compo-max-width) (compo-max-height compo-max-height)
+		   (pending-buffer pending-buffer)) toplevel
+
+    (setf compo-max-width width compo-max-height height)
+    (setf x new-x y new-y)
+
+    (configure-toplevel-default toplevel)
+
+    ;; NOTE If the dimensions of the toplevel are less than what is allocated
+    ;; This should only be done after the client notifies their dimensions
+    (after xdg-surface:set-window-geometry toplevel
+	   (lambda (xdg x y width height)
+	     (declare (ignore x y))
+	     (with-accessors ((x x) (y y)) xdg
+	       (when (< 0 width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
+	       (when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2)))))))))
+
 (defmethod recalculate-layout ((desktop desktop))
   (when (and (output desktop) (windows desktop))
     (let* ((output (output desktop))
@@ -95,25 +113,11 @@
 	   (amount (length (windows desktop)))
 	   (width-per (floor (/ d-width amount))))
       (loop
-	for window in (remove-if (lambda (window) (not (typep window 'toplevel))) (windows desktop))
+	for toplevel in (remove-if (lambda (toplevel) (not (typep toplevel 'toplevel))) (windows desktop))
 	for i from 0
-	do (with-accessors
-		 ((x x) (y y) (compo-max-width compo-max-width) (compo-max-height compo-max-height)) window
-
-	     (setf compo-max-width  width-per
-		   compo-max-height d-height)
-
-	     (setf x (+ (* i width-per) (screen-x output))
-		   y (screen-y output))
-
-	     ;; TODO: This only really needs to be done when the window is resized.
-	     (configure-toplevel-default window)
-
-	     ;; NOTE If the dimensions of the window are less than what is allocated
-	     ;; This should only be done after the client notifies their dimensions
-	     (after xdg-surface:set-window-geometry window
-		    (lambda (xdg x y width height)
-		      (declare (ignore x y))
-		      (with-accessors ((x x) (y y)) xdg
-			(when (< 0 width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
-			(when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2))))))))))))
+	do (recalculate-toplevel
+	    toplevel
+	    width-per
+	    d-height
+	    (+ (* i width-per) (screen-x output))
+	    (screen-y output))))))
