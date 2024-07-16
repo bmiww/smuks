@@ -203,7 +203,7 @@ https://community.silabs.com/s/article/Linux-kernel-error-codes?language=en_US"
 	  ;; Could also figure out how to do the memfd stuff, but the runtime dir should still be mem based
 	  (filename (concatenate 'string xdg-dir "/" (randomize-file-name ,prefix))))
 
-     (with-open-file (stream filename :direction :io :element-type ,element-type)
+     (with-open-file (stream filename :direction :io :element-type ,element-type :if-exists :supersede)
        (let ((,stream stream))
 	 ,@body))
 
