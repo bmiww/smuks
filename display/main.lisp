@@ -331,30 +331,34 @@
   (when (keyboard-focus display)
     (wl:destroy-client (wl:client (keyboard-focus display)))))
 
+(defmethod maybe-keyboard-focus ((display display) surface)
+  (with-accessors ((x cursor-x) (y cursor-y) (focus keyboard-focus)) display
+    (if surface
+	(unless (eq focus surface) (setf (keyboard-focus display) surface))
+	(when focus (setf (keyboard-focus display) nil)))))
+
+;; TODO: If this fails with an undefined seat - a better fix is to add a check in surface-at-coords perhaps
+;; Or figure out an actual fix for that to not happen
+;; TODO: Maybe redo here it to be (setf pointer-focus) similar to how keyboard-focus is done
+(defmethod maybe-pointer-focus ((display display) surface)
+  (with-accessors ((x cursor-x) (y cursor-y) (focus pointer-focus)) display
+    (if surface
+	(unless (eq focus surface)
+	  (when focus (pointer-leave (seat focus)))
+	  (pointer-enter (seat surface) surface (- x (x surface)) (- y (y surface)))
+	  (setf focus surface))
+	(when focus
+	  (pointer-leave (seat focus))
+	  (setf focus nil)))))
+
 (defmethod handle-surface-change ((display display) &optional surface)
   "If a surface has had a change - it is no longer visible, has a different surface on top,
 or has a all required parameters initiated to be focusable,
 then this can be called to determine the new focus surfaces."
-  (with-accessors ((x cursor-x) (y cursor-y) (focus pointer-focus)) display
+  (with-accessors ((x cursor-x) (y cursor-y)) display
     (let ((surface (or surface (surface-at-coords display x y))))
-      (if surface
-	  (let ((seat (seat surface)) (surf-x (- x (x surface))) (surf-y (- y (y surface))))
-	    (when seat
-	      (if (eq focus surface)
-		  ;; NOTE: If already pointer focus - return it as is
-		  surface
-		  ;; NOTE: Otherwise - switch focus to the new window
-		  (progn
-		    (when focus
-		      (pointer-leave (seat focus)))
-		    (setf (keyboard-focus display) surface)
-		    (pointer-enter seat surface surf-x surf-y)
-		    (setf focus surface)))))
-	  ;; NOTE: If no surface at coordinates - remove display pointer focus
-	  (when focus
-	    (pointer-leave (seat focus))
-	    (setf (keyboard-focus display) nil)
-	    (setf focus nil))))))
+      (maybe-keyboard-focus display surface)
+      (maybe-pointer-focus display surface))))
 
 (defmethod keyboard-focus ((display display)) (slot-value display 'keyboard-focus))
 (defmethod (setf keyboard-focus) (focus-surface (display display))
@@ -363,7 +367,13 @@ then this can be called to determine the new focus surfaces."
 	(let* ((client (wl:client focus-surface)) (seat (seat client)))
 	  (when seat
 	    (setf (slot-value display 'keyboard-focus) focus-surface)
-	    (keyboard-destroy-callback seat (lambda (keyboard) (declare (ignore keyboard)) (setf (slot-value display 'keyboard-focus) nil)))
+
+	    ;; NOTE: A bit of a winded attempt to remove keyboard-focus when the focus surface keyboard is destroyed
+	    (when (seat-keyboard seat)
+	      (before wl:destroy (seat-keyboard seat)
+		      (lambda (keyboard)
+			(when (eq (wl:client keyboard) (wl:client (keyboard-focus display)))
+			  (setf (slot-value display 'keyboard-focus) nil)))))
 
 	    (when current (keyboard-leave (seat current) current))
 	    ;; TODO: You're supposed to send the actual pressed keys as last arg

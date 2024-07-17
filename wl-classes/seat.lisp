@@ -76,12 +76,6 @@
 				(stupid-xkb-modifier-bitfield display)
 				0 0 0)))
 
-(defmethod keyboard-destroy-callback ((seat seat) callback)
-  (let* ((keyboard (seat-keyboard seat)))
-    (if keyboard
-	(wl:add-destroy-callback keyboard callback)
-	(log! "keyboard-destroy-callback: Seat does not have a keyboard... Yet??"))))
-
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬
 ;;  │ │ ││ ││  ├─┤
@@ -265,3 +259,5 @@
     (if keyboard
 	(wl-keyboard:send-leave keyboard (next-serial display) surface)
 	(log! "keyboard-leave: Seat does not have a keyboard... Yet??"))))
+
+(defcontinue destroy ((keyboard keyboard)) ())

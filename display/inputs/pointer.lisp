@@ -10,7 +10,8 @@
 (defmethod process ((display display) (type (eql :pointer-motion)) (usecase (eql :passthrough)) event)
   (declare (ignore usecase))
   (update-cursor display (flo (pointer-motion@-dx event)) (flo (pointer-motion@-dy event)))
-  (let ((surface (handle-surface-change display)))
+  (handle-surface-change display)
+  (let ((surface (pointer-focus display)))
     (when surface (pointer-motion (seat surface) (- (cursor-x display) (x surface)) (- (cursor-y display) (y surface))))))
 
 ;; NOTE: Additionally - sets display keyboard focus to the surface
