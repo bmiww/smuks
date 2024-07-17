@@ -69,9 +69,12 @@
    (libinput-ptr :initform nil :accessor libinput-ptr)
    (capabilities :initform nil :accessor capabilities)
    (pointless :initform t :accessor pointless)
+   (bus-type :initform nil :accessor bus-type)
+   (product-id :initform nil :accessor product-id)
+   (vendor-id :initform nil :accessor vendor-id)
+
    (dev-track :initform nil :accessor dev-track)
    (disabled :initform nil :accessor disabled)
-   (size :initform nil :accessor size)
    (width :initform nil :accessor width)
    (height :initform nil :accessor height)
    (output-name :initform nil :accessor output-name)))
@@ -81,11 +84,7 @@
     (with-slots (name) dev
       (format stream "~a" (or name "NONE")))))
 
-(defvar *caps-of-interest*
-  (list
-   `(:keyboard ,libinput:device-cap-keyboard)
-   `(:pointer ,libinput:device-cap-pointer)
-   `(:touch ,libinput:device-cap-touch)))
+(defvar *caps-of-interest* (list :keyboard :pointer :touch))
 
 (defmethod initialize-instance :after ((dev dev) &key path dev-track)
   (setf (libinput-ptr dev) (libinput:path-add-device (context dev-track) (namestring path)))
@@ -96,23 +95,24 @@
       (progn
 	(setf (pointless dev) nil)
 	(setf (name dev) (libinput:device-get-name (libinput-ptr dev)))
-	;; TODO: Instead of having a size property on a device, we should just upgrade
-	;; The class to a more concrete device type, like touchscreen
+	;; NOTE: Libinput discourages the use of this function.
+	;; Lets see if it's even helpful in the first place.
+	(setf (output-name dev) (libinput:device-get-output-name (libinput-ptr dev)))
+
+	(setf (bus-type dev) (libinput:device-get-id-bustype (libinput-ptr dev)))
+	(setf (product-id dev) (libinput:device-get-id-product (libinput-ptr dev)))
+	(setf (vendor-id dev) (libinput:device-get-id-vendor (libinput-ptr dev)))
+
 	(let ((width) (height))
 	  (setf (values width height) (libinput:device-get-size (libinput-ptr dev)))
 	  (when width (setf (width dev) width))
 	  (when height (setf (height dev) height)))
 
-	;; NOTE: Libinput discourages the use of this function.
-	;; Lets see if it's even helpful in the first place.
-	(let ((output-name (libinput:device-get-output-name (libinput-ptr dev))))
-	  (when output-name (setf (output-name dev) output-name)))
-
 	(libinput:device-ref (libinput-ptr dev))
 
 	(dolist (capability *caps-of-interest*)
-	  (let ((has-cap (libinput:device-has-capability (libinput-ptr dev) (cadr capability))))
-	    (when has-cap (push (car capability) (capabilities dev)))))
+	  (let ((has-cap (libinput:device-has-capability (libinput-ptr dev) capability)))
+	    (when has-cap (push capability (capabilities dev)))))
 
 	(unless (capabilities dev) (mk-dev-pointless dev)))))
 
