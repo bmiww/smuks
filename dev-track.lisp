@@ -70,7 +70,16 @@
    (capabilities :initform nil :accessor capabilities)
    (pointless :initform t :accessor pointless)
    (dev-track :initform nil :accessor dev-track)
-   (disabled :initform nil :accessor disabled)))
+   (disabled :initform nil :accessor disabled)
+   (size :initform nil :accessor size)
+   (width :initform nil :accessor width)
+   (height :initform nil :accessor height)
+   (output-name :initform nil :accessor output-name)))
+
+(defmethod print-object ((dev dev) stream)
+  (print-unreadable-object (dev stream :type t)
+    (with-slots (name) dev
+      (format stream "~a" (or name "NONE")))))
 
 (defvar *caps-of-interest*
   (list
@@ -87,6 +96,18 @@
       (progn
 	(setf (pointless dev) nil)
 	(setf (name dev) (libinput:device-get-name (libinput-ptr dev)))
+	;; TODO: Instead of having a size property on a device, we should just upgrade
+	;; The class to a more concrete device type, like touchscreen
+	(let ((width) (height))
+	  (setf (values width height) (libinput:device-get-size (libinput-ptr dev)))
+	  (when width (setf (width dev) width))
+	  (when height (setf (height dev) height)))
+
+	;; NOTE: Libinput discourages the use of this function.
+	;; Lets see if it's even helpful in the first place.
+	(let ((output-name (libinput:device-get-output-name (libinput-ptr dev))))
+	  (when output-name (setf (output-name dev) output-name)))
+
 	(libinput:device-ref (libinput-ptr dev))
 
 	(dolist (capability *caps-of-interest*)
