@@ -95,16 +95,20 @@
     (setf compo-max-width width compo-max-height height)
     (setf x new-x y new-y)
 
-    (configure-toplevel-default toplevel)
-
     ;; NOTE If the dimensions of the toplevel are less than what is allocated
-    ;; This should only be done after the client notifies their dimensions
-    (after xdg-surface:set-window-geometry toplevel
-	   (lambda (xdg x y width height)
-	     (declare (ignore x y))
-	     (with-accessors ((x x) (y y)) xdg
-	       (when (< 0 width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
-	       (when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2)))))))))
+    ;; We center the window in the middle of their allocated space
+    (let ((serial (configure-toplevel-default toplevel)))
+      (after
+       xdg-surface:ack-configure toplevel
+       (lambda (surface ack-serial)
+	 (if (eq serial ack-serial)
+	     (after wl-surface:commit surface
+		    (lambda (surface)
+		      (with-accessors ((x x) (y y) (width width) (height height)
+				       (compo-max-height compo-max-height) (compo-max-width compo-max-width))
+			  surface
+			(when (< 0 width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
+			(when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2)))))))))))))
 
 (defmethod recalculate-layout ((desktop desktop))
   (when (and (output desktop) (windows desktop))

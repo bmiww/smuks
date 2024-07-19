@@ -65,7 +65,7 @@ The main purpose here is to define that child/parent relationships between the f
 
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
 ;; The configuration sequence. Applying pending state or whatnot. Not sure
-(defmethod xdg-surface:ack-configure ((xdg xdg-surface) serial)
+(defcontinue xdg-surface:ack-configure ((xdg xdg-surface) serial)
   (if (eq serial (awaiting-ack xdg))
       (setf (awaiting-ack xdg) nil)
       (error (format nil "Configure serial out of sync. Expected ~a, got ~a" (awaiting-ack xdg) serial))))
@@ -88,6 +88,10 @@ The main purpose here is to define that child/parent relationships between the f
    (states :initform nil :accessor states)
    (new-states? :initform nil :accessor new-states?)
    (first-commit :initform t :accessor first-commit)))
+
+(defmethod print-object ((toplevel toplevel) stream)
+  (print-unreadable-object (toplevel stream :type t)
+    (format stream "Client: ~a:::~a" (title toplevel) (app-id toplevel))))
 
 (defmethod (setf states) :after (states (toplevel toplevel)) (setf (new-states? toplevel) t))
 (defmethod surface-x ((toplevel toplevel) x) (+ x (xdg-x-offset toplevel)))
@@ -157,8 +161,7 @@ For my purposes - i'm just ignoring this and giving the client the current state
 
 (defmethod xdg-toplevel:resize ((toplevel toplevel) seat serial edges)
   "A client wants to resize their window."
-  (log! "xdg-toplevel:resize: Not implemented")
-  )
+  (log! "xdg-toplevel:resize: Not implemented"))
 
 
 (defmethod xdg-toplevel:set-fullscreen ((toplevel toplevel) output)
@@ -188,7 +191,7 @@ For my purposes - i'm just ignoring this and giving the client the current state
 	       (eq (height toplevel) height)
 	       (not (new-states? toplevel)))
     (with-accessors ((awaiting-ack awaiting-ack) (states states)) toplevel
-      (let ((new-serial (or serial (configure-serial toplevel))) (old-serial (awaiting-ack toplevel)))
+      (let ((new-serial (or serial (configure-serial toplevel))))
 	(if awaiting-ack
 	    (after wl-surface:commit toplevel
 		   (lambda (toplevel)
@@ -197,9 +200,10 @@ For my purposes - i'm just ignoring this and giving the client the current state
 			   (do-window-configure toplevel width height new-serial)))))
 	    (progn
 	      (setf (new-states? toplevel) nil)
-	      (setf (awaiting-ack toplevel) new-serial)
+	      (setf awaiting-ack new-serial)
 	      (xdg-toplevel:send-configure toplevel width height (apply 'configure-states states))
-	      (xdg-surface:send-configure toplevel new-serial)))))))
+	      (xdg-surface:send-configure toplevel new-serial)))
+	new-serial))))
 
 
 
