@@ -93,3 +93,6 @@
 	   (width buffer) (height buffer)
 	   (pixel-format buffer)
 	   (fd plane) (offset plane) (stride plane)))))
+
+(defmethod wl:destroy ((buffer dma-buffer))
+  (seglutil:destroy-image-khr (egl (wl:get-display buffer)) (image buffer)))

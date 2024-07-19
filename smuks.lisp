@@ -7,6 +7,15 @@
 ;; ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
 ;; NOTE: Command i usually use to fire up a debug session via ssh (xdg session id might differ)
 ;; DEBUG_SMUKS=1 XDG_SESSION_ID=1 sbcl --dynamic-space-size 4028 --eval '(ql:quickload :swank)' --eval '(swank:create-server :port 25252 :dont-close t)' --eval '(ql:quickload :smuks)'
+
+;; TODO: Libwayland does some annoying shared memory creation by opening a descriptor to this file: /memfd:wayland-cursor
+;; This isn't being cleaned up - and i have no clue why it's being created in the first place.
+;; Afaik - i'm creating the mmaps myself.
+
+;; TODO: There is an extra fd for a dmabuf hanging around after closing a window. I though't i'm cleaning those up.
+;; Maybe its libwayland again somehow???
+;; Or egl is doing something weird.
+
 (in-package :smuks)
 
 (defvar *enable-wayland-debug-logs* "")

@@ -15,6 +15,8 @@
   (:nicknames :seglutil)
   (:export
    create-egl-image destroy-image
+   destroy-image-khr
+
    create-egl-image-from-buffer
    init-egl cleanup-egl
    check-egl-error))
@@ -103,6 +105,7 @@
     (check-egl-error "Creating egl image")))
 
 
+(defun destroy-image-khr (egl image) (egl:destroy-image-khr egl image))
 (defun destroy-image (egl image) (egl:destroy-image egl image))
 
 
