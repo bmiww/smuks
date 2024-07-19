@@ -209,27 +209,14 @@
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
-(defun shutdown () (cl-async:exit-event-loop) (setf *running* nil))
-
-
-;; ┬ ┬┌┐┌┌─┐┌─┐┬─┐┌┬┐┌─┐┌┬┐
-;; │ ││││└─┐│ │├┬┘ │ ├┤  ││
-;; └─┘┘└┘└─┘└─┘┴└─ ┴ └─┘─┴┘
 (defun load-cursor-texture ()
-  (let* ((texture (sglutil:mk-tex))
-	 (image (png-read:read-png-file (merge-pathnames "assets/mouse.png" (asdf:system-source-directory :smuks))))
-	 (data (png-read:image-data image)))
-    (gl:bind-texture :texture-2d (tex-id texture))
-    (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
-    (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
-    (gl:tex-image-2d :texture-2d 0 :rgba
-		     (png-read:width image) (png-read:height image)
-		     0 :rgba :unsigned-byte (make-array
-					     (array-total-size data)
-					     :element-type '(unsigned-byte 8)
-					     :displaced-to data))
-    texture))
+  (load-png-texture (merge-pathnames "assets/mouse.png" (asdf:system-source-directory :smuks))))
 
+
+;; ┌─┐┬  ┌─┐┌─┐┬┌┐┌┌─┐
+;; │  │  │ │└─┐│││││ ┬
+;; └─┘┴─┘└─┘└─┘┴┘└┘└─┘
+(defun shutdown () (cl-async:exit-event-loop) (setf *running* nil))
 
 (defun cleanup ()
   #+xwayland

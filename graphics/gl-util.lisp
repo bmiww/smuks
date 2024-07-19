@@ -15,12 +15,14 @@
    check-gl-fb-status
    prep-gl-implementation
    create-gl-framebuffer
+
    create-image-texture create-texture
-   projection-matrix
-   matrix->array transpose-mat mat->arr
+   load-png-texture
 
    translation-matrix
    scaling-matrix
+   projection-matrix
+   matrix->array transpose-mat mat->arr
 
    ;; damage
    make-damage damage-full
@@ -120,6 +122,21 @@
   (gl:clear-color 0.0 0.0 0.2 1.0)
   (gl:viewport 0 0 width height))
 
+
+(defun load-png-texture (path)
+  (let* ((texture (mk-tex))
+	 (image (png-read:read-png-file (merge-pathnames "assets/mouse.png" (asdf:system-source-directory :smuks))))
+	 (data (png-read:image-data image)))
+    (gl:bind-texture :texture-2d (tex-id texture))
+    (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
+    (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
+    (gl:tex-image-2d :texture-2d 0 :rgba
+		     (png-read:width image) (png-read:height image)
+		     0 :rgba :unsigned-byte (make-array
+					     (array-total-size data)
+					     :element-type '(unsigned-byte 8)
+					     :displaced-to data))
+    texture))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
