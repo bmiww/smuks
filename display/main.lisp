@@ -396,6 +396,9 @@ then this can be called to determine the new focus surfaces."
 	  (when current (keyboard-leave (seat current) current))
 	  (setf (slot-value display 'keyboard-focus) nil)))))
 
+(defmethod set-active-desktop-nr ((display display) nr)
+  (setf (active-desktop display) (nth nr (desktops display))))
+
 (defmethod focus-output-keyboard ((display display) output-nr)
   (let ((output (nth output-nr (outputs display))))
     (when output

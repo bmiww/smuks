@@ -79,6 +79,8 @@
 	    (case key
 	      ;; Key p
 	      (25 (uiop:launch-program "anyrun"))
+	      ;; Key c
+	      (46 (uiop:launch-program "emacsclient -c"))
 
 	      ;; Switch outputs
 	      (17 (focus-output-keyboard display 0))
@@ -91,16 +93,16 @@
 	      (37 (focus-prev-window display))
 
 	      ;; Numeric keys - switching desktops
-	      (2  (setf (active-desktop display) (nth 0 (desktops display))))
-	      (3  (setf (active-desktop display) (nth 1 (desktops display))))
-	      (4  (setf (active-desktop display) (nth 2 (desktops display))))
-	      (5  (setf (active-desktop display) (nth 3 (desktops display))))
-	      (6  (setf (active-desktop display) (nth 4 (desktops display))))
-	      (7  (setf (active-desktop display) (nth 5 (desktops display))))
-	      (8  (setf (active-desktop display) (nth 6 (desktops display))))
-	      (9  (setf (active-desktop display) (nth 7 (desktops display))))
-	      (10 (setf (active-desktop display) (nth 8 (desktops display))))
-	      (11 (setf (active-desktop display) (nth 9 (desktops display))))
+	      (2  (set-active-desktop-nr display 0))
+	      (3  (set-active-desktop-nr display 1))
+	      (4  (set-active-desktop-nr display 2))
+	      (5  (set-active-desktop-nr display 3))
+	      (6  (set-active-desktop-nr display 4))
+	      (7  (set-active-desktop-nr display 5))
+	      (8  (set-active-desktop-nr display 6))
+	      (9  (set-active-desktop-nr display 7))
+	      (10 (set-active-desktop-nr display 8))
+	      (11 (set-active-desktop-nr display 9))
 	      (t :miss))))
 
     (let* ((surface (or (exclusive-keyboard-focus display) (keyboard-focus display))))
