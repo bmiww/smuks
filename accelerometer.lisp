@@ -135,6 +135,7 @@
   (when (dev-fd dev)
     (if (close-device dev)
 	(funcall (close-device dev) (dev-fd dev))
+	;; TODO: SBCL exclusive
 	(sb-unix:unix-close (dev-fd dev)))
     (setf (dev-fd dev) nil)))
 

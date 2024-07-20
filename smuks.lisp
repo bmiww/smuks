@@ -10,11 +10,10 @@
 
 ;; TODO: Libwayland does some annoying shared memory creation by opening a descriptor to this file: /memfd:wayland-cursor
 ;; This isn't being cleaned up - and i have no clue why it's being created in the first place.
-;; Afaik - i'm creating the mmaps myself.
+;; Afaik - i'm creating the mmaps myself. And also technically closing their fds. Confused as to why this is happening.
 
-;; TODO: There is an extra fd for a dmabuf hanging around after closing a window. I though't i'm cleaning those up.
-;; Maybe its libwayland again somehow???
-;; Or egl is doing something weird.
+;; TODO: I should reconsider how i'm handling the destroy methods in CL-WL
+;; I offer an override option. But this screws with the basic destroy method.
 
 (in-package :smuks)
 
