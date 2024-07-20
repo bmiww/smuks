@@ -214,8 +214,7 @@ Buuuut subsurfaces also have the option of setting sync/desync mode"
 ;; TODO: For now not implemented
 ;; In effect should make it so that any changes are applied only when the parent surface
 ;; has a commit. Not too hard to implement, but lazy for now
-(defmethod wl-subsurface:set-sync ((sub subsurface))
-  (setf (sync-mode sub) :sync))
+(defmethod wl-subsurface:set-sync ((sub subsurface)) (setf (sync-mode sub) :sync))
 
 ;; TODO: Not implemented
 ;; Should act the same as a regular surface when it comes to commits

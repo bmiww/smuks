@@ -73,13 +73,9 @@
 	 ;; Then wouldn't have to do this weird pointer math
 	 (ptr-max (cffi:inc-pointer ptr (* height stride pixel-size))))
     (gl:bind-texture :texture-2d (tex-id texture))
-    (check-gl-error "create-texture: bind-texture")
     (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
-    (check-gl-error "create-texture: tex-parameter wrap-s")
     (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge)
-    (check-gl-error "create-texture: tex-parameter wrap-t")
     (gl:pixel-store :unpack-row-length (/ stride pixel-size))
-    (check-gl-error "create-texture: pixel-store")
 
     (if (tex-initd texture)
 	;; NOTE: Partial texture upload - only update the damaged areas
@@ -104,15 +100,12 @@
 	    (wrn! "Texture rectangle out of bounds. This would memory corrupt.")
 	    (error "Texture upload out of bounds"))
 
-	  ;; (print "TEX 2Ding")
-	  ;; (print ptr)
 	  ;; TODO: Figure out the diff between internal-format and format
 	  (gl:tex-image-2d :texture-2d 0 gl-format width height
 			   0 gl-format :unsigned-byte ptr)
-	  ;; (print "DONE 2Ding")
 	  (check-gl-error "create-texture: tex-image-2d")
 	  (setf (tex-initd texture) t)))
-
+    (gl:bind-texture :texture-2d 0)
     texture))
 
 (defun prep-gl-implementation (framebuffer width height)

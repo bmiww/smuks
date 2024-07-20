@@ -33,6 +33,7 @@
       (setf (client-cursor-drawn output) nil)
       (gl:flush)
       (gl:finish)
+      (gl:bind-framebuffer :framebuffer 0)
 
       ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
       ;; Any events or changes that i could instead attach to?
