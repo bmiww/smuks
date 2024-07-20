@@ -86,7 +86,7 @@
 
        (pollr "drm"            (fd drm)                     (cb (drm:handle-event (fd (drm *display*)) :page-flip2 'set-frame-ready)))
        (pollr "wayland events" (wl:event-loop-fd *display*) (cb (handle-wayland-event)))
-       (pollr "input event"    (context-fd *libinput*)      (cb (bt:make-thread (lambda () (smuks::dispatch *libinput* 'handle-input)))))
+       (pollr "input event"    (context-fd *libinput*)      (cb (smuks::dispatch *libinput* 'handle-input)))
        (pollr "seat/session"   (libseat:get-fd libseat)     (cb (libseat:dispatch (libseat *display*) 0)))
        (pollr "udev"           (udev:get-fd *udev-monitor*) (cb (handle-device-changes *udev-monitor*)))
        (pollr "wayland client"
