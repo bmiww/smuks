@@ -63,8 +63,8 @@
 	  (height surface)))
 
 (defun render-subsurface (output surface)
-  (values (- (x surface) (screen-x output))
-	  (- (y surface) (screen-y output))
+  (values (- (or (x surface) 0) (screen-x output))
+	  (- (or (y surface) 0) (screen-y output))
 	  (width surface)
 	  (height surface)))
 
