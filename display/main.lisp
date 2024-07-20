@@ -289,6 +289,7 @@
 (defmethod output-by-crtc ((display display) crtc-id) (find-if (lambda (output) (eq (crtc-id (connector output)) crtc-id)) (outputs display)))
 (defmethod update-projections ((display display) projection) (mapcar (lambda (output) (update-projections output projection)) (outputs display)))
 (defmethod start-monitors ((display display)) (mapcar (lambda (out) (start-monitor out)) (outputs display)))
+(defmethod first-desktop-with-output ((display display)) (find-if (lambda (desktop) (output desktop)) (desktops display)))
 
 ;; TODO: This also needs to take into account screen positions
 ;; And overall bounds when outputs are skewed from each other
@@ -297,9 +298,6 @@
     (loop for output in (outputs display)
 	  do (setf (screen-y output) screen-y)
 	     (incf screen-y (output-height output)))))
-
-(defmethod first-desktop-with-output ((display display))
-  (find-if (lambda (desktop) (output desktop)) (desktops display)))
 
 (defmethod remove-output-from-desktops ((display display) output)
   (loop for desktop in (desktops display)
@@ -312,6 +310,21 @@
   (let ((window (keyboard-focus display)))
     (when window
       (let ((old-desktop (desktop window)))
+	(unless (eq old-desktop desktop)
+	  (setf (desktop window) desktop)
+
+	  (pushnew window (windows desktop))
+	  (setf (windows old-desktop) (remove window (windows old-desktop)))
+
+	  (recalculate-layout desktop)
+	  (recalculate-layout old-desktop))))))
+
+(defmethod send-to-output ((display display) output-nr)
+  (let ((window (keyboard-focus display))
+	(output (nth output-nr (outputs display))))
+    (when (and window output)
+      (let ((old-desktop (desktop window))
+	    (desktop (find-output-desktop display output)))
 	(unless (eq old-desktop desktop)
 	  (setf (desktop window) desktop)
 
@@ -382,6 +395,14 @@ then this can be called to determine the new focus surfaces."
 	(progn
 	  (when current (keyboard-leave (seat current) current))
 	  (setf (slot-value display 'keyboard-focus) nil)))))
+
+(defmethod focus-output-keyboard ((display display) output-nr)
+  (let ((output (nth output-nr (outputs display))))
+    (when output
+      (let ((desktop (find-output-desktop display output)))
+	(when desktop
+	  (setf (keyboard-focus display) (first (windows desktop))))))))
+
 
 (defmethod grab-keyboard-focus ((display display) surface)
   (setf (exclusive-keyboard-focus display) surface)

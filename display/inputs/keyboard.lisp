@@ -51,6 +51,11 @@
 	      (10 (send-to-desktop display (nth 8 (desktops display))))
 	      (11 (send-to-desktop display (nth 9 (desktops display))))
 
+	      ;; Send active window to desktop
+	      (17 (send-to-output display 0))
+	      (18 (send-to-output display 1))
+	      (19 (send-to-output display 2))
+
 	      ;; Key j
 	      (36 (shift-window-next display))
 	      ;; Key k
@@ -74,6 +79,11 @@
 	    (case key
 	      ;; Key p
 	      (25 (uiop:launch-program "anyrun"))
+
+	      ;; Switch outputs
+	      (17 (focus-output-keyboard display 0))
+	      (18 (focus-output-keyboard display 1))
+	      (19 (focus-output-keyboard display 2))
 
 	      ;; Key j
 	      (36 (focus-next-window display))
