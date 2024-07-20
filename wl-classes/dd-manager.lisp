@@ -23,7 +23,12 @@
 ;;  ││├┤ └┐┌┘││  ├┤
 ;; ─┴┘└─┘ └┘ ┴└─┘└─┘
 (defclass data-device (wl-data-device:dispatch seat)
-  ())
+  ((selection :initform nil :accessor selection)))
+
+(defmethod wl-data-device:set-selection ((dev data-device) source serial)
+  (declare (ignore serial))
+  (setf (selection dev) source))
+
 
 ;; TODO: If source is nil - the drag event should not produce drop/hover notify events on other client surfaces
 ;; TODO: If source is destroyed - this whole event should be cancelled
