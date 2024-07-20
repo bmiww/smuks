@@ -234,8 +234,8 @@
       (after wl-surface:commit surface
 	     (lambda (toplevel)
 	       (if (or
-		    (print (not (awaiting-ack toplevel)))
-		    (print (< surface-configure-serial (awaiting-ack toplevel))))
+		    (not (awaiting-ack toplevel))
+		    (< surface-configure-serial (awaiting-ack toplevel)))
 		   (setf (initial-config-ackd toplevel) t)
 		   :keep))))))
 
