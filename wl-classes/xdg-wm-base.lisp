@@ -118,6 +118,7 @@ The main purpose here is to define that child/parent relationships between the f
   (log! "xdg-toplevel:set-parent: Not implemented fully")
   (when parent (setf (parent toplevel) parent)))
 
+(defmethod close-toplevel ((toplevel toplevel)) (xdg-toplevel:send-close toplevel))
 
 ;; TODO: xdg-toplevel:set-min-size: size limitations still ignored
 (defmethod xdg-toplevel:set-min-size ((toplevel toplevel) width height)

@@ -342,7 +342,7 @@
 ;; Unless we expect the client to die off itself once toplevels go away?
 (defmethod kill-focus-client ((display display))
   (when (keyboard-focus display)
-    (wl:destroy-client (wl:client (keyboard-focus display)))))
+    (close-toplevel (keyboard-focus display))))
 
 (defmethod maybe-keyboard-focus ((display display) surface)
   (with-accessors ((x cursor-x) (y cursor-y) (focus keyboard-focus)) display
