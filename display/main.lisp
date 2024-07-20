@@ -227,7 +227,17 @@
 	 (setf (keyboard-focus display) (car (windows desktop))))
        (recalculate-layout desktop)))
 
-    (recalculate-layout desktop)))
+    (recalculate-layout desktop)
+
+    ;; NOTE: client confirms the window dimensions. We set it as ready for render.
+    (let ((surface-configure-serial (awaiting-ack surface)))
+      (after wl-surface:commit surface
+	     (lambda (toplevel)
+	       (if (or
+		    (print (not (awaiting-ack toplevel)))
+		    (print (< surface-configure-serial (awaiting-ack toplevel))))
+		   (setf (initial-config-ackd toplevel) t)
+		   :keep))))))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││

@@ -69,18 +69,20 @@
 	  (height surface)))
 
 (defun render-toplevel (output surface)
-  (with-accessors ((x x) (y y) (width width) (height height)
-		   (compo-max-width compo-max-width)
-		   (compo-max-height compo-max-height)
-		   (texture texture)) surface
-    ;; TODO: Probably can just do max or min func
-    (let* ((w-exceed (> width compo-max-width))
-	   (h-exceed (> height compo-max-height)))
+  (if (initial-config-ackd surface)
+    (with-accessors ((x x) (y y) (width width) (height height)
+		     (compo-max-width compo-max-width)
+		     (compo-max-height compo-max-height)
+		     (texture texture)) surface
 
-      (values (- x (screen-x output))
-	      (- y (screen-y output))
-	      (if w-exceed compo-max-width width)
-	      (if h-exceed compo-max-height height)))))
+      (let* ((w-exceed (> width compo-max-width))
+	     (h-exceed (> height compo-max-height)))
+
+	(values (- x (screen-x output))
+		(- y (screen-y output))
+		(if w-exceed compo-max-width width)
+		(if h-exceed compo-max-height height))))
+    (values nil nil nil nil)))
 
 
 (defun render-layer-surface (output surface)

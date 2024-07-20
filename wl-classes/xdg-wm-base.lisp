@@ -50,9 +50,9 @@ The main purpose here is to define that child/parent relationships between the f
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((display (wl:get-display xdg)))
     (wl:up-if 'toplevel xdg id)
-    (new-toplevel display xdg)
     (add-state xdg :maximized)
-    (configure-toplevel-default xdg)))
+    (new-toplevel display xdg)))
+
 
 ;; TODO: Unify this configure with the one that toplevel uses to some extent?
 ;; At lest the surface:send-configure should be the same.
@@ -87,7 +87,7 @@ The main purpose here is to define that child/parent relationships between the f
    (desktop :initform nil :accessor desktop)
    (states :initform nil :accessor states)
    (new-states? :initform nil :accessor new-states?)
-   (first-commit :initform t :accessor first-commit)))
+   (initial-config-ackd :initform nil :accessor initial-config-ackd)))
 
 (defmethod print-object ((toplevel toplevel) stream)
   (print-unreadable-object (toplevel stream :type t)
@@ -96,11 +96,6 @@ The main purpose here is to define that child/parent relationships between the f
 (defmethod (setf states) :after (states (toplevel toplevel)) (setf (new-states? toplevel) t))
 (defmethod surface-x ((toplevel toplevel) x) (+ x (xdg-x-offset toplevel)))
 (defmethod surface-y ((toplevel toplevel) y) (+ y (xdg-y-offset toplevel)))
-
-(defmethod wl-surface:commit :after ((surface toplevel))
-  (when (first-commit surface)
-    (setf (first-commit surface) nil)
-    (handle-surface-change (wl:get-display surface) surface)))
 
 (defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
   (setf (title toplevel) title))
