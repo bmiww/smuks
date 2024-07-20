@@ -1,10 +1,18 @@
 
 (in-package :smuks)
 
+
 (defun open-close-window ()
+  (let ((process (uiop:launch-program "weston-terminal")))
+    (sleep 3)
+    (uiop:terminate-process process)
+    (sleep 2)))
+
+(defvar *open-close-continue* nil)
+(defun stop-open-close-loop () (setf *open-close-continue* nil))
+(defun open-close-loop ()
+  (setf *open-close-continue* t)
   (bt:make-thread
    (lambda ()
-     (let ((process (uiop:launch-program "weston-terminal")))
-       (sleep 3)
-       (uiop:terminate-process process)
-       (when *open-close-continue* (open-close-window))))))
+     (loop while *open-close-continue*
+	   do (open-close-window)))))
