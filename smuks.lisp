@@ -76,7 +76,7 @@
 
        (init-globals *display*)
        #+xwayland
-       (setf *xwayland-process* (start-xwayland))
+       (setf *xwayland-process* (start-xwayland *display*))
        (start-monitors *display*)
 
        (pollr "drm"            (fd drm)                     (cb (drm:handle-event (fd (drm *display*)) :page-flip2 'set-frame-ready)))
@@ -224,7 +224,7 @@
 
 (defun cleanup ()
   #+xwayland
-  (when *xwayland-process* (uiop:terminate-process *xwayland-process*))
+  (when *xwayland-process* (cleanup-xwayland *xwayland-process*))
 
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *display*) *egl-context*))
   (when *libinput* (destroy *libinput*))
@@ -236,4 +236,6 @@
     (delete-file *socket-path*))
 
   (setfnil *egl* *egl-context*
+	   #+xwayland
+	   *xwayland-process*
 	   *display* *socket* *cursor* *libinput*))

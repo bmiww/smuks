@@ -1,8 +1,8 @@
 
-(defpackage #:osiwrap
+(defpackage #:socketpair
   (:use #:cl #:cffi #:cffi-define)
-  (:export socket-pair))
-(in-package :osiwrap)
+  (:export socketpair))
+(in-package :socketpair)
 
 (defcenum! address-family
     ("<sys/socket.h>")
