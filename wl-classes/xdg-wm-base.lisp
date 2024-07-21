@@ -24,19 +24,14 @@
 ;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
-(defclass xdg-surface (xdg-surface:dispatch surface)
-  ((configure-serial :initform 0)
-   (xdg-x-offset :initform 0 :accessor xdg-x-offset)
+(defclass xdg-surface (xdg-surface:dispatch surface surface-configure)
+  ((xdg-x-offset :initform 0 :accessor xdg-x-offset)
    (xdg-y-offset :initform 0 :accessor xdg-y-offset)
-   (awaiting-ack :initform nil :accessor awaiting-ack)
    (grab-child :initform nil :accessor grab-child)
    (grab-parent :initarg :grab-parent :initform nil :accessor grab-parent))
   (:documentation
    "An xdg surface identifies a toplevel or a popup surface.
 The main purpose here is to define that child/parent relationships between the former."))
-
-(defmethod configure-serial ((surface xdg-surface)) (incf (slot-value surface 'configure-serial)))
-(defmethod last-serial ((surface xdg-surface)) (slot-value surface 'configure-serial))
 
 (defcontinue xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (unless (and (eq width (width xdg)) (eq height (height xdg)))

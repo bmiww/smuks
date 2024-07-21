@@ -94,7 +94,8 @@
 	       (:file "dev-track")
 	       (:file "structs")
 	       (:module "wl-classes"
-		:components ((:file "output")
+		:components ((:file "configure-serial")
+			     (:file "output")
 			     (:file "surface")
 			     (:file "xdg-wm-base")
 			     (:file "compositor")

@@ -24,7 +24,7 @@
 ;; ┬  ┌─┐┬ ┬┌─┐┬─┐  ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; │  ├─┤└┬┘├┤ ├┬┘  └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; ┴─┘┴ ┴ ┴ └─┘┴└─  └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
-(defclass layer-surface (zwlr-layer-surface-v1:dispatch surface)
+(defclass layer-surface (zwlr-layer-surface-v1:dispatch surface surface-configure)
   ((output :initarg :output :reader output)
    (layer :initarg :layer :reader layer)
    (namespace :initarg :namespace :reader namespace)
@@ -42,7 +42,7 @@
 	   (desktop (active-desktop display)))
       (when (eq (width surface) 0) (setf (width surface) (width desktop)))
       (when (eq (height surface) 0) (setf (height surface) (height desktop)))
-      (zwlr-layer-surface-v1:send-configure surface (incf (configure-serial surface)) (width surface) (height surface))
+      (zwlr-layer-surface-v1:send-configure surface (configure-serial surface) (width surface) (height surface))
       (setf (new-size? surface) nil))))
 
 (defmethod zwlr-layer-surface-v1:set-keyboard-interactivity ((surface layer-surface) keyboard-interactivity)
@@ -82,7 +82,7 @@
 (defmethod zwlr-layer-surface-v1:set-exclusive-zone ((surface layer-surface) zone)
   (setf (exclusive-zone surface) zone))
 
-;; TODO: I'm still not handling ack-configure events.
-;; For now - don't care - leaving empty
-;; TODO: Also - not really sending the configure event out
-(defmethod zwlr-layer-surface-v1:ack-configure ((surface layer-surface) serial))
+(defmethod zwlr-layer-surface-v1:ack-configure ((surface layer-surface) serial)
+  (if (eq serial (awaiting-ack surface))
+      (setf (awaiting-ack surface) nil)
+      (wrn! "Configure serial out of sync. Expected ~a, got ~a" (awaiting-ack surface) serial)))
