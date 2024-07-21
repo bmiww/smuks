@@ -36,10 +36,7 @@
 #+xwayland
 (defvar *xwayland-process* nil)
 
-(defun main ()
-  (unwind-protect (mainer)
-    (cleanup)))
-
+(defun main () (unwind-protect (mainer) (cleanup)))
 (defun mainer ()
   (setf *log-output* *standard-output*)
   (heading)

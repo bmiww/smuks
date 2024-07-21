@@ -68,7 +68,7 @@ The main purpose here is to define that child/parent relationships between the f
 (defcontinue xdg-surface:ack-configure ((xdg xdg-surface) serial)
   (if (eq serial (awaiting-ack xdg))
       (setf (awaiting-ack xdg) nil)
-      (error (format nil "Configure serial out of sync. Expected ~a, got ~a" (awaiting-ack xdg) serial))))
+      (wrn! "Configure serial out of sync. Expected ~a, got ~a" (awaiting-ack xdg) serial)))
 
 
 ;; ┌┬┐┌─┐┌─┐┬  ┌─┐┬  ┬┌─┐┬
