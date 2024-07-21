@@ -58,7 +58,14 @@
 (defmethod destroy ((track dev-track))
   (loop for dev being the hash-values of (devices track)
 	do (destroy dev))
-  (libinput:unref (context track)))
+  ;; (print "UNREF CONTEXT FAILING DURING CLEANUP TRYING SUSPEND FIRST")
+  (print "LIBINPUT CONTEXT UNREF BORKED. FOR NOW ONLY SUSPENDING")
+  (libinput:suspend (context track))
+  ;; (print "UNREF CONTEXT FAILING DURING CLEANUP")
+  ;; (print (context track))
+  ;; (libinput:unref (context track))
+  ;; (print "LIBINPUT CLEAN")
+  )
 
 ;; ┌┬┐┌─┐┬  ┬┬┌─┐┌─┐
 ;;  ││├┤ └┐┌┘││  ├┤
