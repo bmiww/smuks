@@ -55,6 +55,7 @@
 	       #:cl-wl.virtual-keyboard  ;; TODO: Add to my own distribution
 	       #:cl-wl.text-input  ;; TODO: Add to my own distribution
 	       #:cl-wl.input-method  ;; TODO: Add to my own distribution
+	       #+xwayland
 	       #:cl-wl.xwayland  ;; TODO: Add to my own distribution
 	       ;; TODO: Make libiio optional via compile flag.
 	       ;; It is only really used for mobile devices.
@@ -63,6 +64,7 @@
 	       ;; Or just deliver with it. Or compile it in somehow.
 	       #:lisp-binary ;; NOTE: Used for the accelerometer package which could be extracted
 	       #:mmap
+	       #:cffi-define
 	       #:osicat
 	       #:livesupport
 	       #:unix-sockets
@@ -75,6 +77,7 @@
 	       #:3d-math
 	       #:split-sequence)
   :components ((:file "util")
+	       (:file "socketpair")
 	       (:module "drm"
 		:components ((:file "package")
 			     (:file "classes")
@@ -108,7 +111,9 @@
 			     (:file "text-input")
 			     (:file "input-method")
 			     (:file "virtual-keyboard")
-			     (:file "xwayland")))
+			     #+xwayland
+			     (:file "xwayland")
+			     ))
 
 	       (:file "scenes")
 	       (:module "display"

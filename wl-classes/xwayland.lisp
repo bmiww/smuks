@@ -73,8 +73,4 @@
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
 ;; └─┘ ┴ ┴┴─┘
-(defvar *socket-domain* nil)
-(defvar *socket-type* nil)
-(defvar *socket-protocol* nil)
-
-(defun wm-socket-pair () (osicat-posix:socketpair *socket-domain* *socket-type* *socket-protocol*))
+(defun wm-socket-pair () (socketpair :unix :stream))

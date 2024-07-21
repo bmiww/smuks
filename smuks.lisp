@@ -59,9 +59,6 @@
     (unless (setf *libinput* (make-instance 'dev-track :open-restricted 'open-device :close-restricted 'close-device))
       (error "Failed to initialize libinput"))
 
-    ;; #+xwayland
-    ;; (setf *xwayland-process* (uiop:launch-program "Xwayland"))
-
     (setf (values *egl* *egl-context* *gl-version*) (init-egl (gbm-pointer drm) (wl:display-ptr *display*)))
     (setf (egl *display*) *egl*)
     (setf (gl-version *display*) *gl-version*)
@@ -78,6 +75,8 @@
        (udev::%monitor-enable-receiving *udev-monitor*)
 
        (init-globals *display*)
+       #+xwayland
+       (setf *xwayland-process* (start-xwayland))
        (start-monitors *display*)
 
        (pollr "drm"            (fd drm)                     (cb (drm:handle-event (fd (drm *display*)) :page-flip2 'set-frame-ready)))
