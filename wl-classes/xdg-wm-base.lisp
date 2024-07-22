@@ -33,7 +33,7 @@
    "An xdg surface identifies a toplevel or a popup surface.
 The main purpose here is to define that child/parent relationships between the former."))
 
-(defcontinue xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
+(defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (unless (and (eq width (width xdg)) (eq height (height xdg)))
     (setf (xdg-x-offset xdg) x
 	  (xdg-y-offset xdg) y
@@ -41,13 +41,11 @@ The main purpose here is to define that child/parent relationships between the f
 	  (height xdg) height
 	  (new-dimensions? xdg) t)))
 
-
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((display (wl:get-display xdg)))
     (wl:up-if 'toplevel xdg id)
     (add-state xdg :maximized)
     (new-toplevel display xdg)))
-
 
 ;; TODO: Unify this configure with the one that toplevel uses to some extent?
 ;; At lest the surface:send-configure should be the same.

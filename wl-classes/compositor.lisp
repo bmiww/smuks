@@ -90,9 +90,7 @@
 
 (defmethod add-window ((desktop desktop) window)
   (pushnew window (windows desktop))
-  (before cl-wl:destroy window
-	  (lambda (toplevel)
-	    (rm-window desktop toplevel))))
+  (before cl-wl:destroy window (lambda (toplevel) (rm-window desktop toplevel))))
 
 (defmethod rm-window ((desktop desktop) window)
   (setf (windows desktop) (remove window (windows desktop))))
@@ -110,14 +108,15 @@
       (after
        xdg-surface:ack-configure toplevel
        (lambda (surface ack-serial)
-	 (if (eq serial ack-serial)
-	     (after wl-surface:commit surface
-		    (lambda (surface)
-		      (with-accessors ((x x) (y y) (width width) (height height)
-				       (compo-max-height compo-max-height) (compo-max-width compo-max-width))
-			  surface
-			(when (< 0 width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
-			(when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2)))))))))))))
+	 (when (eq serial ack-serial)
+	   (after
+	    wl-surface:commit surface
+	    (lambda (surface)
+	      (with-accessors ((x x) (y y) (width width) (height height)
+			       (compo-max-height compo-max-height) (compo-max-width compo-max-width))
+		  surface
+		(when (< 0 width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
+		(when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2)))))))))))))
 
 (defmethod recalculate-layout ((desktop desktop))
   (when (and (output desktop) (windows desktop))

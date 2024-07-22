@@ -15,6 +15,12 @@
 ;; TODO: I should reconsider how i'm handling the destroy methods in CL-WL
 ;; I offer an override option. But this screws with the basic destroy method.
 
+;; TODO: Maybe instead of all the crazy continuation magic that i'm doing about positioning/sizing windows
+;; I should try to attach a pre/post processing after reading ALL the client events? (Well - not in all cases i guess)
+;; Commit event is a bit meh though still, i'd say...
+;; The problem i'm ultimately facing right now - is that clients call ack-configure/set-window-geometry and all other events in whatever order they want.
+;; This makes it so that - some app whose positioning i fixed is ok - but qutebrowser for example positions weirdly.
+
 (in-package :smuks)
 
 (defvar *enable-wayland-debug-logs* "")
