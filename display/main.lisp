@@ -219,13 +219,12 @@
   (let* ((desktop (active-desktop display)))
     (setf (desktop surface) desktop)
     (setf (windows desktop) (pushnew surface (windows desktop)))
-    (wl:add-destroy-callback
-     surface
-     (lambda (surf)
-       (setf (windows desktop) (remove surf (windows desktop)))
-       (when (eq surface (keyboard-focus display))
-	 (setf (keyboard-focus display) (car (windows desktop))))
-       (recalculate-layout desktop)))
+    (before wl:destroy surface
+	    (lambda (surf)
+	      (setf (windows desktop) (remove surf (windows desktop)))
+	      (when (eq surface (keyboard-focus display))
+		(setf (keyboard-focus display) (car (windows desktop))))
+	      (recalculate-layout desktop)))
 
     (recalculate-layout desktop)
 

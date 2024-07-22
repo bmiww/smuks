@@ -30,7 +30,7 @@
 
 (defmethod wl-shm:create-pool ((shm shm) id fd size)
   (let ((pool (wl:mk-if 'pool shm id :fd fd :size size :shm shm)))
-    (wl:add-destroy-callback pool (lambda (pool) (remhash (wl:id pool) (pools shm))))
+    (before cl-wl:destroy pool (lambda (pool) (remhash (wl:id pool) (pools shm))))
     (setf (gethash id (pools shm)) pool)))
 
 ;; ┌─┐┌─┐┌─┐┬
