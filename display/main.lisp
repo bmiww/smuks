@@ -316,33 +316,26 @@
 	     (when (eq desktop (active-desktop display))
 	       (setf (active-desktop display) (first-desktop-with-output display)))))
 
+(defmethod perform-send-to-desktop ((display display) window desktop)
+  (let ((old-desktop (desktop window)))
+    (unless (eq old-desktop desktop)
+      (setf (desktop window) desktop)
+
+      (add-window desktop window)
+      (rm-window old-desktop window)
+
+      (recalculate-layout desktop)
+      (recalculate-layout old-desktop))))
+
 (defmethod send-to-desktop ((display display) desktop)
   (let ((window (keyboard-focus display)))
-    (when window
-      (let ((old-desktop (desktop window)))
-	(unless (eq old-desktop desktop)
-	  (setf (desktop window) desktop)
-
-	  (pushnew window (windows desktop))
-	  (setf (windows old-desktop) (remove window (windows old-desktop)))
-
-	  (recalculate-layout desktop)
-	  (recalculate-layout old-desktop))))))
+    (when window (perform-send-to-desktop display window desktop))))
 
 (defmethod send-to-output ((display display) output-nr)
-  (let ((window (keyboard-focus display))
-	(output (nth output-nr (outputs display))))
+  (let ((window (keyboard-focus display)) (output (nth output-nr (outputs display))))
     (when (and window output)
-      (let ((old-desktop (desktop window))
-	    (desktop (find-output-desktop display output)))
-	(unless (eq old-desktop desktop)
-	  (setf (desktop window) desktop)
-
-	  (pushnew window (windows desktop))
-	  (setf (windows old-desktop) (remove window (windows old-desktop)))
-
-	  (recalculate-layout desktop)
-	  (recalculate-layout old-desktop))))))
+      (let ((desktop (find-output-desktop display output)))
+	(perform-send-to-desktop display window desktop)))))
 
 
 ;; ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐  ┌─┐┌─┐┌─┐┬ ┬┌─┐
@@ -395,7 +388,7 @@ then this can be called to determine the new focus surfaces."
 	    (when (seat-keyboard seat)
 	      (before wl:destroy (seat-keyboard seat)
 		      (lambda (keyboard)
-			(when (eq (wl:client keyboard) (wl:client (keyboard-focus display)))
+			(when (and (keyboard-focus display) (eq (wl:client keyboard) (wl:client (keyboard-focus display))))
 			  (setf (slot-value display 'keyboard-focus) nil)))))
 
 	    (when current (keyboard-leave (seat current) current))

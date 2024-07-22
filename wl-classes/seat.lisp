@@ -259,5 +259,3 @@
     (if keyboard
 	(wl-keyboard:send-leave keyboard (next-serial display) surface)
 	(log! "keyboard-leave: Seat does not have a keyboard... Yet??"))))
-
-(defcontinue destroy ((keyboard keyboard)) ())

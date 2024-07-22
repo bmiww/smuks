@@ -11,6 +11,8 @@
 ;; For example - framebuffer-count - means that some framebuffers would need to be deallocated
 ;; Or some new ones would need to be created via mesa/gl/egl
 
+(log! "[BM] Running user config!")
+
 ;; ┬  ┬┌─┐┬─┐┬┌─┐┌┐ ┬  ┌─┐  ┌─┐┬  ┬┌─┐┬─┐┬─┐┬┌┬┐┌─┐┌─┐
 ;; └┐┌┘├─┤├┬┘│├─┤├┴┐│  ├┤   │ │└┐┌┘├┤ ├┬┘├┬┘│ ││├┤ └─┐
 ;;  └┘ ┴ ┴┴└─┴┴ ┴└─┘┴─┘└─┘  └─┘ └┘ └─┘┴└─┴└─┴─┴┘└─┘└─┘

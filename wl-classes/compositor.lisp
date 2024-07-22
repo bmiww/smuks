@@ -88,6 +88,16 @@
 (defmethod width ((desktop desktop)) (output-width (output desktop)))
 (defmethod height ((desktop desktop)) (output-height (output desktop)))
 
+(defmethod add-window ((desktop desktop) window)
+  (pushnew window (windows desktop))
+  (before cl-wl:destroy window
+	  (lambda (toplevel)
+	    (log! "BEFORE DESTROYING DESKTOP TOPLEVEL")
+	    (rm-window desktop toplevel))))
+
+(defmethod rm-window ((desktop desktop) window)
+  (setf (windows desktop) (remove window (windows desktop))))
+
 (defun recalculate-toplevel (toplevel width height new-x new-y)
   (with-accessors ((x x) (y y) (compo-max-width compo-max-width) (compo-max-height compo-max-height)
 		   (pending-buffer pending-buffer)) toplevel
