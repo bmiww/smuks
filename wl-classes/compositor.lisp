@@ -92,7 +92,6 @@
   (pushnew window (windows desktop))
   (before cl-wl:destroy window
 	  (lambda (toplevel)
-	    (log! "BEFORE DESTROYING DESKTOP TOPLEVEL")
 	    (rm-window desktop toplevel))))
 
 (defmethod rm-window ((desktop desktop) window)
