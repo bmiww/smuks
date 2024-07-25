@@ -5,7 +5,7 @@
 ;; ██║  ██║██╔══██╗██║╚██╔╝██║
 ;; ██████╔╝██║  ██║██║ ╚═╝ ██║
 ;; ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝
-(defpackage :smuks-drm
+(defpackage #:smuks-drm
   (:use :cl :smuks-util)
   (:nicknames :sdrm)
   (:export

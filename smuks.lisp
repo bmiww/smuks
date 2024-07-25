@@ -81,8 +81,6 @@
        (udev::%monitor-enable-receiving *udev-monitor*)
 
        (init-globals *display*)
-       ;; #+xwayland
-       ;; (setf *xwayland-process* (start-xwayland *display*))
        (start-monitors *display*)
 
        (pollr "drm"            (fd drm)                     (cb (drm:handle-event (fd (drm *display*)) :page-flip2 'set-frame-ready)))
@@ -103,6 +101,9 @@
 			(signal e))))
 		'client-cb)
 	      :socket t)
+
+       ;; #+xwayland
+       ;; (setf *xwayland-process* (start-xwayland *display*))
 
        (run-user-setup)
 
