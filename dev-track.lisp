@@ -58,14 +58,8 @@
 (defmethod destroy ((track dev-track))
   (loop for dev being the hash-values of (devices track)
 	do (destroy dev))
-  ;; (print "UNREF CONTEXT FAILING DURING CLEANUP TRYING SUSPEND FIRST")
-  (wrn! "LIBINPUT CONTEXT UNREF BORKED. FOR NOW ONLY SUSPENDING")
-  (libinput:suspend (context track))
-  ;; (print "UNREF CONTEXT FAILING DURING CLEANUP")
-  ;; (print (context track))
-  ;; (libinput:unref (context track))
-  ;; (print "LIBINPUT CLEAN")
-  )
+  (when (fd track) (sb-posix:close (fd track)))
+  (libinput:unref (context track)))
 
 ;; ┌┬┐┌─┐┬  ┬┬┌─┐┌─┐
 ;;  ││├┤ └┐┌┘││  ├┤
@@ -98,7 +92,7 @@
   (if (cffi:null-pointer-p (libinput-ptr dev))
       (progn
 	;; Some devices are not handled by libinput, so we ignore them. (null pointer returned)
-	(mk-dev-pointless dev t))
+	(mk-dev-pointless dev))
       (progn
 	(setf (pointless dev) nil)
 	(setf (name dev) (libinput:device-get-name (libinput-ptr dev)))
@@ -124,13 +118,14 @@
 	(unless (capabilities dev) (mk-dev-pointless dev)))))
 
 
-(defmethod mk-dev-pointless ((dev dev) &optional no-unref)
+(defmethod mk-dev-pointless ((dev dev))
   (setf (pointless dev) t)
   (unless (cffi:null-pointer-p (libinput-ptr dev))
-    (unless no-unref (libinput:device-unref (libinput-ptr dev)))
+    (libinput:device-unref (libinput-ptr dev))
     (libinput:path-remove-device (libinput-ptr dev))))
 
 (defmethod destroy ((dev dev))
-  (unless (cffi:null-pointer-p (libinput-ptr dev))
+  (when (and (not (cffi:null-pointer-p (libinput-ptr dev)))
+	     (not (pointless dev)))
     (libinput:device-unref (libinput-ptr dev))
     (libinput:path-remove-device (libinput-ptr dev))))

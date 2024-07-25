@@ -213,6 +213,7 @@
 (defun close-device (fd &optional data)
   (declare (ignore data))
   (libseat:close-device (libseat *display*) (gethash fd *fd-id*))
+  (sb-posix:close fd)
   (remhash fd *fd-id*))
 
 
@@ -234,6 +235,7 @@
 
   (when (and *egl* *egl-context*) (seglutil:cleanup-egl *egl* (wl:display-ptr *display*) *egl-context*))
   (when *libinput* (destroy *libinput*))
+  (when *udev-monitor* (sb-posix:close (udev:get-fd *udev-monitor*)))
 
   (when *display* (cleanup-display *display*))
 
@@ -244,4 +246,5 @@
   (setfnil *egl* *egl-context*
 	   #+xwayland
 	   *xwayland-process*
+	   *udev-monitor*
 	   *display* *socket* *cursor* *libinput*))
