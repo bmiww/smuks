@@ -27,11 +27,11 @@
 (defvar *red-y* 100.0)
 
 (defun scene-1 (screen)
-  (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
+  (shaders.rectangle:draw (rect-shader screen) `(,(shaders.rectangle::make-rect
 						    :x 10.0 :y (next-y-pos) :w 50.0 :h 60.0
 						    :color '(0.2 0.2 0.2 1.0))))
 
-  (shaders.rectangle:draw (shader screen :rect) `(,(shaders.rectangle::make-rect
+  (shaders.rectangle:draw (rect-shader screen) `(,(shaders.rectangle::make-rect
 						    :x *red-x* :y *red-y* :w 200.0 :h 50.0
 						    :color '(1.0 0.0 0.0 0.6)))))
 
@@ -46,16 +46,15 @@
 
 
 (defun scene-2 (output)
-  (shaders.rectangle:draw (shader output :rect) `(,(shaders.rectangle::make-rect
+  (shaders.rectangle:draw (rect-shader output) `(,(shaders.rectangle::make-rect
 						    :x 500.0 :y (next-y-2-pos) :w 200.0 :h 150.0
-						    :color '(0.2 0.2 0.2 1.0))))
-  )
+						    :color '(0.2 0.2 0.2 1.0)))))
 
 ;; NOTE: Accidentally managed to draw like a laying down exclamation mark with this
 (defun scene-nothing-yet (output)
   (let* ((size 100.0) (width (flo (width output))) (height (flo (height output))) (half (/ size 2)))
     (flet ((draw-rect (x y)
-	     (shaders.rectangle:draw (shader output :rect) `(,(shaders.rectangle::make-rect
+	     (shaders.rectangle:draw (rect-shader output) `(,(shaders.rectangle::make-rect
 							       :x x :y y :w size :h size
 							       :color '(0.2 0.2 0.2 1.0))))))
       (draw-rect (- width size (/ width 9) 0.0) (- (/ height 2) half))
@@ -79,7 +78,7 @@
 (defun scene-select-screen-pos (output)
   (let ((size *stupid-size*))
     (flet ((draw-rect (x y)
-	     (shaders.rectangle:draw (shader output :capsule) `(,(shaders.rectangle::make-rect
+	     (shaders.rectangle:draw (rect-shader output) `(,(shaders.rectangle::make-rect
 								:x x :y y :w size :h size
 								:color '(0.2 0.2 0.2 1.0))))))
       (dolist (pos (click-locations output size))

@@ -26,7 +26,7 @@
 
       (when (eq output (cursor-screen display))
 	(unless (client-cursor-drawn output)
-	  (shaders.texture:draw (shader output :texture) *cursor*
+	  (shaders.texture:draw (texture-shader output *cursor*) *cursor*
 				`(,(- (cursor-x display) (screen-x output))
 				  ,(- (cursor-y display) (screen-y output))
 				  36.0 36.0))))
