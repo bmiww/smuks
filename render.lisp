@@ -118,20 +118,30 @@
     (setf (values x y width height)
 	  (typecase surface
 	    (toplevel (render-toplevel output surface))
-	    (cursor (render-cursor display output surface))
-	    (drag-surface (render-drag display output surface))
-	    (layer-surface (render-layer-surface output surface))
 	    (popup (render-popup output surface))
-	    (subsurface (render-subsurface output surface))
-	    (t (render-surface output surface))))
-    (when (and x y width height)
-      (shaders.surface:draw-surface (surface-shader output texture)
-				    texture
-				    `(,(flo x) ,(flo y) ,(flo width) ,(flo height))
-				    :active (eq surface (keyboard-focus display)))
-
-      (flush-frame-callbacks surface)
-      (setf (needs-redraw surface) nil))))
+	    (t (values nil nil nil nil))))
+    (if (and x y width height)
+	(progn
+	  (shaders.surface:draw-surface (surface-shader output texture)
+					texture
+					`(,(flo x) ,(flo y) ,(flo width) ,(flo height))
+					:active (eq surface (keyboard-focus display)))
+	  (flush-frame-callbacks surface)
+	  (setf (needs-redraw surface) nil))
+	(progn
+	  (setf (values x y width height)
+		(typecase surface
+		  (cursor (render-cursor display output surface))
+		  (drag-surface (render-drag display output surface))
+		  (layer-surface (render-layer-surface output surface))
+		  (subsurface (render-subsurface output surface))
+		  (t (render-surface output surface))))
+	  (when (and x y width height)
+	    (shaders.texture:draw (texture-shader output texture)
+				  texture
+				  `(,(flo x) ,(flo y) ,(flo width) ,(flo height))))
+	  (flush-frame-callbacks surface)
+	  (setf (needs-redraw surface) nil)))))
 
 (defun render-rest (display output desktop)
   (declare (ignore desktop))
