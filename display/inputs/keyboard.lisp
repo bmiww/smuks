@@ -81,6 +81,8 @@
 	      (25 (uiop:launch-program "anyrun"))
 	      ;; Key c
 	      (46 (uiop:launch-program "emacsclient -c"))
+	      ;; Key F3
+	      (115 (uiop:launch-program "qutebrowser"))
 
 	      ;; Switch outputs
 	      (17 (focus-output-keyboard display 0))
