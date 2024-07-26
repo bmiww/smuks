@@ -119,9 +119,9 @@
 	       (:file "scenes")
 	       (:module "display"
 		:components ((:file "main")
+			     (:file "focus")
 			     (:module "inputs"
 			      :components ((:file "main")
-					   (:file "focus")
 					   (:file "touch")
 					   (:file "pointer")
 					   (:file "keyboard")

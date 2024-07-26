@@ -106,17 +106,14 @@
     ;; We center the window in the middle of their allocated space
     (let ((serial (configure-toplevel-default toplevel)))
       (after
-       xdg-surface:ack-configure toplevel
-       (lambda (surface ack-serial)
-	 (when (eq serial ack-serial)
-	   (after
-	    wl-surface:commit surface
-	    (lambda (surface)
-	      (with-accessors ((x x) (y y) (width width) (height height)
-			       (compo-max-height compo-max-height) (compo-max-width compo-max-width))
-		  surface
-		(when (< 0 width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
-		(when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2)))))))))))))
+       wl-surface:commit toplevel
+       (lambda (surface)
+	 (when (eq (last-serial surface) serial)
+	   (with-accessors ((x x) (y y) (width width) (height height)
+			    (compo-max-height compo-max-height) (compo-max-width compo-max-width))
+	       surface
+	     (when (< 0 width compo-max-width)   (setf x (+ x (/ (- compo-max-width width) 2))))
+	     (when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2)))))))))))
 
 (defmethod recalculate-layout ((desktop desktop))
   (when (and (output desktop) (windows desktop))
