@@ -81,6 +81,8 @@
 	      (25 (uiop:launch-program "anyrun"))
 	      ;; Key c
 	      (46 (uiop:launch-program "emacsclient -c"))
+	      ;; Key v?
+	      (47 (uiop:launch-program "weston-smoke"))
 	      ;; Key F3
 	      (115 (uiop:launch-program "qutebrowser"))
 
