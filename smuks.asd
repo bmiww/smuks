@@ -91,6 +91,7 @@
 			     (:file "egl-util")
 			     (:file "shader-rect")
 			     (:file "shader-texture")
+			     (:file "shader-surface")
 			     (:file "shader-init")))
 
 	       (:file "package")

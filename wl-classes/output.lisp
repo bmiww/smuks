@@ -90,7 +90,9 @@ transform - is the output rotated? is the output flipped?
 	  (setf (shaders output) `(,(shader-init:create-rect-shader width height rot gl-version)
 				   ,(restart-case (shader-init:create-texture-shader width height rot gl-version)
 				      (ignore () (nth 1 (shaders output))))
-				   ,(shader-init:create-xrgb8888-shader width height rot gl-version)))))))
+				   ,(shader-init:create-xrgb8888-shader width height rot gl-version)
+				   ,(shader-init:create-surface-shader width height rot gl-version)
+				   ,(shader-init:create-surface-xrgb8888-shader width height rot gl-version)))))))
 
 
 (defmethod start-monitor ((output output))
@@ -171,6 +173,13 @@ transform - is the output rotated? is the output flipped?
 (defmethod shader ((output output) (type (eql :rect))) (car (shaders output)))
 (defmethod shader ((output output) (type (eql :texture))) (cadr (shaders output)))
 (defmethod shader ((output output) (type (eql :xrgb8888))) (caddr (shaders output)))
+(defmethod shader ((output output) (type (eql :surface))) (cadr (shaders output)))
+(defmethod shader ((output output) (type (eql :surface-xrgb8888))) (caddr (shaders output)))
+(defmethod surface-shader ((output output) texture)
+  (ecase (tex-format texture)
+    (:argb8888 (nth 3 (shaders output)))
+    (:xrgb8888 (nth 4 (shaders output)))))
+
 (defmethod texture-shader ((output output) texture)
   (ecase (tex-format texture)
     (:argb8888 (nth 1 (shaders output)))

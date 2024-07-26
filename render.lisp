@@ -125,8 +125,10 @@
 	    (subsurface (render-subsurface output surface))
 	    (t (render-surface output surface))))
     (when (and x y width height)
-      (shaders.texture:draw (texture-shader output texture) texture
-			    `(,(flo x) ,(flo y) ,(flo width) ,(flo height)))
+      (shaders.surface:draw-surface (surface-shader output texture)
+				    texture
+				    `(,(flo x) ,(flo y) ,(flo width) ,(flo height))
+				    :active (eq surface (keyboard-focus display)))
 
       (flush-frame-callbacks surface)
       (setf (needs-redraw surface) nil))))

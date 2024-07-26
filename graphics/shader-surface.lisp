@@ -1,20 +1,21 @@
 
-;; ████████╗███████╗██╗  ██╗████████╗██╗   ██╗██████╗ ███████╗
-;; ╚══██╔══╝██╔════╝╚██╗██╔╝╚══██╔══╝██║   ██║██╔══██╗██╔════╝
-;;    ██║   █████╗   ╚███╔╝    ██║   ██║   ██║██████╔╝█████╗
-;;    ██║   ██╔══╝   ██╔██╗    ██║   ██║   ██║██╔══██╗██╔══╝
-;;    ██║   ███████╗██╔╝ ██╗   ██║   ╚██████╔╝██║  ██║███████╗
-;;    ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝
+;; ███████╗██╗   ██╗██████╗ ███████╗ █████╗  ██████╗███████╗
+;; ██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗██╔════╝██╔════╝
+;; ███████╗██║   ██║██████╔╝█████╗  ███████║██║     █████╗
+;; ╚════██║██║   ██║██╔══██╗██╔══╝  ██╔══██║██║     ██╔══╝
+;; ███████║╚██████╔╝██║  ██║██║     ██║  ██║╚██████╗███████╗
+;; ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝
 ;; TODO: I'd like to extract the 100 version shaders a bit further out, right now the whole thing is messy
-(defpackage :shaders.texture
+(defpackage :shaders.surface
   (:use :cl :sglutil :shaders)
-  (:export shader update-matrix draw))
-(in-package :shaders.texture)
+  (:export shader update-matrix draw-surface))
+(in-package :shaders.surface)
 
 (defclass shader (shaders:shader-base)
   ((uni-translation :accessor uni-translation)
    (uni-texture-scaling :accessor uni-texture-scaling)
    (uni-sampler :accessor uni-sampler)
+   (uni-active :accessor uni-active)
 
    (instanced-vbo :accessor instanced-vbo)
    (runtime-vbo :accessor runtime-vbo)
@@ -28,7 +29,7 @@
 ;; ┌─┐┬  ┌─┐┬
 ;; │ ┬│  └─┐│
 ;; └─┘┴─┘└─┘┴─┘
-(defparameter vertex-shader-texture-310-es "
+(defparameter vertex-shader-surface-310-es "
 #version 310 es
 uniform mat3 translation;
 uniform mat3 tex_scaling_matrix;
@@ -58,11 +59,17 @@ void main() {
 
 precision mediump float;
 uniform sampler2D sampler;
+uniform int active_surface;
+
 in vec2 v_tex_coords;
 out vec4 color;
 
 void main() {
     vec4 tex_color = texture2D(sampler, v_tex_coords);
+    if (active_surface != 1) {
+      tex_color = tex_color * vec4(0.5, 0.5, 0.5, 1.0);
+    }
+
     color = tex_color;
 }")
 
@@ -71,50 +78,18 @@ void main() {
 
 precision mediump float;
 uniform sampler2D sampler;
+uniform int active_surface;
+
 in vec2 v_tex_coords;
 out vec4 color;
 
 void main() {
     vec4 tex_color = vec4(texture2D(sampler, v_tex_coords).rgb, 1.0);
+    if (active_surface != 1) {
+      tex_color = tex_color * vec4(0.5, 0.5, 0.5, 1.0);
+    }
+
     color = tex_color;
-}")
-
-(defparameter vertex-shader-texture-100 "
-#version 100
-
-uniform mat3 translation;
-uniform mat3 tex_scaling_matrix;
-uniform mat3 projection;
-
-attribute vec2 vert;
-attribute vec2 vert_transform_scale;
-
-varying vec2 v_tex_coords;
-
-mat2 scale(vec2 scale_vec){
-    return mat2(
-        scale_vec.x, 0.0,
-        0.0, scale_vec.y
-    );
-}
-
-void main() {
-    vec3 position = vec3(vert * scale(vert_transform_scale), 1.0);
-    v_tex_coords = (tex_scaling_matrix * position).xy;
-    gl_Position = vec4(projection * translation * position, 1.0);
-}")
-
-
-(defparameter fragment-shader-abgr-100 "
-#version 100
-
-precision mediump float;
-uniform sampler2D sampler;
-varying vec2 v_tex_coords;
-
-void main() {
-    vec4 tex_color = texture2D(sampler, v_tex_coords);
-    gl_FragColor = tex_color;
 }")
 
 ;; ┌─┐┌─┐┌┬┐┌─┐
@@ -123,21 +98,14 @@ void main() {
 (defmethod initialize-instance :before ((program shader) &key projection gl-version (format :argb8888))
   (setf (gl-version program) gl-version)
   (with-slots (pointer vao uni-projection instanced-vbo runtime-vbo attr-vert attr-transform-scale
-	       uni-translation uni-texture-scaling uni-sampler gl-buffer-array) program
+	       uni-translation uni-texture-scaling uni-sampler gl-buffer-array
+	       uni-active) program
 
     (let ((fragment-shader
-	    (ecase gl-version
-	      (:GL-2-0
-	       (ecase format
-		 (:argb8888 fragment-shader-abgr-100)))
-	      (:GL-3-1
-	       (ecase format
-		 (:argb8888 fragment-shader-abgr-310-es)
-		 (:xrgb8888 fragment-shader-xbgr-310-es)))))
-
-	  (vertex-shader (case gl-version
-			   (:GL-2-0 vertex-shader-texture-100)
-			   (:GL-3-1 vertex-shader-texture-310-es))))
+	    (ecase format
+	      (:argb8888 fragment-shader-abgr-310-es)
+	      (:xrgb8888 fragment-shader-xbgr-310-es)))
+	  (vertex-shader vertex-shader-surface-310-es))
       (setf pointer (shaders:create-shader vertex-shader fragment-shader)))
 
     (setf instanced-vbo (gl:gen-buffer))
@@ -148,6 +116,7 @@ void main() {
     (setf uni-projection (gl:get-uniform-location pointer "projection"))
     (setf uni-translation (gl:get-uniform-location pointer "translation"))
     (setf uni-texture-scaling (gl:get-uniform-location pointer "tex_scaling_matrix"))
+    (setf uni-active (gl:get-uniform-location pointer "active_surface"))
 
     (setf attr-vert (gl:get-attrib-location pointer "vert"))
     (setf attr-transform-scale (gl:get-attrib-location pointer "vert_transform_scale"))
@@ -163,14 +132,13 @@ void main() {
     (when projection (shaders:update-projection program projection))))
 
 
-;; TODO: You should be able to turn shaders into render passes
-;; So that a texture shader wouldn't need to be reenabled for each texture
-(defmethod draw ((program shader) texture position)
+(defmethod draw-surface ((program shader) texture position &key active)
   (destructuring-bind (x y width height) position
     (let ((translation-matrix (translation-matrix x y))
 	  (tex-scaling-matrix (scaling-matrix width height)))
       (with-slots (vao pointer instanced-vbo runtime-vbo attr-vert attr-transform-scale
-		   uni-translation uni-texture-scaling gl-buffer-array) program
+		   uni-translation uni-texture-scaling gl-buffer-array
+		   uni-active) program
 	(gl:use-program pointer)
 	(gl:bind-vertex-array vao)
 
@@ -183,6 +151,8 @@ void main() {
 	(gl:bind-buffer :array-buffer instanced-vbo)
 	(gl:enable-vertex-attrib-array attr-vert)
 	(gl:vertex-attrib-pointer attr-vert 2 :float nil (* 2 4) (cffi:null-pointer))
+
+	(gl:uniformi uni-active (if active 1.0 0.0))
 
 	(uniform-matrix-3fv program uni-translation translation-matrix)
 	(uniform-matrix-3fv program uni-texture-scaling tex-scaling-matrix)
