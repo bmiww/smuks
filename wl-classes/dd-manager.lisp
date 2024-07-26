@@ -29,6 +29,9 @@
   (declare (ignore serial))
   (setf (selection dev) source))
 
+(defmethod wl-data-device:release ((dev data-device))
+  (cl-wl:destroy dev))
+
 
 ;; TODO: If source is nil - the drag event should not produce drop/hover notify events on other client surfaces
 ;; TODO: If source is destroyed - this whole event should be cancelled

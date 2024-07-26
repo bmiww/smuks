@@ -200,12 +200,16 @@
    (slot-surfaces :initform (make-array 32 :initial-element nil) :accessor slot-surfaces)))
 
 
+(defmethod wl-touch:release ((touch touch)) (cl-wl:destroy touch))
+
 ;; ┌─┐┌─┐┬┌┐┌┌┬┐┌─┐┬─┐  ┌┬┐┬┌─┐┌─┐┌─┐┌┬┐┌─┐┬ ┬
 ;; ├─┘│ │││││ │ ├┤ ├┬┘   │││└─┐├─┘├─┤ │ │  ├─┤
 ;; ┴  └─┘┴┘└┘ ┴ └─┘┴└─  ─┴┘┴└─┘┴  ┴ ┴ ┴ └─┘┴ ┴
 (defclass pointer (wl-pointer:dispatch)
   ((seat :initarg :seat :initform nil)
    (cursor-hidden :initform nil :accessor cursor-hidden)))
+
+(defmethod wl-pointer:release ((pointer pointer)) (cl-wl:destroy pointer))
 
 (defmethod pointer-axis-stop ((pointer pointer) axis)
   (when (>= (wl:version-want pointer) 5) (wl-pointer:send-axis-stop pointer (get-ms) axis)))
@@ -259,3 +263,5 @@
     (if keyboard
 	(wl-keyboard:send-leave keyboard (next-serial display) surface)
 	(log! "keyboard-leave: Seat does not have a keyboard... Yet??"))))
+
+(defmethod wl-keyboard:release ((keyboard keyboard)) (cl-wl:destroy keyboard))
