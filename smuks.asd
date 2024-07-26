@@ -121,6 +121,7 @@
 		:components ((:file "main")
 			     (:module "inputs"
 			      :components ((:file "main")
+					   (:file "focus")
 					   (:file "touch")
 					   (:file "pointer")
 					   (:file "keyboard")
