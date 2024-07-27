@@ -84,7 +84,11 @@
 
 (defun render-child-toplevel (output surface active)
   (do-surface-render perform (x y width height texture) output surface active
-    (perform)))
+    (let* ((parent (grab-parent surface))
+	   (parent-width (min (compo-max-width parent) (width parent)))
+	   (parent-height (min (compo-max-height parent) (height parent))))
+      (perform :x (+ (x parent) (/ parent-width 2) (- (/ width 2)))
+	       :y (+ (y parent) (/ parent-height 2) (- (/ height 2)))))))
 
 (defun render-toplevel (output surface active)
   (when (initial-config-ackd surface)
