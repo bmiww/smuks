@@ -119,20 +119,27 @@
   (when (or (not (= x 0)) (not (= y 0)))
     (log! "UNIMPLEMENTED: Set offset")))
 
+
+;; ┌┐ ┌─┐┬ ┬┌┐┌┌┬┐   ┌─┐┬ ┬┌─┐┌─┐┬┌─┌─┐
+;; ├┴┐│ ││ ││││ ││───│  ├─┤├┤ │  ├┴┐└─┐
+;; └─┘└─┘└─┘┘└┘─┴┘   └─┘┴ ┴└─┘└─┘┴ ┴└─┘
+(defmethod in-desktop-bounds ((surface surface) x y desktop)
+  (and (x surface) (y surface) (desktop surface)
+       (<= (x surface) x (+ (x surface) (width surface)))
+       (<= (y surface) y (+ (y surface) (height surface)))
+       (eq desktop (desktop surface))))
+
+;; TODO: Might need to apply offset stuff here...
+(defmethod in-bounds ((surface surface) x y)
+  (and (x surface) (y surface)
+       (<= (x surface) x (+ (x surface) (width surface)))
+       (<= (y surface) y (+ (y surface) (height surface)))))
+
+
 ;; TODO: Destroy any connected textures and other resources
 (defmethod cl-wl:destroy :before ((surface surface))
   (when (eq (type-of surface) 'surface)
     (rem-surface (compositor surface) surface)))
-
-
-;; TODO: Might need to apply offset stuff here...
-(defmethod in-bounds ((surface surface) x y desktop)
-  (if (and (x surface) (y surface) (desktop surface))
-      (and (<= (x surface) x (+ (x surface) (width surface)))
-	   (<= (y surface) y (+ (y surface) (height surface)))
-	   (eq desktop (desktop surface)))
-      nil))
-
 
 ;; ┌─┐┌─┐┬  ┬  ┌┐ ┌─┐┌─┐┬┌─
 ;; │  ├─┤│  │  ├┴┐├─┤│  ├┴┐

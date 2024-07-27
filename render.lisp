@@ -82,6 +82,10 @@
     (perform :x (+ x (x (grab-parent surface)))
 	     :y (+ y (y (grab-parent surface))))))
 
+(defun render-child-toplevel (output surface active)
+  (do-surface-render perform (x y width height texture) output surface active
+    (perform)))
+
 (defun render-toplevel (output surface active)
   (when (initial-config-ackd surface)
     (do-surface-render perform (x y width height texture) output surface active
@@ -91,7 +95,11 @@
 		   :y (- y (screen-y output))
 		   :w (if w-exceed compo-max-width width)
 		   :h (if h-exceed compo-max-height height)))
-	(render-popup output (grab-child surface) active)))))
+
+	(when (grab-child surface)
+	  (typecase (grab-child surface)
+	    (toplevel (render-child-toplevel output (grab-child surface) active))
+	    (popup (render-popup output (grab-child surface) active))))))))
 
 
 ;; TODO: This and render-rest are still messy.
@@ -129,16 +137,17 @@
 (defmacro do-surface-render (perform (x y width height texture) output surface active &body body)
   `(when surface (with-accessors ((,x x) (,y y) (,width width) (,height height) (,texture texture) (subsurfaces subsurfaces)) ,surface
      (flet ((,perform (&key (x ,x) (y ,y) (w ,width) (h ,height) (active ,active))
-	      (shaders.surface:draw-surface (surface-shader ,output ,texture)
-					    ,texture
-					    `(,(flo x) ,(flo y) ,(flo w) ,(flo h))
-					    :active active)
-	      (flush-frame-callbacks ,surface)
-	      (setf (needs-redraw ,surface) nil)
+	      (when ,texture
+		(shaders.surface:draw-surface (surface-shader ,output ,texture)
+					      ,texture
+					      `(,(flo x) ,(flo y) ,(flo w) ,(flo h))
+					      :active active)
+		(flush-frame-callbacks ,surface)
+		(setf (needs-redraw ,surface) nil)
 
-	      ;; Each surface might have subsurfaces. Render those too
-	      (loop for subsurface in subsurfaces
-		    do (render-subsurface ,output subsurface ,active))))
+		;; Each surface might have subsurfaces. Render those too
+		(loop for subsurface in subsurfaces
+		      do (render-subsurface ,output subsurface ,active)))))
 
        ;; Body is expected to call the perform function if it wants to render the surface
        ,@body))))

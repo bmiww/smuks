@@ -231,6 +231,15 @@
 
     (recalculate-layout desktop)
 
+    ;; NOTE: This makes it so that if the surface becomes a child of another
+    ;; It shouldn't be tracked as a desktop toplevel anymore
+    ;; TODO: This doesn't however cover the case when a surface was before moved to another desktop
+    (after xdg-toplevel:set-parent surface
+	   (lambda (toplevel parent)
+	     (when parent
+	       (setf (windows desktop) (remove toplevel (windows desktop)))
+	       (recalculate-layout desktop))))
+
     ;; NOTE: client confirms the window dimensions. We set it as ready for render.
     (let ((surface-configure-serial (awaiting-ack surface)))
       (after wl-surface:commit surface
@@ -255,7 +264,7 @@
 		      (toplevels (and compositor (all-surfaces compositor)))
 		      (popups (and compositor (all-popups compositor))))
 		 (when popups
-		   (let ((popup (find-bounder popups x y desktop)))
+		   (let ((popup (find-bounder popups x y)))
 		     (when popup (return-from surface-at-coords popup))))
 
 		 (when toplevels
@@ -268,9 +277,12 @@
 		  (<= (screen-y output) y (screen-y-max output)))
 	  return output))
 
-(defun find-bounder (surfaces x y desktop)
+(defun find-bounder (surfaces x y &optional desktop)
   (loop for surface in surfaces
-	when (in-bounds surface x y desktop) return surface))
+	when (if desktop
+		 (in-desktop-bounds surface x y desktop)
+		 (in-bounds surface x y))
+	  return surface))
 
 (defmethod update-cursor ((display display) dx dy)
   (let ((new-x (+ (cursor-x display) dx))

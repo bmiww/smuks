@@ -70,7 +70,6 @@ The main purpose here is to define that child/parent relationships between the f
 (defclass toplevel (xdg-toplevel:dispatch xdg-surface)
   ((title :initform nil :accessor title)
    (app-id :initform nil :accessor app-id)
-   (parent :initform nil :accessor parent)
    (min-width :initform 0 :accessor min-width)
    (min-height :initform 0 :accessor min-height)
    (max-width :initform 0 :accessor max-width)
@@ -102,9 +101,12 @@ The main purpose here is to define that child/parent relationships between the f
 (defmethod xdg-toplevel:move ((toplevel toplevel) seat serial)
   (log! "xdg-toplevel:move: Not implemented"))
 
-(defmethod xdg-toplevel:set-parent ((toplevel toplevel) parent)
-  (log! "xdg-toplevel:set-parent: Not implemented fully")
-  (when parent (setf (parent toplevel) parent)))
+(defcontinue xdg-toplevel:set-parent ((toplevel toplevel) parent)
+  (when parent
+    (setf (grab-parent toplevel) parent)
+    (setf (grab-child parent) toplevel)
+    (after cl-wl:destroy toplevel
+	   (lambda (toplevel) (declare (ignore toplevel)) (setf (grab-child parent) nil)))))
 
 (defmethod close-toplevel ((toplevel toplevel)) (xdg-toplevel:send-close toplevel))
 

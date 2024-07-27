@@ -24,6 +24,9 @@
 (defmethod all-subsurfaces ((compositor compositor)) (all- compositor 'subsurface))
 (defmethod all-cursors ((compositor compositor)) (all- compositor 'cursor))
 
+(defmethod all-popups ((compositor compositor))
+  (remove-if-not (lambda (surf) (and (typep surf 'popup) (texture surf))) (all-surfaces compositor)))
+
 (defmethod wl-compositor:create-surface ((compositor compositor) id)
   (let ((surface (wl:mk-if 'surface compositor id :compositor compositor)))
     (setf (gethash id (surfaces compositor)) surface)
