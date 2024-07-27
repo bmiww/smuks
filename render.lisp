@@ -126,7 +126,10 @@
   (loop for window in (windows desktop)
 	do (when (and (texture window) (typep window 'toplevel))
 	     (let ((active (eq window (toplevel-of (keyboard-focus display)))))
-	       (render-toplevel output window active)))))
+	       (render-toplevel output window active)
+	       (when active
+		 (loop for cursor in (all-cursors (compositor (wl:client window)))
+		       do (render-cursor (wl:get-display output) output cursor)))))))
 
 
 ;; ┌─┐┬ ┬┌─┐┬─┐┌─┐┌┬┐
@@ -145,11 +148,7 @@
 
 		;; Each surface might have subsurfaces. Render those too
 		(loop for subsurface in subsurfaces
-		      do (render-subsurface ,output subsurface ,active))
-
-		(when active
-		  (loop for cursor in (all-cursors (compositor (wl:client ,surface)))
-			do (render-cursor (wl:get-display ,output) ,output cursor))))))
+		      do (render-subsurface ,output subsurface ,active)))))
 
        ;; Body is expected to call the perform function if it wants to render the surface
        ,@body))))
