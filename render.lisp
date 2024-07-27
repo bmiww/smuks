@@ -127,8 +127,8 @@
 (defun render-desktop (display output desktop)
   (loop for window in (windows desktop)
 	do (when (texture window)
-	     (let ((active (eq window (keyboard-focus display))))
-	     (render-toplevel output window active)))))
+	     (let ((active (eq window (toplevel-of (keyboard-focus display)))))
+	       (render-toplevel output window active)))))
 
 
 ;; ┌─┐┬ ┬┌─┐┬─┐┌─┐┌┬┐
@@ -151,3 +151,8 @@
 
        ;; Body is expected to call the perform function if it wants to render the surface
        ,@body))))
+
+(defun toplevel-of (surface)
+  (if (grab-parent surface)
+      (toplevel-of (grab-parent surface))
+      surface))
