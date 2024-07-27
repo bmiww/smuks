@@ -47,13 +47,6 @@
 ;; ┌─┐┌─┐┬─┐┌┬┐┬┌┬┐┌─┐
 ;; │  │ │├┬┘ ││││││└─┐
 ;; └─┘└─┘┴└──┴┘┴┴ ┴└─┘
-(defun render-cursor (display output surface)
-  (unless (cursor-hidden (seat (wl:client surface)))
-    (do-surface-render perform (x y width height texture) output surface t
-      (setf (client-cursor-drawn output) t)
-      (perform :x (- (cursor-x display) x (screen-x output))
-	       :y (- (cursor-y display) y (screen-y output))))))
-
 (defun render-drag (display output surface)
   (do-surface-render perform (x y width height texture) output surface t
     (setf (client-cursor-drawn output) t)
@@ -72,6 +65,13 @@
 ;; ┌─┐┌┐  ┬┌─┐┌─┐┌┬┐  ┬─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐
 ;; │ │├┴┐ │├┤ │   │   ├┬┘├┤ │││ ││├┤ ├┬┘
 ;; └─┘└─┘└┘└─┘└─┘ ┴   ┴└─└─┘┘└┘─┴┘└─┘┴└─
+(defun render-cursor (display output surface)
+  (unless (or (cursor-hidden (seat (wl:client surface))) (client-cursor-drawn output))
+    (do-surface-render perform (x y width height texture) output surface t
+      (setf (client-cursor-drawn output) t)
+      (perform :x (- (cursor-x display) x (screen-x output))
+	       :y (- (cursor-y display) y (screen-y output))))))
+
 (defun render-subsurface (output surface active)
   (do-surface-render perform (x y width height texture) output surface active
     (perform :x (- (or x 0) (screen-x output))
@@ -105,7 +105,6 @@
 ;; TODO: This and render-rest are still messy.
 (defun render-type (display output surface)
   (etypecase surface
-    (cursor (render-cursor display output surface))
     (drag-surface (render-drag display output surface))
     (layer-surface (render-layer-surface output surface))))
 
@@ -120,13 +119,12 @@
 		     do (let ((compositor (compositor client)))
 			(when compositor
 			  (mapcar #'render (funcall type compositor)))))))
-	(render-type #'all-layers)
-	(render-type #'all-cursors)))))
+	(render-type #'all-layers)))))
 
 
 (defun render-desktop (display output desktop)
   (loop for window in (windows desktop)
-	do (when (texture window)
+	do (when (and (texture window) (typep window 'toplevel))
 	     (let ((active (eq window (toplevel-of (keyboard-focus display)))))
 	       (render-toplevel output window active)))))
 
@@ -147,12 +145,17 @@
 
 		;; Each surface might have subsurfaces. Render those too
 		(loop for subsurface in subsurfaces
-		      do (render-subsurface ,output subsurface ,active)))))
+		      do (render-subsurface ,output subsurface ,active))
+
+		(when active
+		  (loop for cursor in (all-cursors (compositor (wl:client ,surface)))
+			do (render-cursor (wl:get-display ,output) ,output cursor))))))
 
        ;; Body is expected to call the perform function if it wants to render the surface
        ,@body))))
 
 (defun toplevel-of (surface)
-  (if (grab-parent surface)
-      (toplevel-of (grab-parent surface))
-      surface))
+  (and surface
+       (if (grab-parent surface)
+	   (toplevel-of (grab-parent surface))
+	   surface)))
