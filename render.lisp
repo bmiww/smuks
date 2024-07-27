@@ -21,6 +21,7 @@
       (gl:clear :color-buffer-bit)
 
       (render-scene output)
+
       (render-desktop display output desktop)
       (render-rest display output desktop)
 
@@ -48,101 +49,60 @@
 ;; └─┘└─┘┴└──┴┘┴┴ ┴└─┘
 (defun render-cursor (display output surface)
   (unless (cursor-hidden (seat (wl:client surface)))
-    (setf (client-cursor-drawn output) t)
-    (values (- (cursor-x display) (x surface) (screen-x output))
-	    (- (cursor-y display) (y surface) (screen-y output))
-	    (width surface)
-	    (height surface))))
-
+    (do-surface-render perform (x y width height texture) output surface t
+      (setf (client-cursor-drawn output) t)
+      (perform :x (- (cursor-x display) x (screen-x output))
+	       :y (- (cursor-y display) y (screen-y output))))))
 
 (defun render-drag (display output surface)
-  (setf (client-cursor-drawn output) t)
-  (values (- (cursor-x display) (x surface) (screen-x output))
-	  (- (cursor-y display) (y surface) (screen-y output))
-	  (width surface)
-	  (height surface)))
+  (do-surface-render perform (x y width height texture) output surface t
+    (setf (client-cursor-drawn output) t)
+    (perform :x (- (cursor-x display) x (screen-x output))
+	     :y (- (cursor-y display) y (screen-y output)))))
 
-(defun render-subsurface (output surface)
-  (values (- (or (x surface) 0) (screen-x output))
-	  (- (or (y surface) 0) (screen-y output))
-	  (width surface)
-	  (height surface)))
-
-(defun render-toplevel (output surface)
-  (if (initial-config-ackd surface)
-    (with-accessors ((x x) (y y) (width width) (height height)
-		     (compo-max-width compo-max-width)
-		     (compo-max-height compo-max-height)
-		     (texture texture)) surface
-
-      (let* ((w-exceed (> width compo-max-width))
-	     (h-exceed (> height compo-max-height)))
-
-	(values (- x (screen-x output))
-		(- y (screen-y output))
-		(if w-exceed compo-max-width width)
-		(if h-exceed compo-max-height height))))
-    (values nil nil nil nil)))
-
-
+;; TODO: Renderers should not screw around with setting coordinates/dimensions
 (defun render-layer-surface (output surface)
-  (let ((x (x surface))
-	(y (y surface)))
+  (do-surface-render perform (x y width height texture) output surface t
     (unless x (setf x (- (/ (output-width output) 2) (/ (width surface) 2))))
     (unless y (setf y (- (/ (output-height output) 2) (/ (height surface) 2))))
-
-    (values (- x (screen-x output))
-	    (- y (screen-y output))
-	    (width surface)
-	    (height surface))))
-
-(defun render-popup (output surface)
-  (declare (ignore output))
-  (values (+ (x surface) (x (grab-parent surface)))
-	  (+ (y surface) (y (grab-parent surface)))
-	  (width surface)
-	  (height surface)))
-
-(defun render-surface (output surface)
-  (values (- (x surface) (screen-x output))
-	  (- (y surface) (screen-y output))
-	  (width surface)
-	  (height surface)))
+    (perform :x (- x (screen-x output))
+	     :y (- y (screen-y output)))))
 
 
 ;; ┌─┐┌┐  ┬┌─┐┌─┐┌┬┐  ┬─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐
 ;; │ │├┴┐ │├┤ │   │   ├┬┘├┤ │││ ││├┤ ├┬┘
 ;; └─┘└─┘└┘└─┘└─┘ ┴   ┴└─└─┘┘└┘─┴┘└─┘┴└─
-(defun render-type (display output surface)
-  (let ((texture (texture surface)) x y width height)
-    (setf (values x y width height)
-	  (typecase surface
-	    (toplevel (render-toplevel output surface))
-	    (popup (render-popup output surface))
-	    (t (values nil nil nil nil))))
-    (if (and x y width height)
-	(progn
-	  (shaders.surface:draw-surface (surface-shader output texture)
-					texture
-					`(,(flo x) ,(flo y) ,(flo width) ,(flo height))
-					:active (eq surface (keyboard-focus display)))
-	  (flush-frame-callbacks surface)
-	  (setf (needs-redraw surface) nil))
-	(progn
-	  (setf (values x y width height)
-		(typecase surface
-		  (cursor (render-cursor display output surface))
-		  (drag-surface (render-drag display output surface))
-		  (layer-surface (render-layer-surface output surface))
-		  (subsurface (render-subsurface output surface))
-		  (t (render-surface output surface))))
-	  (when (and x y width height)
-	    (shaders.texture:draw (texture-shader output texture)
-				  texture
-				  `(,(flo x) ,(flo y) ,(flo width) ,(flo height))))
-	  (flush-frame-callbacks surface)
-	  (setf (needs-redraw surface) nil)))))
+(defun render-subsurface (output surface active)
+  (do-surface-render perform (x y width height texture) output surface active
+    (perform :x (- (or x 0) (screen-x output))
+	     :y (- (or y 0) (screen-y output)))))
 
+(defun render-popup (output surface active)
+  (do-surface-render perform (x y width height texture) output surface active
+    (perform :x (+ x (x (grab-parent surface)))
+	     :y (+ y (y (grab-parent surface))))))
+
+(defun render-toplevel (output surface active)
+  (when (initial-config-ackd surface)
+    (do-surface-render perform (x y width height texture) output surface active
+      (with-accessors ((compo-max-width compo-max-width) (compo-max-height compo-max-height)) surface
+	(let* ((w-exceed (> width compo-max-width)) (h-exceed (> height compo-max-height)))
+	  (perform :x (- x (screen-x output))
+		   :y (- y (screen-y output))
+		   :w (if w-exceed compo-max-width width)
+		   :h (if h-exceed compo-max-height height)))
+	(render-popup output (grab-child surface) active)))))
+
+
+;; TODO: This and render-rest are still messy.
+(defun render-type (display output surface)
+  (etypecase surface
+    (cursor (render-cursor display output surface))
+    (drag-surface (render-drag display output surface))
+    (layer-surface (render-layer-surface output surface))))
+
+;; TODO: Layers and cursors also should check if they need to render subsurfaces.
+;; I'm certain cursors won't have them, but they are still implementing surface, so by protocol i guess they could
 (defun render-rest (display output desktop)
   (declare (ignore desktop))
   (flet ((render (surface) (render-type display output surface)))
@@ -152,13 +112,33 @@
 		     do (let ((compositor (compositor client)))
 			(when compositor
 			  (mapcar #'render (funcall type compositor)))))))
-	;; (render-type #'all-toplevels)
-	(render-type #'all-subsurfaces)
-	(render-type #'all-popups)
 	(render-type #'all-layers)
 	(render-type #'all-cursors)))))
 
 
 (defun render-desktop (display output desktop)
   (loop for window in (windows desktop)
-	do (when (texture window) (render-type display output window))))
+	do (when (texture window)
+	     (let ((active (eq window (keyboard-focus display))))
+	     (render-toplevel output window active)))))
+
+
+;; ┌─┐┬ ┬┌─┐┬─┐┌─┐┌┬┐
+;; └─┐├─┤├─┤├┬┘├┤  ││
+;; └─┘┴ ┴┴ ┴┴└─└─┘─┴┘
+(defmacro do-surface-render (perform (x y width height texture) output surface active &body body)
+  `(when surface (with-accessors ((,x x) (,y y) (,width width) (,height height) (,texture texture) (subsurfaces subsurfaces)) ,surface
+     (flet ((,perform (&key (x ,x) (y ,y) (w ,width) (h ,height) (active ,active))
+	      (shaders.surface:draw-surface (surface-shader ,output ,texture)
+					    ,texture
+					    `(,(flo x) ,(flo y) ,(flo w) ,(flo h))
+					    :active active)
+	      (flush-frame-callbacks ,surface)
+	      (setf (needs-redraw ,surface) nil)
+
+	      ;; Each surface might have subsurfaces. Render those too
+	      (loop for subsurface in subsurfaces
+		    do (render-subsurface ,output subsurface ,active))))
+
+       ;; Body is expected to call the perform function if it wants to render the surface
+       ,@body))))

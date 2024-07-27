@@ -22,6 +22,7 @@
    (pending-frame-callbacks :initform nil :accessor pending-frame-callbacks)
    (compositor :initform nil :initarg :compositor :accessor compositor)
    (frame-callbacks :initform nil :accessor frame-callbacks)
+   (subsurfaces :initform nil :accessor subsurfaces)
    (buffer-scale :initform 1 :accessor buffer-scale)))
 
 (defmethod x ((surface surface)) (x (location surface)))
@@ -46,6 +47,13 @@
 (defmethod surface-x ((surface surface) x) x)
 (defmethod surface-y ((surface surface) y) y)
 (defmethod seat ((surface surface)) (seat (wl:client surface)))
+
+(defmethod add-subsurface ((surface surface) sub)
+  (push sub (subsurfaces surface))
+  (after cl-wl:destroy sub (lambda (sub) (rem-subsurface surface sub))))
+
+(defmethod rem-subsurface ((surface surface) sub)
+  (setf (subsurfaces surface) (remove sub (subsurfaces surface))))
 
 ;; ┌─┐┌─┐┌┬┐┌┬┐┬┌┬┐
 ;; │  │ ││││││││ │
