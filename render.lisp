@@ -109,8 +109,7 @@
 
 (defun render-child-toplevel (output surface active)
   (do-surface-render perform (x y width height texture) output surface active
-    (perform :x x
-	     :y y)))
+    (perform)))
 
 (defun render-toplevel (output surface active)
   (when (initial-config-ackd surface)
