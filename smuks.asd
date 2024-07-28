@@ -57,11 +57,6 @@
 	       #:cl-wl.input-method  ;; TODO: Add to my own distribution
 	       #+xwayland
 	       #:cl-wl.xwayland  ;; TODO: Add to my own distribution
-	       ;; TODO: Make libiio optional via compile flag.
-	       ;; It is only really used for mobile devices.
-	       ;; In case if anyone needs it for desktop, hit me up.
-	       ;; The flag could be resolved truthy by checking for the libiio.so file presence.
-	       ;; Or just deliver with it. Or compile it in somehow.
 	       #:lisp-binary ;; NOTE: Used for the accelerometer package which could be extracted
 	       #:mmap
 	       #:trivial-signal
