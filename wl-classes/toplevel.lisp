@@ -144,3 +144,20 @@ For my purposes - i'm just ignoring this and giving the client the current state
   "A client wants to unset fullscreen state."
   (rem-state toplevel :fullscreen)
   (do-window-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel)))
+
+
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+(defun configure-states (&rest states)
+  (loop for state in states
+	collect (case state
+		  (:maximized 1)
+		  (:fullscreen 2)
+		  (:resizing 3)
+		  (:activated 4)
+		  (:tiled-left 5)
+		  (:tiled-right 6)
+		  (:tiled-top 7)
+		  (:tiled-bottom 8)
+		  (:suspended 9))))
