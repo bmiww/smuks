@@ -44,9 +44,38 @@
       (wl:flush-clients display))))
 
 
-;; ┌─┐┌─┐┬─┐┌┬┐┬┌┬┐┌─┐
-;; │  │ │├┬┘ ││││││└─┐
-;; └─┘└─┘┴└──┴┘┴┴ ┴└─┘
+;; ┌─┐┬ ┬┌─┐┬─┐┌─┐┌┬┐
+;; └─┐├─┤├─┤├┬┘├┤  ││
+;; └─┘┴ ┴┴ ┴┴└─└─┘─┴┘
+(defmacro do-surface-render (perform (x y width height texture) output surface active &body body)
+  `(when surface
+     (with-accessors ((,x x) (,y y) (,width width) (,height height) (,texture texture) (subsurfaces subsurfaces)) ,surface
+       (flet ((,perform (&key (x ,x) (y ,y) (w ,width) (h ,height) (active ,active))
+		(when ,texture
+		  (shaders.surface:draw-surface (surface-shader ,output ,texture)
+						,texture
+						`(,(flo x) ,(flo y) ,(flo w) ,(flo h))
+						:active active)
+		  (flush-frame-callbacks ,surface)
+		  (setf (needs-redraw ,surface) nil)
+
+		  ;; Each surface might have subsurfaces. Render those too
+		  (loop for subsurface in subsurfaces
+			do (render-subsurface ,output subsurface ,active)))))
+
+	 ;; Body is expected to call the perform function if it wants to render the surface
+	 ,@body))))
+
+(defun toplevel-of (surface)
+  (and surface
+       (if (grab-parent surface)
+	   (toplevel-of (grab-parent surface))
+	   surface)))
+
+
+;; ┌─┐┌┐  ┬┌─┐┌─┐┌┬┐  ┬─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐
+;; │ │├┴┐ │├┤ │   │   ├┬┘├┤ │││ ││├┤ ├┬┘
+;; └─┘└─┘└┘└─┘└─┘ ┴   ┴└─└─┘┘└┘─┴┘└─┘┴└─
 (defun render-drag (display output surface)
   (do-surface-render perform (x y width height texture) output surface t
     (setf (client-cursor-drawn output) t)
@@ -61,10 +90,6 @@
     (perform :x (- x (screen-x output))
 	     :y (- y (screen-y output)))))
 
-
-;; ┌─┐┌┐  ┬┌─┐┌─┐┌┬┐  ┬─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐
-;; │ │├┴┐ │├┤ │   │   ├┬┘├┤ │││ ││├┤ ├┬┘
-;; └─┘└─┘└┘└─┘└─┘ ┴   ┴└─└─┘┘└┘─┴┘└─┘┴└─
 (defun render-cursor (display output surface)
   (unless (or (cursor-hidden (seat (wl:client surface))) (client-cursor-drawn output))
     (do-surface-render perform (x y width height texture) output surface t
@@ -84,11 +109,8 @@
 
 (defun render-child-toplevel (output surface active)
   (do-surface-render perform (x y width height texture) output surface active
-    (let* ((parent (grab-parent surface))
-	   (parent-width (min (compo-max-width parent) (width parent)))
-	   (parent-height (min (compo-max-height parent) (height parent))))
-      (perform :x (+ (x parent) (/ parent-width 2) (- (/ width 2)))
-	       :y (+ (y parent) (/ parent-height 2) (- (/ height 2)))))))
+    (perform :x x
+	     :y y)))
 
 (defun render-toplevel (output surface active)
   (when (initial-config-ackd surface)
@@ -134,31 +156,3 @@
 	       (when active
 		 (loop for cursor in (all-cursors (compositor (wl:client window)))
 		       do (render-cursor (wl:get-display output) output cursor)))))))
-
-
-;; ┌─┐┬ ┬┌─┐┬─┐┌─┐┌┬┐
-;; └─┐├─┤├─┤├┬┘├┤  ││
-;; └─┘┴ ┴┴ ┴┴└─└─┘─┴┘
-(defmacro do-surface-render (perform (x y width height texture) output surface active &body body)
-  `(when surface (with-accessors ((,x x) (,y y) (,width width) (,height height) (,texture texture) (subsurfaces subsurfaces)) ,surface
-     (flet ((,perform (&key (x ,x) (y ,y) (w ,width) (h ,height) (active ,active))
-	      (when ,texture
-		(shaders.surface:draw-surface (surface-shader ,output ,texture)
-					      ,texture
-					      `(,(flo x) ,(flo y) ,(flo w) ,(flo h))
-					      :active active)
-		(flush-frame-callbacks ,surface)
-		(setf (needs-redraw ,surface) nil)
-
-		;; Each surface might have subsurfaces. Render those too
-		(loop for subsurface in subsurfaces
-		      do (render-subsurface ,output subsurface ,active)))))
-
-       ;; Body is expected to call the perform function if it wants to render the surface
-       ,@body))))
-
-(defun toplevel-of (surface)
-  (and surface
-       (if (grab-parent surface)
-	   (toplevel-of (grab-parent surface))
-	   surface)))

@@ -39,7 +39,17 @@ The main purpose here is to define that child/parent relationships between the f
 	  (xdg-y-offset xdg) y
 	  (width xdg) width
 	  (height xdg) height
-	  (new-dimensions? xdg) t)))
+	  (new-dimensions? xdg) t)
+    (when (grab-child xdg) (reposition-child-toplevel (grab-child xdg)))))
+
+;; TODO: Seemingly should perform itself
+;; once parent changes width/height/x/y
+(defmethod reposition-child-toplevel ((xdg xdg-surface))
+  (let* ((parent (grab-parent xdg))
+	 (parent-width (min (compo-max-width parent) (width parent)))
+	 (parent-height (min (compo-max-height parent) (height parent))))
+    (setf (x xdg) (+ (x parent) (/ parent-width 2) (- (/ (width xdg) 2)))
+	  (y xdg) (+ (y parent) (/ parent-height 2) (- (/ (height xdg) 2))))))
 
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((display (wl:get-display xdg)))
@@ -105,6 +115,7 @@ The main purpose here is to define that child/parent relationships between the f
   (when parent
     (setf (grab-parent toplevel) parent)
     (setf (grab-child parent) toplevel)
+    (reposition-child-toplevel toplevel)
     (after cl-wl:destroy toplevel
 	   (lambda (toplevel) (declare (ignore toplevel)) (setf (grab-child parent) nil)))))
 
