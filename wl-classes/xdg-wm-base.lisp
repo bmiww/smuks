@@ -33,15 +33,10 @@
    "An xdg surface identifies a toplevel or a popup surface.
 The main purpose here is to define that child/parent relationships between the former."))
 
-(defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
-  (unless (and (eq width (width xdg)) (eq height (height xdg)))
-    (setf (xdg-x-offset xdg) x
-	  (xdg-y-offset xdg) y
-	  (width xdg) width
-	  (height xdg) height
-	  (new-dimensions? xdg) t)
-    (when (grab-child xdg) (reposition-child-toplevel (grab-child xdg)))))
 
+;; ┌┬┐┌─┐┌┬┐┬ ┬
+;; │││├┤  │ ├─┤
+;; ┴ ┴└─┘ ┴ ┴ ┴
 ;; TODO: Seemingly should perform itself
 ;; once parent changes width/height/x/y
 (defmethod reposition-child-toplevel ((xdg xdg-surface))
@@ -51,10 +46,24 @@ The main purpose here is to define that child/parent relationships between the f
     (setf (x xdg) (+ (x parent) (/ parent-width 2) (- (/ (width xdg) 2)))
 	  (y xdg) (+ (y parent) (/ parent-height 2) (- (/ (height xdg) 2))))))
 
+
+;; ┬ ┬┬    ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
+;; ││││    ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
+;; └┴┘┴─┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
+(defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
+  (unless (and (eq width (width xdg)) (eq height (height xdg)))
+    (setf (xdg-x-offset xdg) x
+	  (xdg-y-offset xdg) y
+	  (width xdg) width
+	  (height xdg) height
+	  (new-dimensions? xdg) t)
+    (when (grab-child xdg) (reposition-child-toplevel (grab-child xdg)))))
+
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((display (wl:get-display xdg)))
     (wl:up-if 'toplevel xdg id)
     (add-state xdg :maximized)
+
     (new-toplevel display xdg)))
 
 ;; TODO: Unify this configure with the one that toplevel uses to some extent?
@@ -95,15 +104,48 @@ The main purpose here is to define that child/parent relationships between the f
   (print-unreadable-object (toplevel stream :type t)
     (format stream "Client: ~a:::~a" (title toplevel) (app-id toplevel))))
 
+
+;; ┌┬┐┌─┐┌┬┐┬ ┬
+;; │││├┤  │ ├─┤
+;; ┴ ┴└─┘ ┴ ┴ ┴
 (defmethod (setf states) :after (states (toplevel toplevel)) (setf (new-states? toplevel) t))
 (defmethod surface-x ((toplevel toplevel) x) (+ x (xdg-x-offset toplevel)))
 (defmethod surface-y ((toplevel toplevel) y) (+ y (xdg-y-offset toplevel)))
 
-(defmethod xdg-toplevel:set-title ((toplevel toplevel) title)
-  (setf (title toplevel) title))
+(defmethod close-toplevel ((toplevel toplevel)) (xdg-toplevel:send-close toplevel))
 
-(defmethod xdg-toplevel:set-app-id ((toplevel toplevel) app-id)
-  (setf (app-id toplevel) app-id))
+(defmethod add-state ((toplevel toplevel) state) (pushnew state (states toplevel)))
+(defmethod rem-state ((toplevel toplevel) state) (setf (states toplevel) (remove state (states toplevel))))
+
+(defmethod configure-toplevel-default ((toplevel toplevel))
+  (do-window-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel)))
+
+
+(defmethod do-window-configure ((toplevel toplevel) width height &optional serial)
+  (unless (and (eq (width toplevel) width)
+	       (eq (height toplevel) height)
+	       (not (new-states? toplevel)))
+    (with-accessors ((awaiting-ack awaiting-ack) (states states)) toplevel
+      (let ((new-serial (or serial (configure-serial toplevel))))
+	(if awaiting-ack
+	    (after wl-surface:commit toplevel
+		   (lambda (toplevel)
+		     (if (awaiting-ack toplevel) :keep
+			 (unless (> (last-serial toplevel) new-serial)
+			   (do-window-configure toplevel width height new-serial)))))
+	    (progn
+	      (setf (new-states? toplevel) nil)
+	      (setf awaiting-ack new-serial)
+	      (xdg-toplevel:send-configure toplevel width height (apply 'configure-states states))
+	      (xdg-surface:send-configure toplevel new-serial)))
+	new-serial))))
+
+
+;; ┬ ┬┬    ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
+;; ││││    ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
+;; └┴┘┴─┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
+(defmethod xdg-toplevel:set-title ((toplevel toplevel) title) (setf (title toplevel) title))
+(defmethod xdg-toplevel:set-app-id ((toplevel toplevel) app-id) (setf (app-id toplevel) app-id))
 
 ;; NOTE: For now keeping the move request empty
 ;; Since you probably want tiling - this will mostly be ignored
@@ -111,15 +153,13 @@ The main purpose here is to define that child/parent relationships between the f
 (defmethod xdg-toplevel:move ((toplevel toplevel) seat serial)
   (log! "xdg-toplevel:move: Not implemented"))
 
-(defcontinue xdg-toplevel:set-parent ((toplevel toplevel) parent)
+(defmethod xdg-toplevel:set-parent ((toplevel toplevel) parent)
   (when parent
     (setf (grab-parent toplevel) parent)
     (setf (grab-child parent) toplevel)
     (reposition-child-toplevel toplevel)
     (after cl-wl:destroy toplevel
 	   (lambda (toplevel) (declare (ignore toplevel)) (setf (grab-child parent) nil)))))
-
-(defmethod close-toplevel ((toplevel toplevel)) (xdg-toplevel:send-close toplevel))
 
 ;; TODO: xdg-toplevel:set-min-size: size limitations still ignored
 (defmethod xdg-toplevel:set-min-size ((toplevel toplevel) width height)
@@ -183,37 +223,6 @@ For my purposes - i'm just ignoring this and giving the client the current state
   "A client wants to unset fullscreen state."
   (rem-state toplevel :fullscreen)
   (do-window-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel)))
-
-(defmethod configure-toplevel-default ((toplevel toplevel))
-  (do-window-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel)))
-
-
-(defmethod do-window-configure ((toplevel toplevel) width height &optional serial)
-  (unless (and (eq (width toplevel) width)
-	       (eq (height toplevel) height)
-	       (not (new-states? toplevel)))
-    (with-accessors ((awaiting-ack awaiting-ack) (states states)) toplevel
-      (let ((new-serial (or serial (configure-serial toplevel))))
-	(if awaiting-ack
-	    (after wl-surface:commit toplevel
-		   (lambda (toplevel)
-		     (if (awaiting-ack toplevel) :keep
-			 (unless (> (last-serial toplevel) new-serial)
-			   (do-window-configure toplevel width height new-serial)))))
-	    (progn
-	      (setf (new-states? toplevel) nil)
-	      (setf awaiting-ack new-serial)
-	      (xdg-toplevel:send-configure toplevel width height (apply 'configure-states states))
-	      (xdg-surface:send-configure toplevel new-serial)))
-	new-serial))))
-
-
-
-(defmethod add-state ((toplevel toplevel) state)
-  (pushnew state (states toplevel)))
-
-(defmethod rem-state ((toplevel toplevel) state)
-  (setf (states toplevel) (remove state (states toplevel))))
 
 
 ;; ┌─┐┌─┐┌─┐┬ ┬┌─┐
