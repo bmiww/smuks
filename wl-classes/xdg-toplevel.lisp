@@ -19,6 +19,8 @@
    (desktop :initform nil :accessor desktop)
    (states :initform nil :accessor states)
    (new-states? :initform nil :accessor new-states?)
+
+   ;; TODO: Instead of this - make the compositor keep track of which surfaces are ready or not perhaps
    (initial-config-ackd :initform nil :accessor initial-config-ackd)))
 
 (defmethod print-object ((toplevel toplevel) stream)

@@ -105,7 +105,11 @@
 (defun render-popup (output surface active)
   (do-surface-render perform (x y width height texture) output surface active
     (perform :x (+ x (x (grab-parent surface)))
-	     :y (+ y (y (grab-parent surface))))))
+	     :y (+ y (y (grab-parent surface))))
+    (when (grab-child surface)
+      (typecase (grab-child surface)
+	(toplevel (render-child-toplevel output (grab-child surface) active))
+	(popup (render-popup output (grab-child surface) active))))))
 
 (defun render-child-toplevel (output surface active)
   (do-surface-render perform (x y width height texture) output surface active
@@ -114,17 +118,12 @@
 (defun render-toplevel (output surface active)
   (when (initial-config-ackd surface)
     (do-surface-render perform (x y width height texture) output surface active
-      (with-accessors ((compo-max-width compo-max-width) (compo-max-height compo-max-height)) surface
-	(let* ((w-exceed (> width compo-max-width)) (h-exceed (> height compo-max-height)))
-	  (perform :x (- x (screen-x output))
-		   :y (- y (screen-y output))
-		   :w (if w-exceed compo-max-width width)
-		   :h (if h-exceed compo-max-height height)))
+      (perform)
 
-	(when (grab-child surface)
-	  (typecase (grab-child surface)
-	    (toplevel (render-child-toplevel output (grab-child surface) active))
-	    (popup (render-popup output (grab-child surface) active))))))))
+      (when (grab-child surface)
+	(typecase (grab-child surface)
+	  (toplevel (render-child-toplevel output (grab-child surface) active))
+	  (popup (render-popup output (grab-child surface) active)))))))
 
 
 ;; TODO: This and render-rest are still messy.

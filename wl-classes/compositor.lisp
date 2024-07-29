@@ -30,6 +30,7 @@
 (defmethod all-popups ((compositor compo)) (remove-if-not (lambda (surf) (typep surf 'popup)) (all-surfaces compositor)))
 (defmethod all-layers ((compositor compo)) (remove-if-not (lambda (surf) (typep surf 'layer-surface)) (all-surfaces compositor)))
 
+
 ;; ┬ ┬┬   ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;; ││││───├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;; └┴┘┴─┘ ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
@@ -37,7 +38,6 @@
   ;; TODO: DUNNO if i'll ever really use the client compositors from the global
   (let ((client-compositor (wl:iface client id)))
     ))
-
 
 
 ;;  ██████╗██╗     ██╗███████╗███╗   ██╗████████╗    ██████╗ ██╗███████╗██████╗  █████╗ ████████╗ ██████╗██╗  ██╗
@@ -98,10 +98,17 @@
 
 (defun recalculate-toplevel (toplevel width height new-x new-y)
   (with-accessors ((x x) (y y) (compo-max-width compo-max-width) (compo-max-height compo-max-height)
-		   (pending-buffer pending-buffer)) toplevel
+		   (pending-buffer pending-buffer)
+		   (width-want width) (height-want height)) toplevel
 
     (setf compo-max-width width compo-max-height height)
-    (setf x new-x y new-y)
+    (setf x (- new-x (screen-x output)))
+    (setf y (- new-y (screen-y output)))
+
+    ;; TODO: These are overwriting the WANT values from the client
+    ;; Should instead introduce a different variable (or make compo-max* a bit more sensible)
+    (setf width-wand (min compo-max-width width))
+    (setf height-wand (min compo-max-height height))
 
     ;; NOTE If the dimensions of the toplevel are less than what is allocated
     ;; We center the window in the middle of their allocated space
@@ -126,6 +133,7 @@
 	for toplevel in (remove-if (lambda (toplevel) (not (typep toplevel 'toplevel))) (windows desktop))
 	for i from 0
 	do (recalculate-toplevel
+	    output
 	    toplevel
 	    width-per
 	    d-height
