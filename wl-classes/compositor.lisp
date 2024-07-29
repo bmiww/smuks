@@ -11,6 +11,10 @@
   ((desktops :initform nil :accessor desktops)
    (surfaces :initform (make-hash-table) :accessor surfaces)))
 
+(defmethod initialize-instance :after ((compositor compositor-global) &key)
+  (setf (desktops compositor) (loop for i from 0 below 10 collect (make-instance 'desktop))))
+
+
 ;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐  ┌─┐┬┌┬┐┌─┐
 ;; │  │  │├┤ │││ │───└─┐│ ││├┤
 ;; └─┘┴─┘┴└─┘┘└┘ ┴   └─┘┴─┴┘└─┘
@@ -46,14 +50,9 @@
 ;; ┬ ┬┬   ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
 ;; ││││───├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
 ;; └┴┘┴─┘ ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
+(defmethod wl-compositor:create-region ((compositor compositor) id) (wl:mk-if 'region compositor id))
 (defmethod wl-compositor:create-surface ((compositor compositor) id)
-  (let ((surface (wl:mk-if 'surface compositor id :compositor compositor)))
-    (setf (gethash id (surfaces compositor)) surface)
-    surface))
-
-(defmethod wl-compositor:create-region ((compositor compositor) id)
-  (wl:mk-if 'region compositor id))
-
+  (setf (gethash id (surfaces compositor)) (wl:mk-if 'surface compositor id :compositor compositor)))
 
 
 ;; ██████╗ ███████╗███████╗██╗  ██╗████████╗ ██████╗ ██████╗ ███████╗

@@ -14,6 +14,9 @@
    (libseat :initarg :libseat :accessor libseat)
    (gl-version :initarg :gl-version :accessor gl-version)
 
+   (compositor :initform (make-instance 'compositor-global :display display :dispatch-impl 'compositor)
+	       :accessor compositor)
+
    ;; TODO: I would like to turn this into a coord struct - but naming is weird.
    ;; coord assumes desktop. This uses output.
    (cursor-x :initform 0 :accessor cursor-x)
@@ -27,7 +30,7 @@
 
    (pointer-focus :initform nil :accessor pointer-focus)
    (pending-drag :initform nil :accessor pending-drag)
-   (desktops :initform nil :accessor desktops)
+
    (active-desktop :initform nil :accessor active-desktop)
    (outputs :initform nil :accessor outputs)
 
@@ -39,16 +42,13 @@
 (defvar *framebuffer-count* 2)
 
 (defmethod initialize-instance :after ((display display) &key)
-  ;; NOTE: For now creating 10 desktops each for one number key
-  (setf (desktops display)
-	(loop for i from 0 below 10
-	      collect (make-instance 'desktop)))
-
   (setf (active-desktop display) (first (desktops display))))
 
 
 (defgeneric input (display type event))
 (defgeneric process (display type usecase event))
+
+(defmethod desktops ((display display)) (desktops (compositor display)))
 
 (defmethod wl:rem-client :before ((display display) client)
   (with-slots (keyboard-focus pointer-focus pending-drag) display
@@ -78,7 +78,6 @@
 
 (defmethod init-globals ((display display))
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
-  (make-instance 'compositor-global :display display :dispatch-impl 'compositor)
   (make-instance 'wl-subcompositor:global :display display :dispatch-impl 'subcompositor)
   (make-instance 'shm-global :display display :dispatch-impl 'shm)
   (make-instance 'seat-global :display display :dispatch-impl 'seat)
