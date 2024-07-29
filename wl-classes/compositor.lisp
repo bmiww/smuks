@@ -7,11 +7,21 @@
 ;;  ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝      ╚═════╝ ╚══════╝╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
 (in-package :smuks)
 
+(defclass compositor-global (wl-compositor:global)
+  ((desktops :initform nil :accessor desktops)
+   (surfaces :initform (make-hash-table) :accessor surfaces)))
+
+;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐  ┌─┐┬┌┬┐┌─┐
+;; │  │  │├┤ │││ │───└─┐│ ││├┤
+;; └─┘┴─┘┴└─┘┘└┘ ┴   └─┘┴─┴┘└─┘
 (defclass compositor (wl-compositor:dispatch)
   ((surfaces :initform (make-hash-table :test 'equal) :accessor surfaces)))
 
-(defmethod all-surfaces ((compositor compositor)) (reverse (alexandria:hash-table-values (surfaces compositor))))
 
+;; ┌┬┐┌─┐┌┬┐┬ ┬
+;; │││├┤  │ ├─┤
+;; ┴ ┴└─┘ ┴ ┴ ┴
+(defmethod all-surfaces ((compositor compositor)) (reverse (alexandria:hash-table-values (surfaces compositor))))
 (defmethod all-ready-surfaces ((compositor compositor))
   (let* ((all (all-surfaces compositor)))
     (remove-if-not #'texture all)))
@@ -20,20 +30,9 @@
   (remove-if-not (lambda (surf) (typep surf class)) (all-ready-surfaces compositor)))
 
 (defmethod all-layers ((compositor compositor)) (all- compositor 'layer-surface))
-(defmethod all-toplevels ((compositor compositor)) (all- compositor 'toplevel))
-(defmethod all-subsurfaces ((compositor compositor)) (all- compositor 'subsurface))
 (defmethod all-cursors ((compositor compositor)) (all- compositor 'cursor))
-
 (defmethod all-popups ((compositor compositor))
   (remove-if-not (lambda (surf) (and (typep surf 'popup) (texture surf))) (all-surfaces compositor)))
-
-(defmethod wl-compositor:create-surface ((compositor compositor) id)
-  (let ((surface (wl:mk-if 'surface compositor id :compositor compositor)))
-    (setf (gethash id (surfaces compositor)) surface)
-    surface))
-
-(defmethod wl-compositor:create-region ((compositor compositor) id)
-  (wl:mk-if 'region compositor id))
 
 (defmethod toplevel-surface ((compositor compositor))
   (loop for value being the hash-values of (surfaces compositor)
@@ -42,6 +41,19 @@
 
 (defmethod rem-surface ((compositor compositor) surface)
   (remhash (wl-surface::wl_surface-id surface) (surfaces compositor)))
+
+
+;; ┬ ┬┬   ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
+;; ││││───├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
+;; └┴┘┴─┘ ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
+(defmethod wl-compositor:create-surface ((compositor compositor) id)
+  (let ((surface (wl:mk-if 'surface compositor id :compositor compositor)))
+    (setf (gethash id (surfaces compositor)) surface)
+    surface))
+
+(defmethod wl-compositor:create-region ((compositor compositor) id)
+  (wl:mk-if 'region compositor id))
+
 
 
 ;; ██████╗ ███████╗███████╗██╗  ██╗████████╗ ██████╗ ██████╗ ███████╗

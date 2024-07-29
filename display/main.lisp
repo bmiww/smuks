@@ -78,7 +78,7 @@
 
 (defmethod init-globals ((display display))
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
-  (make-instance 'wl-compositor:global :display display :dispatch-impl 'compositor)
+  (make-instance 'compositor-global :display display :dispatch-impl 'compositor)
   (make-instance 'wl-subcompositor:global :display display :dispatch-impl 'subcompositor)
   (make-instance 'shm-global :display display :dispatch-impl 'shm)
   (make-instance 'seat-global :display display :dispatch-impl 'seat)
