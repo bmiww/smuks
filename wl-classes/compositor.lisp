@@ -7,17 +7,45 @@
 ;;  ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝      ╚═════╝ ╚══════╝╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
 (in-package :smuks)
 
-(defclass compositor-global (wl-compositor:global)
-  ((desktops :initform nil :accessor desktops)
+(defclass compo (wl-compositor:global)
+  ((desktops :initform (loop for i from 0 below 10 collect (make-instance 'desktop)) :accessor desktops)
    (surfaces :initform (make-hash-table) :accessor surfaces)))
 
-(defmethod initialize-instance :after ((compositor compositor-global) &key)
-  (setf (desktops compositor) (loop for i from 0 below 10 collect (make-instance 'desktop))))
+
+;; ┌┬┐┌─┐┌┬┐┬ ┬
+;; │││├┤  │ ├─┤
+;; ┴ ┴└─┘ ┴ ┴ ┴
+(defmethod new-surface ((global compo) surface)
+  (setf (gethash (wl-surface::wl_surface-id surface) (surfaces global)) surface))
+
+(defmethod all-surfaces ((compositor compo))
+  ;; TODO: Stupid wasteful reverse
+  (reverse
+   ;; TODO: Stupid removal if texture not set. Should resolve this when a texture is added.
+   ;; Then the surface can be put into something like - ready-surfaces???
+   (remove-if-not
+    (lambda (surf) (texture surf))
+    (alexandria:hash-table-values (surfaces compositor)))))
+
+(defmethod all-popups ((compositor compo)) (remove-if-not (lambda (surf) (typep surf 'popup)) (all-surfaces compositor)))
+(defmethod all-layers ((compositor compo)) (remove-if-not (lambda (surf) (typep surf 'layer-surface)) (all-surfaces compositor)))
+
+;; ┬ ┬┬   ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
+;; ││││───├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
+;; └┴┘┴─┘ ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
+(defmethod wl-compositor:dispatch-bind :after ((global compo) client data version id)
+  ;; TODO: DUNNO if i'll ever really use the client compositors from the global
+  (let ((client-compositor (wl:iface client id)))
+    ))
 
 
-;; ┌─┐┬  ┬┌─┐┌┐┌┌┬┐  ┌─┐┬┌┬┐┌─┐
-;; │  │  │├┤ │││ │───└─┐│ ││├┤
-;; └─┘┴─┘┴└─┘┘└┘ ┴   └─┘┴─┴┘└─┘
+
+;;  ██████╗██╗     ██╗███████╗███╗   ██╗████████╗    ██████╗ ██╗███████╗██████╗  █████╗ ████████╗ ██████╗██╗  ██╗
+;; ██╔════╝██║     ██║██╔════╝████╗  ██║╚══██╔══╝    ██╔══██╗██║██╔════╝██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██║  ██║
+;; ██║     ██║     ██║█████╗  ██╔██╗ ██║   ██║       ██║  ██║██║███████╗██████╔╝███████║   ██║   ██║     ███████║
+;; ██║     ██║     ██║██╔══╝  ██║╚██╗██║   ██║       ██║  ██║██║╚════██║██╔═══╝ ██╔══██║   ██║   ██║     ██╔══██║
+;; ╚██████╗███████╗██║███████╗██║ ╚████║   ██║       ██████╔╝██║███████║██║     ██║  ██║   ██║   ╚██████╗██║  ██║
+;;  ╚═════╝╚══════╝╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝       ╚═════╝ ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝
 (defclass compositor (wl-compositor:dispatch)
   ((surfaces :initform (make-hash-table :test 'equal) :accessor surfaces)))
 
@@ -25,23 +53,10 @@
 ;; ┌┬┐┌─┐┌┬┐┬ ┬
 ;; │││├┤  │ ├─┤
 ;; ┴ ┴└─┘ ┴ ┴ ┴
-(defmethod all-surfaces ((compositor compositor)) (reverse (alexandria:hash-table-values (surfaces compositor))))
-(defmethod all-ready-surfaces ((compositor compositor))
-  (let* ((all (all-surfaces compositor)))
-    (remove-if-not #'texture all)))
-
-(defmethod all- ((compositor compositor) class)
-  (remove-if-not (lambda (surf) (typep surf class)) (all-ready-surfaces compositor)))
-
-(defmethod all-layers ((compositor compositor)) (all- compositor 'layer-surface))
-(defmethod all-cursors ((compositor compositor)) (all- compositor 'cursor))
-(defmethod all-popups ((compositor compositor))
-  (remove-if-not (lambda (surf) (and (typep surf 'popup) (texture surf))) (all-surfaces compositor)))
-
 (defmethod toplevel-surface ((compositor compositor))
   (loop for value being the hash-values of (surfaces compositor)
 	when (typep value 'toplevel)
-	return value))
+	  return value))
 
 (defmethod rem-surface ((compositor compositor) surface)
   (remhash (wl-surface::wl_surface-id surface) (surfaces compositor)))
@@ -52,7 +67,9 @@
 ;; └┴┘┴─┘ ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
 (defmethod wl-compositor:create-region ((compositor compositor) id) (wl:mk-if 'region compositor id))
 (defmethod wl-compositor:create-surface ((compositor compositor) id)
-  (setf (gethash id (surfaces compositor)) (wl:mk-if 'surface compositor id :compositor compositor)))
+  (new-surface
+   (wl:global compositor)
+   (setf (gethash id (surfaces compositor)) (wl:mk-if 'surface compositor id :compositor compositor))))
 
 
 ;; ██████╗ ███████╗███████╗██╗  ██╗████████╗ ██████╗ ██████╗ ███████╗

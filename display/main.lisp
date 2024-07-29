@@ -6,6 +6,9 @@
 ;; ██████╔╝██║███████║██║     ███████╗██║  ██║   ██║
 ;; ╚═════╝ ╚═╝╚══════╝╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝
 (in-package :smuks)
+
+(defvar *framebuffer-count* 2)
+
 (defclass display (wl:display)
   ;; Not sure we need 32. That's a lot of fingers.
   ((touch-slot-interesses :initform (make-array 32 :initial-element nil) :reader touch-slot-interesses)
@@ -38,7 +41,6 @@
    (k-shift? :initform nil :accessor k-shift?)
    (k-super? :initform nil :accessor k-super?)))
 
-(defvar *framebuffer-count* 2)
 
 (defmethod initialize-instance :after ((display display) &key)
   )
@@ -77,7 +79,7 @@
 
 (defmethod init-globals ((display display))
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
-  (setf (compositor display) (make-instance 'compositor-global :display display :dispatch-impl 'compositor))
+  (setf (compositor display) (make-instance 'compo :display display :dispatch-impl 'compositor))
   (make-instance 'wl-subcompositor:global :display display :dispatch-impl 'subcompositor)
   (make-instance 'shm-global :display display :dispatch-impl 'shm)
   (make-instance 'seat-global :display display :dispatch-impl 'seat)
@@ -258,19 +260,18 @@
   "Iterate all clients and their surfaces to find one that intersects with the given coordinates"
   (let* ((clients (wl:all-clients display))
 	 (output (output-at-coords display x y))
-	 (desktop (find-output-desktop display output)))
+	 (desktop (find-output-desktop display output))
+	 (compositor (compositor display)))
     (when desktop
-      (loop for client in clients
-	    do (let* ((compositor (compositor client))
-		      (toplevels (and compositor (all-surfaces compositor)))
-		      (popups (and compositor (all-popups compositor))))
-		 (when popups
-		   (let ((popup (find-bounder popups x y)))
-		     (when popup (return-from surface-at-coords popup))))
+      (let ((popups (all-popups compositor)) (toplevels (all-surfaces compositor)))
 
-		 (when toplevels
-		   (let ((toplevel (find-bounder toplevels x y desktop)))
-		     (when toplevel (return-from surface-at-coords toplevel)))))))))
+	(when popups
+	  (let ((popup (find-bounder popups x y)))
+	    (when popup (return-from surface-at-coords popup))))
+
+	(when toplevels
+	  (let ((toplevel (find-bounder toplevels x y desktop)))
+	    (when toplevel (return-from surface-at-coords toplevel))))))))
 
 (defmethod output-at-coords ((display display) x y)
   (loop for output in (outputs display)
@@ -351,15 +352,6 @@
     (when (and window output)
       (let ((desktop (find-output-desktop display output)))
 	(perform-send-to-desktop display window desktop)))))
-
-
-;; tODO: It's actually a bit more painful to do window resizes. Would need to create actual layouts
-;; (defvar *resize-increment-percent* 0.05)
-;; (defmethod resize-left ((display display))
-  ;; (with-accessors ((windows windows) (output output)) (active-desktop display)
-    ;; (setf (width (car windows)) (max (width output) (+ (width (car windows)) (floor (* (width output) *resize-increment-percent*)))))
-    ;; (mapcar
-     ;; (lambda (window) (setf (width window) (min 0 (width window) (- (width output) (width (car windows))))))
 
 
 ;; ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌┬┐  ┌┬┐┌─┐┌┐ ┬ ┬┌─┐
