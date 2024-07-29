@@ -102,6 +102,8 @@
 			     (:file "xdg-toplevel")
 			     (:file "xdg-popup")
 			     (:file "compositor")
+			     (:file "subcompositor")
+			     (:file "region")
 			     (:file "shm")
 			     (:file "seat")
 			     (:file "dd-manager")

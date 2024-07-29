@@ -43,33 +43,6 @@
 (defmethod rem-surface ((compositor compositor) surface)
   (remhash (wl-surface::wl_surface-id surface) (surfaces compositor)))
 
-;; ┬─┐┌─┐┌─┐┬┌─┐┌┐┌
-;; ├┬┘├┤ │ ┬││ ││││
-;; ┴└─└─┘└─┘┴└─┘┘└┘
-(defclass region (wl-region:dispatch)
-  ((rectangles :initform nil :accessor rectangles)))
-
-(defmethod wl-region:add ((region region) x y width height)
-  (push (list x y width height) (rectangles region)))
-
-(defmethod wl-region:subtract ((region region) x y width height)
-  (setf (rectangles region) (remove (list x y width height) (rectangles region))))
-
-
-;; ███████╗██╗   ██╗██████╗  ██████╗ ██████╗ ███╗   ███╗██████╗  ██████╗ ███████╗██╗████████╗ ██████╗ ██████╗
-;; ██╔════╝██║   ██║██╔══██╗██╔════╝██╔═══██╗████╗ ████║██╔══██╗██╔═══██╗██╔════╝██║╚══██╔══╝██╔═══██╗██╔══██╗
-;; ███████╗██║   ██║██████╔╝██║     ██║   ██║██╔████╔██║██████╔╝██║   ██║███████╗██║   ██║   ██║   ██║██████╔╝
-;; ╚════██║██║   ██║██╔══██╗██║     ██║   ██║██║╚██╔╝██║██╔═══╝ ██║   ██║╚════██║██║   ██║   ██║   ██║██╔══██╗
-;; ███████║╚██████╔╝██████╔╝╚██████╗╚██████╔╝██║ ╚═╝ ██║██║     ╚██████╔╝███████║██║   ██║   ╚██████╔╝██║  ██║
-;; ╚══════╝ ╚═════╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝      ╚═════╝ ╚══════╝╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
-(defclass subcompositor (wl-subcompositor:dispatch)
-  ())
-
-(defmethod wl-subcompositor:get-subsurface ((subcompositor subcompositor) id surface parent)
-  (wl:up-if 'subsurface surface id :parent parent)
-  (add-subsurface parent surface))
-
-
 
 ;; ██████╗ ███████╗███████╗██╗  ██╗████████╗ ██████╗ ██████╗ ███████╗
 ;; ██╔══██╗██╔════╝██╔════╝██║ ██╔╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝
