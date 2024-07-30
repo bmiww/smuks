@@ -14,8 +14,7 @@
    (libseat :initarg :libseat :accessor libseat)
    (gl-version :initarg :gl-version :accessor gl-version)
 
-   (compositor :initform (make-instance 'compositor-global :display display :dispatch-impl 'compositor)
-	       :accessor compositor)
+   (compositor :initform nil :accessor compositor)
 
    ;; TODO: I would like to turn this into a coord struct - but naming is weird.
    ;; coord assumes desktop. This uses output.
@@ -42,7 +41,7 @@
 (defvar *framebuffer-count* 2)
 
 (defmethod initialize-instance :after ((display display) &key)
-  (setf (active-desktop display) (first (desktops display))))
+  )
 
 
 (defgeneric input (display type event))
@@ -78,6 +77,7 @@
 
 (defmethod init-globals ((display display))
   ;; TODO: When you recompile the compiled classes - these globals aren't updated, needing a rerun
+  (setf (compositor display) (make-instance 'compositor-global :display display :dispatch-impl 'compositor))
   (make-instance 'wl-subcompositor:global :display display :dispatch-impl 'subcompositor)
   (make-instance 'shm-global :display display :dispatch-impl 'shm)
   (make-instance 'seat-global :display display :dispatch-impl 'seat)
@@ -92,6 +92,8 @@
   (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
 
   (init-outputs display)
+
+  (setf (active-desktop display) (first (desktops display)))
 
   ;; TODO: Needs outputs at this point. Could be moved if i rewrite initialization
   ;; NOTE: For each screen we have available attach it to a different desktop

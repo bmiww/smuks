@@ -74,7 +74,7 @@
 (defmethod xdg-toplevel:move ((toplevel toplevel) seat serial)
   (log! "xdg-toplevel:move: Not implemented"))
 
-(defmethod xdg-toplevel:set-parent ((toplevel toplevel) parent)
+(defcontinue xdg-toplevel:set-parent ((toplevel toplevel) parent)
   (when parent
     (setf (grab-parent toplevel) parent)
     (setf (grab-child parent) toplevel)
