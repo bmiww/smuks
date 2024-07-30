@@ -16,8 +16,8 @@
   ((fd :initarg :fd :accessor fd)
    (fd-stream :initarg :fd-stream :accessor fd-stream)
    (close-device :initarg :close-device :accessor close-device)
-   (resources :initarg :resources :accessor resources)
-   (gbm-pointer :initarg :gbm-pointer :accessor gbm-pointer)
+   (resources :initform nil :initarg :resources :accessor resources)
+   (gbm-pointer :initform nil :initarg :gbm-pointer :accessor gbm-pointer)
    ;; TODO: Unused for now? Supposed to be DRM lib framebuffers
    ;; Related to planes? Like cursor plane and stuff?
    (framebuffers :initarg :framebuffers :accessor framebuffers)
@@ -49,9 +49,9 @@
 
 	  (setf (dev-t device) (drm::resources-dev-t resources))))
     (error (e)
-      (declare (ignore e))
       (log! "Error during drm/gbm init. Closing device.")
-      (close-drm device))))
+      (close-drm device)
+      (error e))))
 
 
 (defmethod recheck-resources ((device gbm-device))
@@ -182,7 +182,7 @@
 (defmethod close-drm ((device gbm-device))
   (when (resources device) (setf (resources device) nil))
   (when (gbm-pointer device)
-    (check-err (gbm:device-destroy (gbm-pointer device)))
+    (gbm:device-destroy (gbm-pointer device))
     (setf (gbm-pointer device) nil))
 
   ;; (when (master device)
