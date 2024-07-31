@@ -95,11 +95,7 @@
   (setf (max-height toplevel) height))
 
 (defmethod xdg-toplevel:set-maximized ((toplevel toplevel))
-  "A client wants to maximize their window to maximum size.
-For tiling managers - i think i'll just resend the original configure event.
-Supposed to answer with a configure event showing the new size."
-  (let ((width (width toplevel))
-	(height (height toplevel)))
+  (let ((width (width toplevel)) (height (height toplevel)))
 
     (when (< (compo-max-width toplevel) width) (setf width (compo-max-width toplevel)))
     (when (< (compo-max-height toplevel) height) (setf height (compo-max-height toplevel)))
@@ -108,11 +104,7 @@ Supposed to answer with a configure event showing the new size."
     (do-window-configure toplevel width height)))
 
 (defmethod xdg-toplevel:unset-maximized ((toplevel toplevel))
-  "A client wants to unset maximized state.
-For tiling managers - i think i'll just resend the original configure event.
-Supposed to answer with a configure event showing the new size."
-  (let ((width (width toplevel))
-	(height (height toplevel)))
+  (let ((width (width toplevel)) (height (height toplevel)))
 
     (when (or (< width 0) (< (compo-max-width toplevel) width)) (setf width (compo-max-width toplevel)))
     (when (or (< height 0) (< (compo-max-height toplevel) height)) (setf height (compo-max-height toplevel)))
