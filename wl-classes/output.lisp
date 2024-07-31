@@ -74,26 +74,25 @@ transform - is the output rotated? is the output flipped?
 
 (defmethod render-scene ((output output)) (when (scene output) (funcall (scene output) output)))
 (defmethod prep-shaders ((output output))
-  (let ((width (output-width output)) (height (output-height output)) (rot (shader-rot-val output))
-	(gl-version (gl-version (wl:get-display output))))
-    ;; NOTE: Binds the first framebuffer to generate the shaders. Don't think that in itself is necessary.
-    ;; But regardless, both buffer dimensions should be identical here.
-    (loop for framebuffer in (framebuffers output)
-	  do (prep-gl-implementation (framebuffer-id framebuffer) width height))
+  (with-accessors ((width output-width) (height output-height) (rot shader-rot-val)) output
+    (let ((gl-version (gl-version (wl:get-display output))))
+      ;; NOTE: Binds the first framebuffer to generate the shaders. Don't think that in itself is necessary.
+      ;; But regardless, both buffer dimensions should be identical here.
+      ;; TODO: It's also possible that i totally don't even need this
+      (loop for framebuffer in (framebuffers output)
+	    do (prep-gl-implementation (framebuffer-id framebuffer) width height))
 
-    ;; TODO: This check is dumb. We now have a bit more shaders than before too
-    (let ((rect (rect-shader output))
-	  (texture (nth 1 (shaders output)))
-	  (xrgb8888 (nth 2 (shaders output))))
-      (if (and rect texture xrgb8888)
-	  (let ((projection (sglutil:projection-matrix width height rot)))
-	    (mapcar (lambda (shader) (shaders:update-projection shader projection)) (list rect texture xrgb8888)))
-	  (setf (shaders output) `(,(shader-init:create-rect-shader width height rot gl-version)
-				   ,(restart-case (shader-init:create-texture-shader width height rot gl-version)
-				      (ignore () (nth 1 (shaders output))))
-				   ,(shader-init:create-xrgb8888-shader width height rot gl-version)
-				   ,(shader-init:create-surface-shader width height rot gl-version)
-				   ,(shader-init:create-surface-xrgb8888-shader width height rot gl-version)))))))
+      (setf (shaders output) `(,(shader-init:create-rect-shader width height rot gl-version)
+			       ,(restart-case (shader-init:create-texture-shader width height rot gl-version)
+				  (ignore () (nth 1 (shaders output))))
+			       ,(shader-init:create-xrgb8888-shader width height rot gl-version)
+			       ,(shader-init:create-surface-shader width height rot gl-version)
+			       ,(shader-init:create-surface-xrgb8888-shader width height rot gl-version))))))
+
+(defmethod update-shaders ((output output))
+  (with-accessors ((width output-width) (height output-height) (rot shader-rot-val)) output
+      (let ((projection (sglutil:projection-matrix width height rot)))
+	(mapcar (lambda (shader) (shaders:update-projection shader projection)) (shaders output)))))
 
 
 (defmethod start-monitor ((output output))
@@ -133,7 +132,7 @@ transform - is the output rotated? is the output flipped?
   (unless orientation (error "Provided orientation cannot be nil."))
   (setf (slot-value output 'orientation) orientation)
   (recalculate-dimensions (wl:get-display output))
-  (prep-shaders output)
+  (update-shaders output)
   (let ((related-desktop (find-output-desktop (wl:get-display output) output)))
     (recalculate-layout related-desktop)))
 
@@ -185,20 +184,21 @@ transform - is the output rotated? is the output flipped?
     (:xrgb8888 (nth 2 (shaders output)))))
 
 (defmethod determine-orientation ((output output) display accel)
-  (with-accessors ((orientation orientation) (accelerometer accelerometer)) output
-    (unless accelerometer (error "No accelerometer connected to output."))
-    (let* ((current-orient orientation))
-      (destructuring-bind (x y z) accel
-	(declare (ignore z))
-	(let* ((y-neg (<= y 0)) (x-neg (<= x 0))
-	       (x (abs x)) (y (abs y))
-	       (new-orient
-		 (cond
-		   ((and y-neg (>= y x)) :portrait)
-		   ((>= y x) :portrait-i)
-		   ((and x-neg (>= x y)) :landscape)
-		   ((>= x y) :landscape-i))))
-	  (unless (eq current-orient new-orient) (setf orientation new-orient)))))))
+  ;; (with-accessors ((orientation orientation) (accelerometer accelerometer)) output
+    ;; (unless accelerometer (error "No accelerometer connected to output."))
+    ;; (let* ((current-orient orientation))
+      ;; (destructuring-bind (x y z) accel
+	;; (declare (ignore z))
+	;; (let* ((y-neg (<= y 0)) (x-neg (<= x 0))
+	       ;; (x (abs x)) (y (abs y))
+	       ;; (new-orient
+		 ;; (cond
+		   ;; ((and y-neg (>= y x)) :portrait)
+		   ;; ((>= y x) :portrait-i)
+		   ;; ((and x-neg (>= x y)) :landscape)
+		   ;; ((>= x y) :landscape-i))))
+	  ;; (unless (eq current-orient new-orient) (setf orientation new-orient))))))
+  )
 
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘
