@@ -259,13 +259,20 @@
 (defmethod surface-at-coords ((display display) x y)
   "Iterate all clients and their surfaces to find one that intersects with the given coordinates"
   (let* ((output (output-at-coords display x y))
-	 (desktop (find-output-desktop display output))
-	 (compositor (compositor display)))
+	 (desktop (find-output-desktop display output)))
     (when desktop
-      (let ((popups (all-popups compositor)) (toplevels (all-surfaces compositor)))
+      (with-accessors ((popups popups) (toplevels toplevels) (layers layers) (subsurfaces subsurfaces)) (compositor display)
+	(when layers
+	  (let ((layer (find-bounder layers x y)))
+	    (when layer (return-from surface-at-coords layer))))
+
 	(when popups
 	  (let ((popup (find-bounder popups x y)))
 	    (when popup (return-from surface-at-coords popup))))
+
+	(when subsurfaces
+	  (let ((subsurface (find-bounder subsurfaces x y)))
+	    (when subsurface (return-from surface-at-coords subsurface))))
 
 	(when toplevels
 	  (let ((toplevel (find-desktop-bounder toplevels x y desktop)))

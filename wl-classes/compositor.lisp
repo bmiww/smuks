@@ -9,33 +9,48 @@
 
 (defclass compo (wl-compositor:global)
   ((desktops :initform (loop for i from 0 below 10 collect (make-instance 'desktop)) :accessor desktops)
-   (surfaces :initform nil :accessor surfaces)))
+   (surfaces :initform nil :accessor surfaces)
+   (toplevels :initform nil)
+   (cursors :initform nil)
+   (popups :initform nil)
+   (layers :initform nil)
+   (subsurfaces :initform nil)))
 
+(defun type-slot (object)
+  (case object
+    (toplevel 'toplevels)
+    (popup 'popups)
+    (layer-surface 'layers)
+    (cursor 'cursors)
+    (subsurface 'subsurfaces)
+    (surface 'surfaces)
+    (xdg-surface 'surfaces)))
+
+(defun has-texture (surface) (texture surface))
+
+(defmethod layers ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'layers)))
+(defmethod toplevels ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'toplevels)))
+(defmethod popups ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'popups)))
+(defmethod cursors ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'cursors)))
+(defmethod subsurfaces ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'subsurfaces)))
 
 ;; ┌┬┐┌─┐┌┬┐┬ ┬
 ;; │││├┤  │ ├─┤
 ;; ┴ ┴└─┘ ┴ ┴ ┴
-(defmethod new-surface ((global compo) surface) (pushnew surface (surfaces global)))
+(defmethod new-surface ((global compo) surface)
+  (pushnew surface (surfaces global))
+
+  ;; If a surface changes type - we put it in the correct list
+  (wl:before*
+   wl:change-if surface
+   (lambda (class surface &rest rest)
+     (declare (ignore rest))
+     (let ((slot (type-slot (class-name (class-of surface)))) (new-slot (type-slot class)))
+       (unless (eq new-slot slot)
+	 (setf (slot-value global slot) (remove surface (slot-value global slot)))
+	 (pushnew surface (slot-value global (type-slot class))))))))
+
 (defmethod rem-global-surface ((global compo) surface) (setf (surfaces global) (remove surface (surfaces global))))
-
-(defmethod all-surfaces ((compositor compo))
-  ;; TODO: Stupid wasteful reverse
-  (reverse
-   ;; TODO: Stupid removal if texture not set. Should resolve this when a texture is added.
-   ;; Then the surface can be put into something like - ready-surfaces???
-   (remove-if-not (lambda (surf) (texture surf)) (surfaces compositor))))
-
-(defmethod all-popups ((compositor compo)) (remove-if-not (lambda (surf) (typep surf 'popup)) (all-surfaces compositor)))
-(defmethod all-layers ((compositor compo)) (remove-if-not (lambda (surf) (typep surf 'layer-surface)) (all-surfaces compositor)))
-
-
-;; ┬ ┬┬   ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
-;; ││││───├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
-;; └┴┘┴─┘ ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
-(defmethod wl-compositor:dispatch-bind :after ((global compo) client data version id)
-  ;; TODO: DUNNO if i'll ever really use the client compositors from the global
-  (let ((client-compositor (wl:iface client id)))
-    ))
 
 
 ;;  ██████╗██╗     ██╗███████╗███╗   ██╗████████╗    ██████╗ ██╗███████╗██████╗  █████╗ ████████╗ ██████╗██╗  ██╗

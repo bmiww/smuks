@@ -23,7 +23,6 @@
       (render-scene output)
 
       (render-desktop display output desktop)
-      (render-rest display output desktop)
 
       (when (eq output (cursor-screen display))
 	(unless (client-cursor-drawn output)
@@ -126,24 +125,7 @@
 	  (popup (render-popup output (grab-child surface) active)))))))
 
 
-;; TODO: This and render-rest are still messy.
-(defun render-type (display output surface)
-  (etypecase surface
-    (drag-surface (render-drag display output surface))
-    (layer-surface (render-layer-surface output surface))))
-
-;; TODO: Layers and cursors also should check if they need to render subsurfaces.
-;; I'm certain cursors won't have them, but they are still implementing surface, so by protocol i guess they could
-(defun render-rest (display output desktop)
-  (declare (ignore desktop))
-  (flet ((render (surface) (render-type display output surface)))
-    (let ((clients (wl:all-clients display)))
-      (flet ((render-type (type)
-	       (loop for client in clients
-		     do (mapcar #'render (funcall type (compositor display))))))
-	(render-type #'all-layers)))))
-
-
+;; TODO: Missing drag surface rendering
 (defun render-desktop (display output desktop)
   (loop for window in (windows desktop)
 	do (when (and (texture window) (typep window 'toplevel))
@@ -151,4 +133,9 @@
 	       (render-toplevel output window active)
 	       (when active
 		 (loop for cursor in (all-cursors (compositor (wl:client window)))
-		       do (render-cursor (wl:get-display output) output cursor)))))))
+		       do (render-cursor (wl:get-display output) output cursor))))))
+
+  ;; TODO: Layers should also be handled per desktop level.
+  ;; Right now this will just render all layers on all outputs
+  (loop for layer in (layers (compositor display))
+	do (render-layer-surface output layer)))
