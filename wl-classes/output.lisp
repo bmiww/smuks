@@ -133,7 +133,9 @@ transform - is the output rotated? is the output flipped?
   (unless orientation (error "Provided orientation cannot be nil."))
   (setf (slot-value output 'orientation) orientation)
   (recalculate-dimensions (wl:get-display output))
-  (prep-shaders output))
+  (prep-shaders output)
+  (let ((related-desktop (find-output-desktop (wl:get-display output) output)))
+    (recalculate-layout related-desktop)))
 
 (defmethod update-projections ((output output) projection)
   (let ((projection (sglutil:projection-matrix (output-width output) (output-height output) (shader-rot-val output))))
@@ -196,10 +198,7 @@ transform - is the output rotated? is the output flipped?
 		   ((>= y x) :portrait-i)
 		   ((and x-neg (>= x y)) :landscape)
 		   ((>= x y) :landscape-i))))
-	  (unless (eq current-orient new-orient)
-	    (setf orientation new-orient)
-	    (let ((related-desktop (find-output-desktop display output)))
-	      (recalculate-layout related-desktop))))))))
+	  (unless (eq current-orient new-orient) (setf orientation new-orient)))))))
 
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘

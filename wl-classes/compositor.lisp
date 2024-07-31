@@ -53,6 +53,9 @@
 ;; ┌┬┐┌─┐┌┬┐┬ ┬
 ;; │││├┤  │ ├─┤
 ;; ┴ ┴└─┘ ┴ ┴ ┴
+(defmethod all-cursors ((compositor compositor))
+  (remove-if-not (lambda (surf) (typep surf 'cursor)) (alexandria:hash-table-values (surfaces compositor))))
+
 (defmethod toplevel-surface ((compositor compositor))
   (loop for value being the hash-values of (surfaces compositor)
 	when (typep value 'toplevel)
@@ -96,7 +99,7 @@
 (defmethod rm-window ((desktop desktop) window)
   (setf (windows desktop) (remove window (windows desktop))))
 
-(defun recalculate-toplevel (toplevel width height new-x new-y)
+(defun recalculate-toplevel (output toplevel width height new-x new-y)
   (with-accessors ((x x) (y y) (compo-max-width compo-max-width) (compo-max-height compo-max-height)
 		   (pending-buffer pending-buffer)
 		   (width-want width) (height-want height)) toplevel
@@ -107,8 +110,8 @@
 
     ;; TODO: These are overwriting the WANT values from the client
     ;; Should instead introduce a different variable (or make compo-max* a bit more sensible)
-    (setf width-wand (min compo-max-width width))
-    (setf height-wand (min compo-max-height height))
+    (setf width-want (min compo-max-width width))
+    (setf height-want (min compo-max-height height))
 
     ;; NOTE If the dimensions of the toplevel are less than what is allocated
     ;; We center the window in the middle of their allocated space

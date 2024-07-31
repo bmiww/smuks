@@ -140,9 +140,7 @@
     (let ((clients (wl:all-clients display)))
       (flet ((render-type (type)
 	       (loop for client in clients
-		     do (let ((compositor (compositor client)))
-			(when compositor
-			  (mapcar #'render (funcall type compositor)))))))
+		     do (mapcar #'render (funcall type (compositor display))))))
 	(render-type #'all-layers)))))
 
 
