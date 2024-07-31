@@ -76,9 +76,7 @@ transform - is the output rotated? is the output flipped?
 (defmethod prep-shaders ((output output))
   (with-accessors ((width output-width) (height output-height) (rot shader-rot-val)) output
     (let ((gl-version (gl-version (wl:get-display output))))
-      ;; NOTE: Binds the first framebuffer to generate the shaders. Don't think that in itself is necessary.
-      ;; But regardless, both buffer dimensions should be identical here.
-      ;; TODO: It's also possible that i totally don't even need this
+
       (loop for framebuffer in (framebuffers output)
 	    do (prep-gl-implementation (framebuffer-id framebuffer) width height))
 
