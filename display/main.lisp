@@ -258,19 +258,17 @@
 ;; └─┘ ┴ ┴┴─┘
 (defmethod surface-at-coords ((display display) x y)
   "Iterate all clients and their surfaces to find one that intersects with the given coordinates"
-  (let* ((clients (wl:all-clients display))
-	 (output (output-at-coords display x y))
+  (let* ((output (output-at-coords display x y))
 	 (desktop (find-output-desktop display output))
 	 (compositor (compositor display)))
     (when desktop
       (let ((popups (all-popups compositor)) (toplevels (all-surfaces compositor)))
-
 	(when popups
 	  (let ((popup (find-bounder popups x y)))
 	    (when popup (return-from surface-at-coords popup))))
 
 	(when toplevels
-	  (let ((toplevel (find-bounder toplevels x y desktop)))
+	  (let ((toplevel (find-desktop-bounder toplevels x y desktop)))
 	    (when toplevel (return-from surface-at-coords toplevel))))))))
 
 (defmethod output-at-coords ((display display) x y)
@@ -279,11 +277,14 @@
 		  (<= (screen-y output) y (screen-y-max output)))
 	  return output))
 
-(defun find-bounder (surfaces x y &optional desktop)
+(defun find-desktop-bounder (surfaces x y desktop)
   (loop for surface in surfaces
-	when (if desktop
-		 (in-desktop-bounds surface x y desktop)
-		 (in-bounds surface x y))
+	when (in-desktop-bounds surface x y desktop)
+	  return surface))
+
+(defun find-bounder (surfaces x y)
+  (loop for surface in surfaces
+	when (in-bounds surface x y)
 	  return surface))
 
 (defmethod update-cursor ((display display) dx dy)

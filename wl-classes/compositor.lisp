@@ -9,23 +9,21 @@
 
 (defclass compo (wl-compositor:global)
   ((desktops :initform (loop for i from 0 below 10 collect (make-instance 'desktop)) :accessor desktops)
-   (surfaces :initform (make-hash-table) :accessor surfaces)))
+   (surfaces :initform nil :accessor surfaces)))
 
 
 ;; ┌┬┐┌─┐┌┬┐┬ ┬
 ;; │││├┤  │ ├─┤
 ;; ┴ ┴└─┘ ┴ ┴ ┴
-(defmethod new-surface ((global compo) surface)
-  (setf (gethash (wl-surface::wl_surface-id surface) (surfaces global)) surface))
+(defmethod new-surface ((global compo) surface) (pushnew surface (surfaces global)))
+(defmethod rem-global-surface ((global compo) surface) (setf (surfaces global) (remove surface (surfaces global))))
 
 (defmethod all-surfaces ((compositor compo))
   ;; TODO: Stupid wasteful reverse
   (reverse
    ;; TODO: Stupid removal if texture not set. Should resolve this when a texture is added.
    ;; Then the surface can be put into something like - ready-surfaces???
-   (remove-if-not
-    (lambda (surf) (texture surf))
-    (alexandria:hash-table-values (surfaces compositor)))))
+   (remove-if-not (lambda (surf) (texture surf)) (surfaces compositor))))
 
 (defmethod all-popups ((compositor compo)) (remove-if-not (lambda (surf) (typep surf 'popup)) (all-surfaces compositor)))
 (defmethod all-layers ((compositor compo)) (remove-if-not (lambda (surf) (typep surf 'layer-surface)) (all-surfaces compositor)))
@@ -62,6 +60,7 @@
 	  return value))
 
 (defmethod rem-surface ((compositor compositor) surface)
+  (rem-global-surface (wl:global compositor) surface)
   (remhash (wl-surface::wl_surface-id surface) (surfaces compositor)))
 
 
@@ -107,11 +106,6 @@
     (setf compo-max-width width compo-max-height height)
     (setf x (- new-x (screen-x output)))
     (setf y (- new-y (screen-y output)))
-
-    ;; TODO: These are overwriting the WANT values from the client
-    ;; Should instead introduce a different variable (or make compo-max* a bit more sensible)
-    (setf width-want (min compo-max-width width))
-    (setf height-want (min compo-max-height height))
 
     ;; NOTE If the dimensions of the toplevel are less than what is allocated
     ;; We center the window in the middle of their allocated space
