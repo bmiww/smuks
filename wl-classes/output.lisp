@@ -182,21 +182,20 @@ transform - is the output rotated? is the output flipped?
     (:xrgb8888 (nth 2 (shaders output)))))
 
 (defmethod determine-orientation ((output output) display accel)
-  ;; (with-accessors ((orientation orientation) (accelerometer accelerometer)) output
-    ;; (unless accelerometer (error "No accelerometer connected to output."))
-    ;; (let* ((current-orient orientation))
-      ;; (destructuring-bind (x y z) accel
-	;; (declare (ignore z))
-	;; (let* ((y-neg (<= y 0)) (x-neg (<= x 0))
-	       ;; (x (abs x)) (y (abs y))
-	       ;; (new-orient
-		 ;; (cond
-		   ;; ((and y-neg (>= y x)) :portrait)
-		   ;; ((>= y x) :portrait-i)
-		   ;; ((and x-neg (>= x y)) :landscape)
-		   ;; ((>= x y) :landscape-i))))
-	  ;; (unless (eq current-orient new-orient) (setf orientation new-orient))))))
-  )
+  (with-accessors ((orientation orientation) (accelerometer accelerometer)) output
+    (unless accelerometer (error "No accelerometer connected to output."))
+    (let* ((current-orient orientation))
+      (destructuring-bind (x y z) accel
+	(declare (ignore z))
+	(let* ((y-neg (<= y 0)) (x-neg (<= x 0))
+	       (x (abs x)) (y (abs y))
+	       (new-orient
+		 (cond
+		   ((and y-neg (>= y x)) :portrait)
+		   ((>= y x) :portrait-i)
+		   ((and x-neg (>= x y)) :landscape)
+		   ((>= x y) :landscape-i))))
+	  (unless (eq current-orient new-orient) (setf orientation new-orient)))))))
 
 ;; ┌─┐┬  ┌─┐┌─┐┌┐┌┬ ┬┌─┐
 ;; │  │  ├┤ ├─┤││││ │├─┘
