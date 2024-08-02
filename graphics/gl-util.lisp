@@ -101,15 +101,6 @@
 	    (error "Texture upload out of bounds"))
 
 	  ;; TODO: Figure out the diff between internal-format and format
-	  ;; (trivial-signal:signal-handler-bind
-	      ;; ((:sigint (lambda (signo)
-			  ;; (wrn! "Caught signal: ~a" signo)
-			  ;; (error "Caught sigint in texture upload")))
-	       ;; (:sigsegv (lambda (signo)
-			  ;; (wrn! "Caught signal: ~a" signo)
-			  ;; (error "Caught sigsegv in texture upload"))))
-	    ;; (gl:tex-image-2d :texture-2d 0 gl-format width height 0 gl-format :unsigned-byte ptr))
-
 	  (gl:tex-image-2d :texture-2d 0 gl-format width height 0 gl-format :unsigned-byte ptr)
 	  (check-gl-error "create-texture: tex-image-2d")
 	  (setf (tex-initd texture) t)))

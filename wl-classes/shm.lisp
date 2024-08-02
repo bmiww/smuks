@@ -23,15 +23,9 @@
 ;; └─┐├─┤│││
 ;; └─┘┴ ┴┴ ┴
 (defclass shm (wl-shm:dispatch)
-  ((pools :initform (make-hash-table :test 'equal) :accessor pools)))
+  ())
 
-(defmethod wl:destroy ((shm shm))
-  (clrhash (pools shm)))
-
-(defmethod wl-shm:create-pool ((shm shm) id fd size)
-  (let ((pool (wl:mk-if 'pool shm id :fd fd :size size :shm shm)))
-    (before cl-wl:destroy pool (lambda (pool) (remhash (wl:id pool) (pools shm))))
-    (setf (gethash id (pools shm)) pool)))
+(defmethod wl-shm:create-pool ((shm shm) id fd size) (wl:mk-if 'pool shm id :fd fd :size size :shm shm))
 
 ;; ┌─┐┌─┐┌─┐┬
 ;; ├─┘│ ││ ││
@@ -46,9 +40,6 @@
 (defmethod initialize-instance :after ((pool pool) &key)
   (multiple-value-bind (ptr fd size) (mmap:mmap (fd pool) :size (size pool) :mmap '(:shared))
     (setf (mmap-pool pool) (make-mmap-pool :ptr ptr :fd fd :size size))))
-
-(defmethod wl:destroy ((pool pool))
-  (when (mmap-pool pool) (munmap (mmap-pool pool))))
 
 (defmethod wl-shm-pool:resize ((pool pool) size)
   (multiple-value-bind (ptr fd size) (mmap:mmap (fd pool) :size size :mmap '(:shared))
@@ -71,6 +62,9 @@
    (stride :initarg :stride :accessor stride)
    (pixel-format :initarg :pixel-format :accessor pixel-format)
    (mmap-pool :initarg :mmap-pool :accessor mmap-pool)))
+
+(defmethod wl:destroy ((buffer buffer))
+  (when (mmap-pool buffer) (munmap (mmap-pool buffer))))
 
 (defmethod pool-ptr ((buffer buffer))
   (let* ((pool (mmap-pool buffer)) (ptr (mmap-pool-ptr pool)))
