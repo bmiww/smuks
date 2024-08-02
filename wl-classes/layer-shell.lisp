@@ -24,7 +24,11 @@
 ;; ┬  ┌─┐┬ ┬┌─┐┬─┐  ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; │  ├─┤└┬┘├┤ ├┬┘  └─┐│ │├┬┘├┤ ├─┤│  ├┤
 ;; ┴─┘┴ ┴ ┴ └─┘┴└─  └─┘└─┘┴└─└  ┴ ┴└─┘└─┘
-(defclass layer-surface (zwlr-layer-surface-v1:dispatch surface surface-configure)
+;; TODO: The xdg-surface here could be reduced down to just hierarchical-surface or something
+;; Since we only care about the parent/child relation here
+;; In which case it might be possible to pull back in surface?
+;; Or perhaps xdg-surface should consume surface-configure since now the use cases are all here
+(defclass layer-surface (zwlr-layer-surface-v1:dispatch xdg-surface)
   ((output :initarg :output :reader output)
    (layer :initarg :layer :reader layer)
    (namespace :initarg :namespace :reader namespace)
@@ -86,3 +90,6 @@
   (if (eq serial (awaiting-ack surface))
       (setf (awaiting-ack surface) nil)
       (wrn! "Configure serial out of sync. Expected ~a, got ~a" (awaiting-ack surface) serial)))
+
+(defmethod zwlr-layer-surface-v1:get-popup ((surface layer-surface) popup-surface)
+  (setf (grab-child surface) popup-surface))

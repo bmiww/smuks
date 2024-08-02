@@ -10,12 +10,19 @@
 (defclass xdg-surface (xdg-surface:dispatch surface surface-configure)
   ((xdg-x-offset :initform 0 :accessor xdg-x-offset)
    (xdg-y-offset :initform 0 :accessor xdg-y-offset)
-   (grab-child :initform nil :accessor grab-child)
-   (grab-parent :initarg :grab-parent :initform nil :accessor grab-parent))
+   (grab-child :initform nil :reader grab-child)
+   (grab-parent :initarg :grab-parent :initform nil :reader grab-parent))
   (:documentation
    "An xdg surface identifies a toplevel or a popup surface.
 The main purpose here is to define that child/parent relationships between the former."))
 
+(defmethod (setf grab-child) (child (xdg xdg-surface))
+  (setf (slot-value xdg 'grab-child) child)
+  (setf (slot-value child 'grab-parent) xdg))
+
+(defmethod (setf grab-parent) (parent (xdg xdg-surface))
+  (setf (slot-value xdg 'grab-parent) parent)
+  (setf (slot-value parent 'grab-child) xdg))
 
 ;; ┌┬┐┌─┐┌┬┐┬ ┬
 ;; │││├┤  │ ├─┤
@@ -53,7 +60,7 @@ The main purpose here is to define that child/parent relationships between the f
 ;; At lest the surface:send-configure should be the same.
 (defmethod xdg-surface:get-popup ((xdg xdg-surface) id parent positioner)
   (wl:up-if 'popup xdg id :positioner positioner :grab-parent parent)
-  (setf (grab-child parent) xdg)
+  (when parent (setf (grab-child parent) xdg))
   (xdg-popup:send-configure xdg (x positioner) (y positioner) (width positioner) (height positioner))
   (xdg-surface:send-configure xdg (configure-serial xdg)))
 

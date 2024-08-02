@@ -75,6 +75,12 @@
 ;; ┌─┐┌┐  ┬┌─┐┌─┐┌┬┐  ┬─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐
 ;; │ │├┴┐ │├┤ │   │   ├┬┘├┤ │││ ││├┤ ├┬┘
 ;; └─┘└─┘└┘└─┘└─┘ ┴   ┴└─└─┘┘└┘─┴┘└─┘┴└─
+(defun render-child (output surface active)
+  (when (grab-child surface)
+    (typecase (grab-child surface)
+      (toplevel (render-child-toplevel output (grab-child surface) active))
+      (popup (render-popup output (grab-child surface) active)))))
+
 (defun render-drag (display output surface)
   (do-surface-render perform (x y width height texture) output surface t
     (setf (client-cursor-drawn output) t)
@@ -87,7 +93,9 @@
     (unless x (setf x (- (/ (output-width output) 2) (/ (width surface) 2))))
     (unless y (setf y (- (/ (output-height output) 2) (/ (height surface) 2))))
     (perform :x (- x (screen-x output))
-	     :y (- y (screen-y output)))))
+	     :y (- y (screen-y output)))
+    (render-child output surface t)))
+
 
 (defun render-cursor (display output surface)
   (unless (or (cursor-hidden (seat (wl:client surface))) (client-cursor-drawn output))
@@ -105,10 +113,7 @@
   (do-surface-render perform (x y width height texture) output surface active
     (perform :x (+ x (x (grab-parent surface)))
 	     :y (+ y (y (grab-parent surface))))
-    (when (grab-child surface)
-      (typecase (grab-child surface)
-	(toplevel (render-child-toplevel output (grab-child surface) active))
-	(popup (render-popup output (grab-child surface) active))))))
+    (render-child output surface active)))
 
 (defun render-child-toplevel (output surface active)
   (do-surface-render perform (x y width height texture) output surface active
@@ -118,11 +123,7 @@
   (when (initial-config-ackd surface)
     (do-surface-render perform (x y width height texture) output surface active
       (perform)
-
-      (when (grab-child surface)
-	(typecase (grab-child surface)
-	  (toplevel (render-child-toplevel output (grab-child surface) active))
-	  (popup (render-popup output (grab-child surface) active)))))))
+      (render-child output surface active))))
 
 
 ;; TODO: Missing drag surface rendering

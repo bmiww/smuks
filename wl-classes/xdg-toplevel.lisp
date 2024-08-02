@@ -76,9 +76,9 @@
 (defmethod xdg-toplevel:move ((toplevel toplevel) seat serial)
   (log! "xdg-toplevel:move: Not implemented"))
 
+;; TODO: Perhaps i can instead do this on the (setf grab-child) method
 (defcontinue xdg-toplevel:set-parent ((toplevel toplevel) parent)
   (when parent
-    (setf (grab-parent toplevel) parent)
     (setf (grab-child parent) toplevel)
     (reposition-child-toplevel toplevel)
     (after cl-wl:destroy toplevel
