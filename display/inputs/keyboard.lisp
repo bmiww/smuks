@@ -56,6 +56,9 @@
 	      (18 (send-to-output display 1))
 	      (19 (send-to-output display 2))
 
+	      ;; TODO: Make a check here to see if swank is actually active
+	      (53 (swank:inspect-in-emacs (wl:client (keyboard-focus display))))
+
 	      ;; Key j
 	      (36 (shift-window-next display))
 	      ;; Key k
