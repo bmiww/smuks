@@ -1,0 +1,48 @@
+[submodule "sub/cl-xkb"]
+	path = sub/cl-xkb
+	url = git@github.com:bmiww/cl-xkb.git
+
+
+[submodule "sub/cl-libseat"]
+	path = sub/cl-libseat
+	url = git@github.com:bmiww/cl-libseat.git
+
+
+[submodule "sub/cl-gbm"]
+	path = sub/cl-gbm
+	url = git@github.com:bmiww/cl-gbm.git
+
+
+[submodule "sub/cl-egl"]
+	path = sub/cl-egl
+	url = git@github.com:bmiww/cl-egl.git
+
+
+[submodule "sub/cl-libinput"]
+	path = sub/cl-libinput
+	url = git@github.com:bmiww/cl-libinput.git
+
+
+[submodule "sub/cl-udev"]
+	path = sub/cl-udev
+	url = git@github.com:bmiww/cl-udev.git
+
+
+[submodule "sub/cl-wl"]
+	path = sub/cl-wl
+	url = git@github.com:bmiww/cl-libwayland.git
+
+
+[submodule "sub/cl-unix-sockets"]
+	path = sub/cl-unix-sockets
+	url = git@github.com:bmiww/cl-unix-sockets.git
+
+
+[submodule "sub/cl-async"]
+	path = sub/cl-async
+	url = git@github.com:bmiww/cl-async.git
+
+
+[submodule "sub/cffi-define"]
+	path = sub/cffi-define
+	url = git@github.com:bmiww/cffi-define.git

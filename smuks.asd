@@ -38,35 +38,41 @@
 				  (compilation-peed 0)
 				  (space 2))))
 		    (funcall next))
-  :depends-on (#:cl-drm ;; TODO: Add to my own distribution
-	       #:cl-udev ;; TODO: Add to my own distribution
-	       #:cl-opengl ;; TODO: Add to my own distribution
-	       #:cl-egl ;; TODO: Add to my own distribution
-	       #:cl-gbm ;; TODO: Add to my own distribution
-	       #:cl-libinput ;; TODO: Add to my own distribution
-	       #:cl-libseat ;; TODO: Add to my own distribution
-	       #:cl-xkb ;; TODO: Add to my own distribution
-	       #:cl-wl ;; TODO: Add to my own distribution
-	       #:cl-wl.wayland-core ;; TODO: Add to my own distribution
-	       #:cl-wl.xdg-shell ;; TODO: Add to my own distribution
-	       #:cl-wl.zwp-linux ;; TODO: Add to my own distribution
-	       #:cl-wl.zwlr-layer-shell  ;; TODO: Add to my own distribution
-	       #:cl-wl.xdg-decoration  ;; TODO: Add to my own distribution
-	       #:cl-wl.virtual-keyboard  ;; TODO: Add to my own distribution
-	       #:cl-wl.text-input  ;; TODO: Add to my own distribution
-	       #:cl-wl.input-method  ;; TODO: Add to my own distribution
-	       #+xwayland
-	       #:cl-wl.xwayland  ;; TODO: Add to my own distribution
-	       #:lisp-binary ;; NOTE: Used for the accelerometer package which could be extracted
-	       #:mmap
-	       #:trivial-signal
-	       #:cffi-define
-	       #:osicat
+  :depends-on (#:osicat
+	       #:cl-opengl
 	       #:livesupport
-	       #:unix-sockets
 	       #:alexandria
 	       #:bordeaux-threads
 	       #:str
+
+	       ;; TODO: Add these to my own distribution
+	       ;; These are libs i either built or forked
+	       #:cl-drm
+	       #:cl-udev
+	       #:cl-egl
+	       #:cl-gbm
+	       #:cl-libinput
+	       #:cl-libseat
+	       #:cl-xkb
+	       #:cl-wl
+	       #:unix-sockets
+	       #:cffi-define
+
+	       ;; TODO: Add to my own distribution
+	       ;; These come together with cl-wl
+	       #:cl-wl.wayland-core
+	       #:cl-wl.xdg-shell
+	       #:cl-wl.zwp-linux
+	       #:cl-wl.zwlr-layer-shell
+	       #:cl-wl.xdg-decoration
+	       #:cl-wl.virtual-keyboard
+	       #:cl-wl.text-input
+	       #:cl-wl.input-method
+	       #+xwayland
+	       #:cl-wl.xwayland
+
+	       #:lisp-binary ;; NOTE: Used for the accelerometer package which could be extracted
+	       #:mmap
 	       #:swank ;; TODO: Add for debug mode only
 	       #:parse-float
 	       #:png-read ;; TODO: Unless you decide to create screenshotting tools - remove this dependency
