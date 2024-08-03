@@ -12,7 +12,6 @@
   ((pending-buffer :initform nil :accessor pending-buffer)
    (needs-redraw :initform nil :accessor needs-redraw)
    (texture :initform nil :accessor texture)
-   (texture-type :initform nil :accessor texture-type)
    (new-dimensions? :initform t :accessor new-dimensions?)
    (width :initform -1)
    (height :initform -1)
@@ -185,8 +184,7 @@
 (defmethod commit-dma-buffer ((surface surface))
   (commit-buffer surface
     (let* ((buffer (pending-buffer surface)))
-      (setf (texture surface) (sglutil:create-image-texture (image buffer) texture))
-      (setf (texture-type surface) :dma))))
+      (setf (texture surface) (sglutil:create-image-texture (image buffer) texture)))))
 
 
 (defmethod commit-shm-buffer ((surface surface))
@@ -199,8 +197,7 @@
 	     :damage (damage surface)
 	     :texture texture
 	     :format pixel-format))
-      (setf (damage surface) nil)
-      (setf (texture-type surface) :shm))))
+      (setf (damage surface) nil))))
 
 ;; ┬ ┬┌┬┐┬┬
 ;; │ │ │ ││
