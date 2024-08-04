@@ -46,7 +46,8 @@
 ;; Unless we expect the client to die off itself once toplevels go away?
 (defmethod kill-focus-client ((display display))
   (when (keyboard-focus display)
-    (close-toplevel (keyboard-focus display))))
+    (close-toplevel (keyboard-focus display))
+    (setf (keyboard-focus display) nil)))
 
 (defmethod maybe-keyboard-focus ((display display) surface)
   (with-accessors ((x cursor-x) (y cursor-y) (focus keyboard-focus)) display

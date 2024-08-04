@@ -91,7 +91,7 @@
   (make-instance 'zwp-text-input-manager-v3:global :display display :dispatch-impl 'text-input-manager)
   (make-instance 'zwp-input-method-manager-v2:global :display display :dispatch-impl 'input-method-manager)
   (make-instance 'zwp-virtual-keyboard-manager-v1:global :display display :dispatch-impl 'virtual-keyboard-manager)
-  (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
+  ;; (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
 
   (init-outputs display)
 

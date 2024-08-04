@@ -129,7 +129,23 @@ void main() {
     (setf attr-color (gl:get-attrib-location pointer "color"))
     (setf gl-buffer-array (shaders:allocate-gl-array 8))
 
+    (gl:use-program pointer)
+    (gl:bind-vertex-array vao)
     (shaders:array-buffer-data instanced-vbo shaders:*instanced-vert*)
+
+    (gl:bind-buffer :array-buffer instanced-vbo)
+    (gl:vertex-attrib-pointer attr-vert 2 :float nil (* 2 4) (cffi:null-pointer))
+
+    (gl:bind-buffer :array-buffer runtime-vbo)
+    (gl:vertex-attrib-pointer attr-position 4 :float nil (* 4 4) (cffi:null-pointer))
+    (gl:vertex-attrib-pointer attr-color 4 :float nil (* 4 4) (cffi:inc-pointer (cffi:null-pointer) (* 4 4)))
+
+    (ecase (gl-version program)
+      (:GL-3-1
+       (progn
+	 (%gl:vertex-attrib-divisor attr-vert 0)
+	 (%gl:vertex-attrib-divisor attr-position 1)
+	 (%gl:vertex-attrib-divisor attr-color 1))))
 
     (when projection (shaders:update-projection program projection))))
 
@@ -140,29 +156,17 @@ void main() {
     (gl:use-program pointer)
     (gl:bind-vertex-array vao)
 
-    (gl:bind-buffer :array-buffer instanced-vbo)
-    (gl:enable-vertex-attrib-array attr-vert)
-    (gl:vertex-attrib-pointer attr-vert 2 :float nil (* 2 4) (cffi:null-pointer))
-
     (shaders:fill-buffer
      runtime-vbo
-     (concatenate
-      'simple-vector
-      (util:flatten (loop for rect in rects collect (space-tuple rect)))
-      (util:flatten (loop for rect in rects collect (rect-color rect))))
+     `(,@(space-tuple (car rects))
+       ,@(rect-color (car rects)))
      gl-buffer-array)
 
-    (gl:bind-buffer :array-buffer runtime-vbo)
+    (gl:enable-vertex-attrib-array attr-vert)
     (gl:enable-vertex-attrib-array attr-position)
-    (gl:vertex-attrib-pointer attr-position 4 :float nil (* 4 4) (cffi:null-pointer))
-
-    ;; NOTE This has some info on how everything gets collected together with the attrib pointers
-    ;; https://www.khronos.org/opengl/wiki/Generic_Vertex_Attribute_-_examples
     (gl:enable-vertex-attrib-array attr-color)
-    (gl:vertex-attrib-pointer attr-color 4 :float nil (* 4 4) (cffi:inc-pointer (cffi:null-pointer) (* 4 4 (length rects))))
 
-
-    (case (gl-version program)
+    (ecase (gl-version program)
       (:GL-2-0
        (progn
 	 ;; (gl:draw-arrays :triangle-strip 0 9)
@@ -173,4 +177,10 @@ void main() {
 	 (%gl:vertex-attrib-divisor attr-position 1)
 	 (%gl:vertex-attrib-divisor attr-color 1)
 
-	 (gl:draw-arrays-instanced :triangle-strip 0 4 (length rects)))))))
+	 (gl:draw-arrays-instanced :triangle-strip 0 4 (length rects)))))
+
+    (gl:disable-vertex-attrib-array attr-vert)
+    (gl:disable-vertex-attrib-array attr-position)
+    (gl:disable-vertex-attrib-array attr-color)
+    (gl:bind-buffer :array-buffer 0)
+    (gl:bind-vertex-array 0)))

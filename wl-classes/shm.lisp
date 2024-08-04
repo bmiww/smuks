@@ -70,6 +70,10 @@
   (let* ((pool (mmap-pool buffer)) (ptr (mmap-pool-ptr pool)))
     (cffi:inc-pointer ptr (offset buffer))))
 
+
+;; ┌┬┐┌┬┐┌─┐  ┌┐ ┬ ┬┌─┐┌─┐┌─┐┬─┐
+;;  │││││├─┤  ├┴┐│ │├┤ ├┤ ├┤ ├┬┘
+;; ─┴┘┴ ┴┴ ┴  └─┘└─┘└  └  └─┘┴└─
 (defclass dma-buffer (wl-buffer:dispatch)
   ((planes :initarg :planes :accessor planes)
    (width :initarg :width :accessor width)
@@ -87,8 +91,14 @@
 	   (pixel-format buffer)
 	   (fd plane) (offset plane) (stride plane)))))
 
+;; TODO: Find a way to reinstate this.
+;; For now - it is causing bad allocs when closing windows.
+;; Primarily errors out when a closed FD is being reused.
 (defmethod wl:destroy :after ((buffer dma-buffer))
-  (seglutil:destroy-image-khr (egl (wl:get-display buffer)) (image buffer))
-  (loop for plane being the hash-values of (planes buffer)
-	;; TODO: SBCL exclusive
-	do (sb-unix:unix-close (fd plane))))
+  ;; (seglutil:destroy-image-khr (egl (wl:get-display buffer)) (image buffer))
+  ;; (loop for plane being the hash-values of (planes buffer)
+	;; ;; TODO: SBCL exclusive
+	;; do
+	   ;; (log! "Closing FD for client: ~a ~a" (wl::ptr (wl:client buffer)) (fd plane))
+	   ;; (sb-unix:unix-close (fd plane)))
+  )

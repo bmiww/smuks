@@ -1,0 +1,27 @@
+happens when i'm closing windows.
+most likely not timing the closing of egl images properly.
+Possibly some connected objects need to be cleaned up once the buffer gets killed off.
+
+
+
+#0  blorp_emit_blend_state () at ../mesa-24.1.4/src/intel/blorp/blorp_genX_exec_brw.h:896
+#1  blorp_emit_pipeline () at ../mesa-24.1.4/src/intel/blorp/blorp_genX_exec_brw.h:1017
+#2  0x00007c7caeb91152 in blorp_exec_3d () at ../mesa-24.1.4/src/intel/blorp/blorp_genX_exec_brw.h:1588
+#3  blorp_exec () at ../mesa-24.1.4/src/intel/blorp/blorp_genX_exec_brw.h:2184
+#4  0x00007c7caeb91d67 in iris_blorp_exec_render () at ../mesa-24.1.4/src/gallium/drivers/iris/iris_blorp.c:371
+#5  iris_blorp_exec () at ../mesa-24.1.4/src/gallium/drivers/iris/iris_blorp.c:482
+#6  0x00007c7caeb8aa20 in blorp_clear () at ../mesa-24.1.4/src/intel/blorp/blorp_clear.c:672
+#7  0x00007c7caeb50fcd in clear_color () at ../mesa-24.1.4/src/gallium/drivers/iris/iris_clear.c:425
+#8  0x00007c7caeb51ff1 in iris_clear () at ../mesa-24.1.4/src/gallium/drivers/iris/iris_clear.c:724
+#9  0x00007c7cae24bc43 in tc_call_clear () at ../mesa-24.1.4/src/gallium/auxiliary/util/u_threaded_context.c:4669
+#10 0x00007c7cae24c986 in batch_execute () at ../mesa-24.1.4/src/gallium/auxiliary/util/u_threaded_context.c:453
+#11 tc_batch_execute () at ../mesa-24.1.4/src/gallium/auxiliary/util/u_threaded_context.c:504
+#12 0x00007c7cae24d0d8 in _tc_sync () at ../mesa-24.1.4/src/gallium/auxiliary/util/u_threaded_context.c:759
+#13 0x00007c7cae25570f in tc_flush () at ../mesa-24.1.4/src/gallium/auxiliary/util/u_threaded_context.c:3652
+#14 0x00007c7cadcf2139 in st_flush () at ../mesa-24.1.4/src/mesa/state_tracker/st_cb_flush.c:63
+#15 st_glFlush () at ../mesa-24.1.4/src/mesa/state_tracker/st_cb_flush.c:99
+#16 0x0000000056243c02 in ?? ()
+#17 0x0000000056243bc6 in ?? ()
+#18 0x00007c7cb6600080 in ?? ()
+#19 0x0000001008546f13 in ?? ()
+#20 0x0000000000000000 in ?? ()

@@ -24,6 +24,7 @@
      (ash (char-code a) 0) (ash (char-code b) 8)
      (ash (char-code c) 16) (ash (char-code d) 24))))
 
+;; TODO: You should be able to grab these via your CFFI-DEFINE package now - inside cl-drm
 (defvar *argb-8888* (cc4 "AR24"))
 (defvar *xrgb-8888* (cc4 "XR24"))
 
@@ -116,11 +117,10 @@ It is mentally a bit simpler than the regular create as seen in this protocol"
   ;; TODO: The tranche could be extracted to its own method so as to make this a bit prettier
   ;; For now - since - i only have one device and one supported format/modifier - i'm being lazy
   (zwp-linux-dmabuf-feedback-v1:send-tranche-target-device feedback (list device))
-  ;; TODO: The 0 here identifies the first element of the *format-table*
-  ;; Make it a bit smarter
   (zwp-linux-dmabuf-feedback-v1:send-tranche-formats feedback formats)
   ;; TODO: I still don't know which nodes are scanouts and which are renders
   ;; There should be some way to identify in DRM level
+  ;; NOTE: You already did some work towards this in DRM level, should be able to use that
   (when scanout (zwp-linux-dmabuf-feedback-v1:send-tranche-flags feedback :scanout))
   (zwp-linux-dmabuf-feedback-v1:send-tranche-done feedback))
 
@@ -132,6 +132,8 @@ It is mentally a bit simpler than the regular create as seen in this protocol"
     (zwp-linux-dmabuf-feedback-v1:send-format-table feedback (mmap-pool-fd *format-table*) (mmap-pool-size *format-table*))
     (zwp-linux-dmabuf-feedback-v1:send-main-device feedback `(,dev-t))
 
+    ;; TODO: The 0 here identifies the first element of the *format-table*
+    ;; Make it a bit smarter
     ;; TODO: For now - the scanout thing here is pretty fake.
     ;; Primarily used to see how the simple-dmabuf-feedback example from weston works
     ;; (send-tranche feedback dev-t '(0 1) :scanout t)

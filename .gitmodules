@@ -46,3 +46,8 @@
 [submodule "sub/cffi-define"]
 	path = sub/cffi-define
 	url = git@github.com:bmiww/cffi-define.git
+
+
+[submodule "sub/cl-drm"]
+	path = sub/cl-drm
+	url = git@github.com:bmiww/cl-drm.git

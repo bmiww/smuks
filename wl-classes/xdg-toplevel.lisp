@@ -10,6 +10,10 @@
 (defclass toplevel (xdg-toplevel:dispatch xdg-surface)
   ((title :initform nil :accessor title)
    (app-id :initform nil :accessor app-id)
+   ;; TODO: Slightly annoyed, if this is really needed, then it was for
+   ;; Making sure that this isn't being rendered while the texture
+   ;; is being destroyed
+   (closed :initform nil :accessor closed)
    (min-width :initform 0 :accessor min-width)
    (min-height :initform 0 :accessor min-height)
    (max-width :initform 0 :accessor max-width)
@@ -35,7 +39,10 @@
 (defmethod surface-x ((toplevel toplevel) x) (+ x (xdg-x-offset toplevel)))
 (defmethod surface-y ((toplevel toplevel) y) (+ y (xdg-y-offset toplevel)))
 
-(defmethod close-toplevel ((toplevel toplevel)) (xdg-toplevel:send-close toplevel))
+(defmethod close-toplevel ((toplevel toplevel))
+  (unless (closed toplevel)
+    (setf (closed toplevel) t)
+    (xdg-toplevel:send-close toplevel)))
 
 (defmethod add-state ((toplevel toplevel) state) (pushnew state (states toplevel)))
 (defmethod rem-state ((toplevel toplevel) state) (setf (states toplevel) (remove state (states toplevel))))

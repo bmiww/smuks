@@ -105,17 +105,19 @@ GL es does not like the transpose flag."
   (let* ((length (length verts))
 	 (arr (gl:alloc-gl-array :float length)))
     (dotimes (i length)
-      (setf (gl:glaref arr i) (aref verts i)))
+      (setf (gl:glaref arr i) (nth i verts)))
     (gl:buffer-data :array-buffer :static-draw arr)))
 
 (defun fill-buffer (vbo verts arr)
   (gl:bind-buffer :array-buffer vbo)
+  ;; (print (length verts))
   (dotimes (i (length verts))
-    (setf (gl:glaref arr i) (aref verts i)))
+    (setf (gl:glaref arr i) (nth i verts)))
   (gl:buffer-data :array-buffer :static-draw arr)
   ;; TODO: Create and reenable the buffer-sub-data flow
   ;; TODO: The width/height actually doesn't change that often
   ;; A lot of this buffer prep could be skipped
+  ;; (gl:buffer-sub-data :array-buffer)
   ;; (buffer-sub-data :array-buffer arr)
   )
 
@@ -123,8 +125,8 @@ GL es does not like the transpose flag."
 ;; │  │ ││││└─┐ │ └─┐
 ;; └─┘└─┘┘└┘└─┘ ┴ └─┘
 
-(defparameter *instanced-vert* #(1.0 0.0  0.0 0.0  1.0 1.0  0.0 1.0))
-(defparameter *instanced-texture-vert* #(1.0 0.0  0.0 0.0  1.0 1.0  0.0 1.0))
+(defparameter *instanced-vert* `(1.0 0.0  0.0 0.0  1.0 1.0  0.0 1.0))
+(defparameter *instanced-texture-vert* `(1.0 0.0  0.0 0.0  1.0 1.0  0.0 1.0))
 
 
 ;; ┌─┐┬ ┬┌─┐┌┬┐┌─┐┬─┐  ┬  ┬┌─┐┬─┐┌─┐┬┌─┐┌┐┌┌─┐

@@ -29,10 +29,13 @@
 (defun has-texture (surface) (texture surface))
 
 (defmethod layers ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'layers)))
-(defmethod toplevels ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'toplevels)))
 (defmethod popups ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'popups)))
 (defmethod cursors ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'cursors)))
 (defmethod subsurfaces ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'subsurfaces)))
+(defmethod toplevels ((compo compo))
+  (remove-if-not
+   (lambda (toplevel) (and (has-texture toplevel) (not (closed toplevel))))
+   (slot-value compo 'toplevels)))
 
 ;; ┌┬┐┌─┐┌┬┐┬ ┬
 ;; │││├┤  │ ├─┤

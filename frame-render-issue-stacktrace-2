@@ -1,0 +1,44 @@
+Render issue
+
+#0  0x000059ad67216401 in memory_fault_emulation_trap ()
+#1  0x000077c139ffa480 in ?? ()
+#2  0x000077c14e59a426 in memcpy () at /usr/include/bits/string_fortified.h:29
+#3  iris_upload_sampler_states ()
+    at ../mesa-24.1.4/src/gallium/drivers/iris/iris_state.c:2593
+#4  0x000077c14e5a8a38 in iris_upload_dirty_render_state ()
+    at ../mesa-24.1.4/src/gallium/drivers/iris/iris_state.c:7120
+#5  0x000077c14e5ad8c9 in iris_upload_render_state ()
+    at ../mesa-24.1.4/src/gallium/drivers/iris/iris_state.c:8339
+#6  0x000077c14eb7055f in iris_simple_draw_vbo ()
+    at ../mesa-24.1.4/src/gallium/drivers/iris/iris_draw.c:194
+#7  iris_draw_vbo () at ../mesa-24.1.4/src/gallium/drivers/iris/iris_draw.c:345
+#8  0x000077c14dc53931 in tc_call_draw_single ()
+    at ../mesa-24.1.4/src/gallium/auxiliary/util/u_threaded_context.c:3796
+#9  0x000077c14dc4c986 in batch_execute ()
+    at ../mesa-24.1.4/src/gallium/auxiliary/util/u_threaded_context.c:453
+#10 tc_batch_execute ()
+    at ../mesa-24.1.4/src/gallium/auxiliary/util/u_threaded_context.c:504
+#11 0x000077c14dc4d0d8 in _tc_sync ()
+    at ../mesa-24.1.4/src/gallium/auxiliary/util/u_threaded_context.c:759
+#12 0x000077c14dc5570f in tc_flush ()
+    at ../mesa-24.1.4/src/gallium/auxiliary/util/u_threaded_context.c:3652
+#13 0x000077c14d6f2139 in st_flush ()
+    at ../mesa-24.1.4/src/mesa/state_tracker/st_cb_flush.c:63
+#14 st_glFlush () at ../mesa-24.1.4/src/mesa/state_tracker/st_cb_flush.c:99
+#15 0x000000005634e98e in ?? ()
+#16 0x43b08e9f00000019 in ?? ()
+#17 0x000000100cb07023 in ?? ()
+#18 0x00000010121bd433 in ?? ()
+#19 0x43e9032e00000019 in ?? ()
+#20 0x0000000000000600 in ?? ()
+#21 0x0000000000000aac in ?? ()
+#22 0x000077c14fbf8f80 in ?? ()
+#23 0x0000000050000117 in ?? ()
+#24 0x0000000000000000 in ?? ()
+
+
+
+
+#3  iris_upload_sampler_states ()
+    at ../mesa-24.1.4/src/gallium/drivers/iris/iris_state.c:2593
+2593	           memcpy(map, sampler_state, 4 * GENX(SAMPLER_STATE_length));

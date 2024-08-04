@@ -121,13 +121,27 @@ void main() {
     (setf attr-vert (gl:get-attrib-location pointer "vert"))
     (setf attr-transform-scale (gl:get-attrib-location pointer "vert_transform_scale"))
 
-    ;; TODO: This 4 is horrible.
+    ;; TODO: This 2 is horrible.
     ;; Especially since i might at some point allocate more than one vertice
-    (setf gl-buffer-array (shaders:allocate-gl-array 4))
+    (setf gl-buffer-array (shaders:allocate-gl-array 2))
 
     (gl:use-program pointer)
-    (gl:uniformi uni-sampler 0)
+    (gl:bind-vertex-array vao)
+
     (shaders:array-buffer-data instanced-vbo shaders:*instanced-vert*)
+    (gl:uniformi uni-sampler 0)
+
+    (gl:bind-buffer :array-buffer instanced-vbo)
+    (gl:vertex-attrib-pointer attr-vert 2 :float nil (* 2 4) (cffi:null-pointer))
+
+    (gl:bind-buffer :array-buffer runtime-vbo)
+    (gl:vertex-attrib-pointer attr-transform-scale 2 :float nil (* 2 4) (cffi:null-pointer))
+
+    ;; NOTE: Since you will forget as usual
+    ;; 0 for the constant value of the corners - every corner gets its own attribute
+    ;; 1 For the scaling of the texture - every corner uses the same attribute
+    (%gl:vertex-attrib-divisor attr-vert 0)
+    (%gl:vertex-attrib-divisor attr-transform-scale 1)
 
     (when projection (shaders:update-projection program projection))))
 
@@ -139,6 +153,7 @@ void main() {
       (with-slots (vao pointer instanced-vbo runtime-vbo attr-vert attr-transform-scale
 		   uni-translation uni-texture-scaling gl-buffer-array
 		   uni-active) program
+
 	(gl:use-program pointer)
 	(gl:bind-vertex-array vao)
 
@@ -148,27 +163,23 @@ void main() {
 	(gl:tex-parameter :texture-2d :texture-min-filter :linear)
 	(gl:tex-parameter :texture-2d :texture-mag-filter :linear)
 
-	(gl:bind-buffer :array-buffer instanced-vbo)
-	(gl:enable-vertex-attrib-array attr-vert)
-	(gl:vertex-attrib-pointer attr-vert 2 :float nil (* 2 4) (cffi:null-pointer))
-
 	(gl:uniformi uni-active (if active 1.0 0.0))
-
 	(uniform-matrix-3fv program uni-translation translation-matrix)
 	(uniform-matrix-3fv program uni-texture-scaling tex-scaling-matrix)
 
-	(gl:bind-buffer :array-buffer runtime-vbo)
-
 	(shaders:fill-buffer
 	 runtime-vbo
-	 (concatenate 'simple-vector (util:flatten (list (list width height))))
+	 (list width height)
 	 gl-buffer-array)
+
+
+	(gl:enable-vertex-attrib-array attr-vert)
 	(gl:enable-vertex-attrib-array attr-transform-scale)
-	(gl:vertex-attrib-pointer attr-transform-scale 4 :float nil (* 4 4) (cffi:null-pointer))
 
+	(gl:draw-arrays :triangle-strip 0 4)
 
-	(when (eq (gl-version program) :GL-3-1)
-	  (%gl:vertex-attrib-divisor attr-vert 0)
-	  (%gl:vertex-attrib-divisor attr-transform-scale 1))
-
-	(gl:draw-arrays :triangle-strip 0 4)))))
+	(gl:disable-vertex-attrib-array attr-vert)
+	(gl:disable-vertex-attrib-array attr-transform-scale)
+	(gl:bind-buffer :array-buffer 0)
+	(gl:bind-vertex-array 0)
+	(gl:bind-texture :texture-2d 0)))))

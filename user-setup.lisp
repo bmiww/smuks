@@ -19,7 +19,8 @@
 ;; Set the number of framebuffers that the display should cycle through
 ;; Higher number is of course more memory intensive
 ;; But can help in case of slow refresh rates/vsync issues
-(setf *framebuffer-count* 2)
+;; TODO: This should be set earlier...
+;; (setf *framebuffer-count* 2)
 
 ;; ┬  ┌─┐┬ ┬┌┐┌┌─┐┬ ┬  ┌─┐┌─┐┌─┐┌─┐
 ;; │  ├─┤│ │││││  ├─┤  ├─┤├─┘├─┘└─┐

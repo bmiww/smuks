@@ -183,8 +183,15 @@
 ;; TODO: For now only supporting a single plane
 (defmethod commit-dma-buffer ((surface surface))
   (commit-buffer surface
-    (let* ((buffer (pending-buffer surface)))
-      (setf (texture surface) (sglutil:create-image-texture (image buffer) texture)))))
+    (let* ((buffer (pending-buffer surface))
+	   (texture (sglutil:create-image-texture (image buffer) texture)))
+      (setf (texture surface) texture)
+      (before wl:destroy buffer
+	     (lambda (buffer)
+	       (declare (ignore buffer))
+	       (when (and (texture surface) (eq (texture surface) texture))
+		 (gl:delete-texture (sglutil:tex-id (texture surface)))
+		 (setf (texture surface) nil)))))))
 
 
 (defmethod commit-shm-buffer ((surface surface))

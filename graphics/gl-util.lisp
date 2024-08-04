@@ -6,10 +6,10 @@
 ;; ╚██████╔╝███████╗ ╚██████╔╝   ██║   ██║███████╗
 ;;  ╚═════╝ ╚══════╝  ╚═════╝    ╚═╝   ╚═╝╚══════╝
 (defpackage :smuks-gl-util
+  (:nicknames :sglutil)
   (:use :cl :sdrm :smuks-util)
   (:local-nicknames
    (:math #:org.shirakumo.fraf.math))
-  (:nicknames :sglutil)
   (:export
    check-gl-error
    check-gl-fb-status
@@ -54,6 +54,8 @@
     (check-gl-error "create-image-texture: bind")
     (%gl:egl-image-target-texture-2d-oes :texture-2d image)
     (check-gl-error "create-image-texture: egl-image-target-texture-2d-oes")
+
+    (setf (tex-initd texture) t)
 
     texture))
 

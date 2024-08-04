@@ -33,7 +33,6 @@
       (setf (client-cursor-drawn output) nil)
       (gl:flush)
       (gl:finish)
-      (gl:bind-framebuffer :framebuffer 0)
 
       ;; TODO: Also not entirely sure if flushing clients per frame is the best thing to do
       ;; Any events or changes that i could instead attach to?
@@ -129,8 +128,9 @@
 ;; TODO: Missing drag surface rendering
 (defun render-desktop (display output desktop)
   (loop for window in (windows desktop)
-	do (when (and (texture window) (typep window 'toplevel))
+	do (when (and (typep window 'toplevel) (not (closed window)))
 	     (let ((active (eq window (toplevel-of (keyboard-focus display)))))
+	       ;; (log! "Rendering client ~a" (wl::ptr (wl:client window)))
 	       (render-toplevel output window active)
 	       (when active
 		 (loop for cursor in (all-cursors (compositor (wl:client window)))
@@ -139,4 +139,6 @@
   ;; TODO: Layers should also be handled per desktop level.
   ;; Right now this will just render all layers on all outputs
   (loop for layer in (layers (compositor display))
-	do (render-layer-surface output layer)))
+	do
+	   (log! "Doing things?")
+	   (render-layer-surface output layer)))
