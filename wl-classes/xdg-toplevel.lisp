@@ -50,6 +50,9 @@
 (defmethod configure-toplevel-default ((toplevel toplevel))
   (do-window-configure toplevel (compo-max-width toplevel) (compo-max-height toplevel)))
 
+(defmethod configure-toplevel-custom ((toplevel toplevel) width height)
+  (do-window-configure toplevel width height))
+
 
 (defmethod do-window-configure ((toplevel toplevel) width height &optional serial)
   (unless (and (eq (width toplevel) width)
