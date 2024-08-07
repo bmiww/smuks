@@ -102,6 +102,7 @@
 			    :dma-buf-plane0-pitch-ext stride
 			    :dma-buf-plane0-offset-ext offset
 			    :none)
+    (sb-posix:close fd)
     (check-egl-error "Creating egl image")))
 
 
