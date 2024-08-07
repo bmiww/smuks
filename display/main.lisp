@@ -300,16 +300,6 @@
     (setf (values (cursor-x display) (cursor-y display) (cursor-screen display))
 	  (bounds-check display new-x new-y))))
 
-(defmethod orient-point ((display display) x y)
-  (let ((touch-screen (dsi-output display)))
-    (case (orientation touch-screen)
-      (:landscape (values y (+ (- (output-height touch-screen) x) (screen-x touch-screen))))
-      (:portrait (- (output-width touch-screen) x)))))
-
-(defmethod find-output-desktop ((display display) output)
-  (find output (desktops display) :key #'output))
-
-
 ;; ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌┬┐  ┬ ┬┌┬┐┬┬
 ;; │ ││ │ │ ├─┘│ │ │   │ │ │ ││
 ;; └─┘└─┘ ┴ ┴  └─┘ ┴   └─┘ ┴ ┴┴─┘
@@ -324,6 +314,7 @@
 (defmethod update-projections ((display display) projection) (mapcar (lambda (output) (update-projections output projection)) (outputs display)))
 (defmethod start-monitors ((display display)) (mapcar (lambda (out) (start-monitor out)) (outputs display)))
 (defmethod first-desktop-with-output ((display display)) (find-if (lambda (desktop) (output desktop)) (desktops display)))
+(defmethod find-output-desktop ((display display) output) (find output (desktops display) :key #'output))
 
 ;; TODO: This also needs to take into account screen positions
 ;; And overall bounds when outputs are skewed from each other

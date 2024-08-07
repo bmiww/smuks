@@ -155,7 +155,7 @@ For my purposes - i'm just ignoring this and giving the client the current state
 ;; └─┘ ┴ ┴┴─┘
 (defun configure-states (&rest states)
   (loop for state in states
-	collect (case state
+	collect (ecase state
 		  (:maximized 1)
 		  (:fullscreen 2)
 		  (:resizing 3)

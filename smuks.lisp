@@ -69,8 +69,8 @@
     (setf (egl *display*) *egl*)
     (setf (gl-version *display*) *gl-version*)
 
-    #+smuks-debug
-    (sglutil::enable-gl-debug)
+    ;; #+smuks-debug
+    ;; (sglutil::enable-gl-debug)
 
     (setf *cursor* (load-cursor-texture))
 

@@ -60,3 +60,13 @@ and then clean the list out"
   (dolist (client (wl:all-clients display))
     (when (seat-touch (seat client))
       (touch-frame (seat client)))))
+
+
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+(defmethod orient-point ((display display) x y)
+  (let ((touch-screen (dsi-output display)))
+    (case (orientation touch-screen)
+      (:landscape (values y (+ (- (output-height touch-screen) x) (screen-x touch-screen))))
+      (:portrait (- (output-width touch-screen) x)))))
