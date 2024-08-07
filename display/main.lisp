@@ -41,11 +41,6 @@
    (k-shift? :initform nil :accessor k-shift?)
    (k-super? :initform nil :accessor k-super?)))
 
-
-(defmethod initialize-instance :after ((display display) &key)
-  )
-
-
 (defgeneric input (display type event))
 (defgeneric process (display type usecase event))
 

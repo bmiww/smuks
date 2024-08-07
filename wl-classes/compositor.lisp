@@ -121,26 +121,35 @@
 		   (pending-buffer pending-buffer)
 		   (width-want width) (height-want height)) toplevel
 
-    ;; NOTE If the dimensions of the toplevel are less than what is allocated
-    ;; We center the window in the middle of their allocated space
-    (let ((serial (configure-toplevel-custom toplevel new-width new-height)))
-      (after
-       wl-surface:commit toplevel
-       (lambda (surface)
-	 (when (eq (last-serial surface) serial)
-	   (with-accessors ((x x) (y y) (width width) (height height)
-			    (compo-max-height compo-max-height) (compo-max-width compo-max-width))
-	       surface
+    ;; If the dimensions have changed - we need to reconfigure the toplevel
+    (if (or (not (eq compo-max-width new-width)) (not (eq compo-max-height new-height)))
 
-	     (setf compo-max-width new-width compo-max-height new-height)
+	;; NOTE If the dimensions of the toplevel are less than what is allocated
+	;; We center the window in the middle of their allocated space
+	(let ((serial (configure-toplevel-custom toplevel new-width new-height)))
+	  (after
+	   wl-surface:commit toplevel
+	   (lambda (surface)
+	     (when (eq (last-serial surface) serial)
+	       (with-accessors ((x x) (y y) (width width) (height height)
+				(compo-max-height compo-max-height) (compo-max-width compo-max-width))
+		   surface
 
-	     (if (< 0 width compo-max-width)
-		 (setf x (+ x (/ (- compo-max-width width) 2)))
-		 (setf x (- new-x (screen-x output))))
+		 (setf compo-max-width new-width compo-max-height new-height)
 
-	     (if (< 0 height compo-max-height)
-		 (setf y (+ y (/ (- compo-max-height height) 2)))
-		 (setf y (- new-y (screen-y output)))))))))))
+		 (if (< 0 width compo-max-width)
+		     (setf x (+ x (/ (- compo-max-width width) 2)))
+		     (setf x (- new-x (screen-x output))))
+
+		 (if (< 0 height compo-max-height)
+		     (setf y (+ y (/ (- compo-max-height height) 2)))
+		     (setf y (- new-y (screen-y output)))))))))
+
+	(progn
+	  (setf x (- new-x (screen-x output)))
+	  (setf y (- new-y (screen-y output)))))))
+
+
 
 (defmethod recalculate-layout ((desktop desktop))
   (when (and (output desktop) (windows desktop))
