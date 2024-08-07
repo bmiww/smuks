@@ -116,38 +116,30 @@
 (defmethod rm-window ((desktop desktop) window)
   (setf (windows desktop) (remove window (windows desktop))))
 
+(defun center-toplevel (toplevel)
+  (with-accessors ((x x) (y y) (width width) (height height)
+		   (compo-max-height compo-max-height) (compo-max-width compo-max-width)) toplevel
+    (when (< 0 width compo-max-width) (setf x (+ x (/ (- compo-max-width width) 2))))
+    (when (< 0 height compo-max-height) (setf y (+ y (/ (- compo-max-height height) 2))))))
+
 (defun recalculate-toplevel (output toplevel new-width new-height new-x new-y)
-  (with-accessors ((x x) (y y) (compo-max-width compo-max-width) (compo-max-height compo-max-height)
-		   (pending-buffer pending-buffer)
-		   (width-want width) (height-want height)) toplevel
+  (with-accessors ((x x) (y y) (compo-max-width compo-max-width) (compo-max-height compo-max-height)) toplevel
 
-    ;; If the dimensions have changed - we need to reconfigure the toplevel
+    (setf x (- new-x (screen-x output)))
+    (setf y (- new-y (screen-y output)))
+
     (if (or (not (eq compo-max-width new-width)) (not (eq compo-max-height new-height)))
-
-	;; NOTE If the dimensions of the toplevel are less than what is allocated
-	;; We center the window in the middle of their allocated space
+	;; If the dimensions have changed - we need to reconfigure the toplevel
 	(let ((serial (configure-toplevel-custom toplevel new-width new-height)))
 	  (after
 	   wl-surface:commit toplevel
 	   (lambda (surface)
 	     (when (eq (last-serial surface) serial)
-	       (with-accessors ((x x) (y y) (width width) (height height)
-				(compo-max-height compo-max-height) (compo-max-width compo-max-width))
-		   surface
-
+	       (with-accessors ((compo-max-height compo-max-height) (compo-max-width compo-max-width)) surface
 		 (setf compo-max-width new-width compo-max-height new-height)
+		 (center-toplevel toplevel))))))
 
-		 (if (< 0 width compo-max-width)
-		     (setf x (+ x (/ (- compo-max-width width) 2)))
-		     (setf x (- new-x (screen-x output))))
-
-		 (if (< 0 height compo-max-height)
-		     (setf y (+ y (/ (- compo-max-height height) 2)))
-		     (setf y (- new-y (screen-y output)))))))))
-
-	(progn
-	  (setf x (- new-x (screen-x output)))
-	  (setf y (- new-y (screen-y output)))))))
+	(center-toplevel toplevel))))
 
 
 
