@@ -95,10 +95,4 @@
 ;; For now - it is causing bad allocs when closing windows.
 ;; Primarily errors out when a closed FD is being reused.
 (defmethod wl:destroy :after ((buffer dma-buffer))
-  ;; (seglutil:destroy-image-khr (egl (wl:get-display buffer)) (image buffer))
-  ;; (loop for plane being the hash-values of (planes buffer)
-	;; ;; TODO: SBCL exclusive
-	;; do
-	   ;; (log! "Closing FD for client: ~a ~a" (wl::ptr (wl:client buffer)) (fd plane))
-	   ;; (sb-unix:unix-close (fd plane)))
-  )
+  (seglutil:destroy-image-khr (egl (wl:get-display buffer)) (image buffer)))
