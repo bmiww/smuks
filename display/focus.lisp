@@ -118,3 +118,13 @@ then this can be called to determine the new focus surfaces."
 	    (rotatef (nth focus-index windows) (nth (1- (length windows)) windows))
 	    (rotatef (nth (1- focus-index) windows) (nth focus-index windows)))
 	(recalculate-layout (active-desktop display))))))
+
+
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+;; NOTE: Util function to kill off all client toplevels gracefully
+;; IDEA: Could possibly be used as a cleanup step for when the compositor is killed
+;; For now used only from repl
+(defmethod kill-all-clients ((display display))
+  (dolist (toplevel (toplevels (compositor display))) (close-toplevel toplevel)))

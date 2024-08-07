@@ -63,7 +63,7 @@
    (pixel-format :initarg :pixel-format :accessor pixel-format)
    (mmap-pool :initarg :mmap-pool :accessor mmap-pool)))
 
-(defmethod wl:destroy ((buffer buffer))
+(defmethod wl:destroy :after ((buffer buffer))
   (when (mmap-pool buffer) (munmap (mmap-pool buffer))))
 
 (defmethod pool-ptr ((buffer buffer))

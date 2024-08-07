@@ -11,7 +11,7 @@
 (defclass surface (wl-surface:dispatch)
   ((pending-buffer :initform nil :accessor pending-buffer)
    (needs-redraw :initform nil :accessor needs-redraw)
-   (texture :initform nil :accessor texture)
+   (texture :initform nil :reader texture)
    (new-dimensions? :initform t :accessor new-dimensions?)
    (width :initform -1)
    (height :initform -1)
@@ -29,6 +29,18 @@
 (defmethod desktop ((surface surface)) (desktop (location surface)))
 (defmethod width ((surface surface)) (slot-value surface 'width))
 (defmethod height ((surface surface)) (slot-value surface 'height))
+
+(defmethod (setf texture) (texture (surface surface))
+  (unless (eq (texture surface) texture)
+    (setf (slot-value surface 'texture) texture)
+    (when texture
+      (unless (pending-buffer surface) (error "No pending buffer associated with texture. You probably screwed up the buffer commit order"))
+      (before wl:destroy (pending-buffer surface)
+	      (lambda (buffer)
+		(declare (ignore buffer))
+		(when (and (texture surface) (eq (texture surface) texture))
+		  (gl:delete-texture (sglutil:tex-id (texture surface)))
+		  (setf (texture surface) nil)))))))
 
 (defcontinue (setf desktop) (val (surface surface)) (setf (desktop (location surface)) val))
 (defcontinue (setf x) (val (surface surface)) (setf (x (location surface)) val))
@@ -185,13 +197,7 @@
   (commit-buffer surface
     (let* ((buffer (pending-buffer surface))
 	   (texture (sglutil:create-image-texture (image buffer) texture)))
-      (setf (texture surface) texture)
-      (before wl:destroy buffer
-	     (lambda (buffer)
-	       (declare (ignore buffer))
-	       (when (and (texture surface) (eq (texture surface) texture))
-		 (gl:delete-texture (sglutil:tex-id (texture surface)))
-		 (setf (texture surface) nil)))))))
+      (setf (texture surface) texture))))
 
 
 (defmethod commit-shm-buffer ((surface surface))
