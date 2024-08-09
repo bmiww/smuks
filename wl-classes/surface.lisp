@@ -22,7 +22,8 @@
    (compositor :initform nil :initarg :compositor :accessor compositor)
    (frame-callbacks :initform nil :accessor frame-callbacks)
    (subsurfaces :initform nil :accessor subsurfaces)
-   (buffer-scale :initform 1 :accessor buffer-scale)))
+   (buffer-scale :initform 1 :accessor buffer-scale)
+   (input-regions :initform :full :accessor input-regions)))
 
 (defmethod x ((surface surface)) (x (location surface)))
 (defmethod y ((surface surface)) (y (location surface)))
@@ -112,11 +113,13 @@
 			     :full (or (> x 2147483646) (> y 2147483646)))
 	(pending-damage surface)))
 
-(defmethod wl-surface:set-opaque-region ((surface surface) region))
+(defmethod wl-surface:set-opaque-region ((surface surface) region)
+  ())
 
-;; TODO: This one is meaningful for me - for now i'm sending all events to the client
+;; TODO: This should be double buffered - aka pending/apply on commit
 (defmethod wl-surface:set-input-region ((surface surface) region)
-  (log! "Setting input region for surface: ~a" surface))
+  (setf (input-regions surface) (if region region :none))
+  (after wl:destroy region (lambda (region) (setf (input-regions surface) :none))))
 
 ;; TODO: Implement to support clients setting higher/lower "dpi"
 (defmethod wl-surface:set-buffer-scale ((surface surface) scale)
@@ -146,7 +149,11 @@
 (defmethod in-bounds ((surface surface) x y)
   (and (x surface) (y surface)
        (<= (x surface) x (+ (x surface) (width surface)))
-       (<= (y surface) y (+ (y surface) (height surface)))))
+       (<= (y surface) y (+ (y surface) (height surface)))
+       (case (input-regions surface)
+	 (:full t)
+	 (:none nil)
+	 (t (in-region (input-regions surface) x y)))))
 
 
 ;; TODO: Destroy any connected textures and other resources

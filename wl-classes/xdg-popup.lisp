@@ -42,6 +42,7 @@
     ;; TODO: The keys here are supposed to be the currently pressed keys
     (keyboard-enter seat popup '())))
 
+;; TODO: Should 'send-repositioned with the token
 (defmethod xdg-popup:reposition ((popup popup) positioner token)
   (setup-from-positioner popup positioner))
 
