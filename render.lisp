@@ -129,7 +129,8 @@
 (defun render-desktop (display output desktop)
   (loop for window in (windows desktop)
 	do (when (and (typep window 'toplevel) (not (closed window)))
-	     (let ((active (eq window (toplevel-of (keyboard-focus display)))))
+	     (let* ((focus (keyboard-focus display))
+		    (active (when (typep focus 'xdg-surface) (eq window (toplevel-of focus)))))
 	       ;; (log! "Rendering client ~a" (wl::ptr (wl:client window)))
 	       (render-toplevel output window active)
 	       (when active
@@ -139,6 +140,4 @@
   ;; TODO: Layers should also be handled per desktop level.
   ;; Right now this will just render all layers on all outputs
   (loop for layer in (layers (compositor display))
-	do
-	   (log! "Doing things?")
-	   (render-layer-surface output layer)))
+	do (render-layer-surface output layer)))
