@@ -18,6 +18,7 @@
    (gl-version :initarg :gl-version :accessor gl-version)
 
    (compositor :initform nil :accessor compositor)
+   (virtual-keyboard-manager :initform nil :accessor virtual-keyboard-manager)
 
    ;; TODO: I would like to turn this into a coord struct - but naming is weird.
    ;; coord assumes desktop. This uses output.
@@ -83,9 +84,10 @@
   (make-instance 'dmabuf-global :display display :dispatch-impl 'dmabuf)
   (make-instance 'layer-shell-global :display display :dispatch-impl 'layer-shell)
   (make-instance 'zxdg-decoration-manager-v1:global :display display :dispatch-impl 'decoration-manager)
-  (make-instance 'zwp-text-input-manager-v3:global :display display :dispatch-impl 'text-input-manager)
   (make-instance 'zwp-input-method-manager-v2:global :display display :dispatch-impl 'input-method-manager)
-  (make-instance 'zwp-virtual-keyboard-manager-v1:global :display display :dispatch-impl 'virtual-keyboard-manager)
+
+  (make-instance 'zwp-text-input-manager-v3:global :display display :dispatch-impl 'text-input-manager)
+  (setf (virtual-keyboard-manager display) (make-instance 'virtual-keyboard-manager :display display :dispatch-impl 'virtual-keyboard-manager-dispatch))
   ;; (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
 
   (init-outputs display)
