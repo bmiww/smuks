@@ -89,7 +89,8 @@
 		       (gl:tex-sub-image-2d
 			:texture-2d 0
 			(damage-x dmg) (damage-y dmg)
-			(damage-width dmg) (damage-height dmg)
+			(min width (damage-width dmg))
+			(min height (damage-height dmg))
 			gl-format :unsigned-byte
 			pointy)
 		       (check-gl-error "create-texture: tex-sub-image-2d"))
