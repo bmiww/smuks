@@ -7,8 +7,7 @@
 ;; ╚═╝  ╚═╝╚═════╝  ╚═════╝       ╚═╝      ╚═════╝ ╚═╝      ╚═════╝ ╚═╝
 (in-package :smuks)
 (defclass popup (xdg-popup:dispatch xdg-surface)
-  ((relative-x :initform nil :accessor relative-x)
-   (relative-y :initform nil :accessor relative-y)))
+  ())
 
 (defmethod shared-initialize :after ((popup popup) slot-names &key positioner)
   (declare (ignore slot-names))

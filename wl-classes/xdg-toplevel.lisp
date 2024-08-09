@@ -36,8 +36,6 @@
 ;; │││├┤  │ ├─┤
 ;; ┴ ┴└─┘ ┴ ┴ ┴
 (defmethod (setf states) :after (states (toplevel toplevel)) (setf (new-states? toplevel) t))
-(defmethod surface-x ((toplevel toplevel) x) (+ x (xdg-x-offset toplevel)))
-(defmethod surface-y ((toplevel toplevel) y) (+ y (xdg-y-offset toplevel)))
 
 (defmethod close-toplevel ((toplevel toplevel))
   (unless (closed toplevel)

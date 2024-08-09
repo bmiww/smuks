@@ -45,6 +45,7 @@
 (defun main () (unwind-protect (mainer) (cleanup)))
 (defun mainer ()
   (setf *log-output* *standard-output*)
+  (setf *warn-output* *standard-output*)
   (heading)
 
   (setf (uiop/os:getenv "WAYLAND_DEBUG") *enable-wayland-debug-logs*)

@@ -115,7 +115,8 @@
 (defmethod wl-surface:set-opaque-region ((surface surface) region))
 
 ;; TODO: This one is meaningful for me - for now i'm sending all events to the client
-(defmethod wl-surface:set-input-region ((surface surface) region))
+(defmethod wl-surface:set-input-region ((surface surface) region)
+  (log! "Setting input region for surface: ~a" surface))
 
 ;; TODO: Implement to support clients setting higher/lower "dpi"
 (defmethod wl-surface:set-buffer-scale ((surface surface) scale)

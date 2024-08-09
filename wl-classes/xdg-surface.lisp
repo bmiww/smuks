@@ -8,8 +8,8 @@
 (in-package :smuks)
 
 (defclass xdg-surface (xdg-surface:dispatch surface surface-configure)
-  ((xdg-x-offset :initform 0 :accessor xdg-x-offset)
-   (xdg-y-offset :initform 0 :accessor xdg-y-offset)
+  ((relative-x :initform 0 :accessor relative-x)
+   (relative-y :initform 0 :accessor relative-y)
    (grab-child :initform nil :reader grab-child)
    (grab-parent :initarg :grab-parent :initform nil :reader grab-parent))
   (:documentation
@@ -30,8 +30,8 @@ The main purpose here is to define that child/parent relationships between the f
 (defmethod reposition-children ((xdg xdg-surface))
   (let ((child (grab-child xdg)))
     (when (and child (typep child 'xdg-surface))
-      (setf (x child) (+ (x xdg) (if (typep child 'popup) (relative-x child) 0)))
-      (setf (y child) (+ (y xdg) (if (typep child 'popup) (relative-y child) 0)))
+      (setf (x child) (+ (x xdg) (relative-x child)))
+      (setf (y child) (+ (y xdg) (relative-y child)))
       (reposition-children child))))
 
 
@@ -40,8 +40,8 @@ The main purpose here is to define that child/parent relationships between the f
 ;; └┴┘┴─┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
 (defmethod xdg-surface:set-window-geometry ((xdg xdg-surface) x y width height)
   (unless (and (eq width (width xdg)) (eq height (height xdg)))
-    (setf (xdg-x-offset xdg) x
-	  (xdg-y-offset xdg) y
+    (setf (relative-x xdg) x
+	  (relative-y xdg) y
 	  (width xdg) width
 	  (height xdg) height
 	  (new-dimensions? xdg) t)

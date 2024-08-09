@@ -43,11 +43,21 @@
   ;; TODO: Maybe possible to use the surface level "new-dimensions?" flag
   (when (new-size? surface)
     (let* ((display (wl:get-display surface))
-	   (desktop (active-desktop display)))
-      (when (eq (width surface) 0) (setf (width surface) (width desktop)))
-      (when (eq (height surface) 0) (setf (height surface) (height desktop)))
-      (zwlr-layer-surface-v1:send-configure surface (configure-serial surface) (width surface) (height surface))
-      (setf (new-size? surface) nil))))
+	   (desktop (active-desktop display))
+	   (output (output desktop))
+	   (serial (configure-serial surface)))
+
+      (with-accessors ((width width) (height height) (x x) (y y)) surface
+	(when (or (not width) (zerop width)) (setf width (width desktop)))
+	(when (or (not height) (zerop height)) (setf height (height desktop)))
+
+	;; TODO: These should probably go into the anchor - or some kind of finalizer function
+	(unless x (setf x (- (/ (output-width output) 2) (/ (width surface) 2))))
+	(unless y (setf y (- (/ (output-height output) 2) (/ (height surface) 2))))
+
+	(setf (awaiting-ack surface) serial)
+	(zwlr-layer-surface-v1:send-configure surface serial (width surface) (height surface))
+	(setf (new-size? surface) nil)))))
 
 (defmethod zwlr-layer-surface-v1:set-keyboard-interactivity ((surface layer-surface) keyboard-interactivity)
   (setf (slot-value surface 'keyboard-interactivity) keyboard-interactivity)
@@ -71,14 +81,29 @@
     (setf (new-dimensions? surface) t)
     (setf (new-size? surface) t)))
 
-;; TODO: Seemingly can be null - which means - centered. Thanks protocol for being specific
 ;; TODO: This anchor should be double-buffered
-;; TODO: Cover more than just the center case
-;; TODO: The coordinates should most likely be based off of the current active desktop screen size
 (defmethod zwlr-layer-surface-v1:set-anchor ((surface layer-surface) anchor)
-  (setf (anchor surface) (if anchor anchor :center))
-  (case (anchor surface)
-    (:center (setf (x surface) 50 (y surface) 50))))
+  (setf (anchor surface) (or anchor '(:center)))
+
+  ;; NOTE: This transforms the bitfield anchor into a singular value similar to popup anchors
+  (flet ((has? (anchors) (has-anchors? (anchor surface) anchors)))
+    (when (has? '(:top :bottom :left :right)) (setf (anchor surface) :center))
+    (when (has? '(:left :right)) (setf (anchor surface) (rm-anchors (anchor surface) :left :right)))
+    (when (has? '(:top :bottom)) (setf (anchor surface) (rm-anchors (anchor surface) :top :bottom)))
+    (unless (anchor surface) (setf (anchor surface) :center))
+    (when (listp (anchor surface))
+      (setf (anchor surface)
+	    (cond
+	      ((has? '(:top :left)) :top-left)
+	      ((has? '(:top :right)) :top-right)
+	      ((has? '(:bottom :left)) :bottom-left)
+	      ((has? '(:bottom :right)) :bottom-right)
+	      ((has? '(:top)) :top)
+	      ((has? '(:bottom)) :bottom)
+	      ((has? '(:left)) :left)
+	      ((has? '(:right)) :right)))))
+  (resolve-position surface))
+
 
 ;; TODO: This has some very implementation specific details
 ;; Check the protocol for more information on how to implement it.
@@ -88,8 +113,51 @@
 
 (defmethod zwlr-layer-surface-v1:ack-configure ((surface layer-surface) serial)
   (if (eq serial (awaiting-ack surface))
-      (setf (awaiting-ack surface) nil)
+      (progn
+	(setf (awaiting-ack surface) nil)
+	(resolve-position surface))
       (wrn! "Configure serial out of sync. Expected ~a, got ~a" (awaiting-ack surface) serial)))
 
 (defmethod zwlr-layer-surface-v1:get-popup ((surface layer-surface) popup-surface)
-  (setf (grab-child surface) popup-surface))
+  (setf (grab-child surface) popup-surface)
+  (reposition-children surface))
+
+(defmethod resolve-position ((surface layer-surface))
+  (let* ((active-desktop (active-desktop (wl:get-display surface)))
+	 (output (output active-desktop)))
+    (with-accessors ((ow output-width) (oh output-height)) output
+      (with-accessors ((x x) (y y) (w width) (h height)) surface
+	(setf (values x y)
+	      (case (anchor surface)
+		(:top-left     (values 0                      0))
+		(:top-right    (values (- ow w)               0))
+		(:bottom-left  (values 0                      (- oh h)))
+		(:bottom-right (values (- ow w)               (- oh h)))
+		(:top          (values (- (/ ow 2) (/ w 2))   0))
+		(:bottom       (values (- (/ ow 2) (/ w 2))   (- oh h)))
+		(:left         (values 0                      (- (/ oh 2) (/ h 2))))
+		(:right        (values (- ow w)               (- (/ oh 2) (/ h 2))))
+		(:center       (values (- (/ ow 2) (/ w 2))   (- (/ oh 2) (/ h 2)))))))))
+
+  (reposition-children surface))
+
+(defmethod (setf x) :after (value (surface layer-surface)) (reposition-children surface))
+(defmethod (setf y) :after (value (surface layer-surface)) (reposition-children surface))
+(defmethod (setf desktop) :after (value (surface layer-surface)) (reposition-children surface))
+
+
+;; ┬ ┬┌┬┐┬┬
+;; │ │ │ ││
+;; └─┘ ┴ ┴┴─┘
+(defun rm-anchors (anchor &rest to-remove)
+  (let ((new-anchor anchor))
+    (dolist (remove to-remove)
+      (setf new-anchor (remove remove new-anchor)))
+    new-anchor))
+
+(defun has-anchors? (anchor-list find-anchors)
+  (let ((has-all t))
+    (when (zerop (length find-anchors)) (setf has-all nil))
+    (dolist (anchor find-anchors)
+      (when (not (member anchor anchor-list)) (setf has-all nil)))
+    has-all))

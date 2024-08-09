@@ -89,10 +89,7 @@
 ;; TODO: Renderers should not screw around with setting coordinates/dimensions
 (defun render-layer-surface (output surface)
   (do-surface-render perform (x y width height texture) output surface t
-    (unless x (setf x (- (/ (output-width output) 2) (/ (width surface) 2))))
-    (unless y (setf y (- (/ (output-height output) 2) (/ (height surface) 2))))
-    (perform :x (- x (screen-x output))
-	     :y (- y (screen-y output)))
+    (perform)
     (render-child output surface t)))
 
 
