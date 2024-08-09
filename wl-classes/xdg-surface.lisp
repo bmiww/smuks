@@ -18,23 +18,21 @@ The main purpose here is to define that child/parent relationships between the f
 
 (defmethod (setf grab-child) (child (xdg xdg-surface))
   (setf (slot-value xdg 'grab-child) child)
-  (setf (slot-value child 'grab-parent) xdg))
+  (when child (setf (slot-value child 'grab-parent) xdg)))
 
 (defmethod (setf grab-parent) (parent (xdg xdg-surface))
   (setf (slot-value xdg 'grab-parent) parent)
-  (setf (slot-value parent 'grab-child) xdg))
+  (when parent (setf (slot-value parent 'grab-child) xdg)))
 
 ;; ┌┬┐┌─┐┌┬┐┬ ┬
 ;; │││├┤  │ ├─┤
 ;; ┴ ┴└─┘ ┴ ┴ ┴
-;; TODO: Seemingly should perform itself
-;; once parent changes width/height/x/y
-(defmethod reposition-child-toplevel ((xdg xdg-surface))
-  (let* ((parent (grab-parent xdg))
-	 (parent-width (min (compo-max-width parent) (width parent)))
-	 (parent-height (min (compo-max-height parent) (height parent))))
-    (setf (x xdg) (+ (x parent) (/ parent-width 2) (- (/ (width xdg) 2)))
-	  (y xdg) (+ (y parent) (/ parent-height 2) (- (/ (height xdg) 2))))))
+(defmethod reposition-children ((xdg xdg-surface))
+  (let ((child (grab-child xdg)))
+    (when (and child (typep child 'xdg-surface))
+      (setf (x child) (+ (x xdg) (if (typep child 'popup) (relative-x child) 0)))
+      (setf (y child) (+ (y xdg) (if (typep child 'popup) (relative-y child) 0)))
+      (reposition-children child))))
 
 
 ;; ┬ ┬┬    ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
@@ -47,7 +45,7 @@ The main purpose here is to define that child/parent relationships between the f
 	  (width xdg) width
 	  (height xdg) height
 	  (new-dimensions? xdg) t)
-    (when (grab-child xdg) (reposition-child-toplevel (grab-child xdg)))))
+    (reposition-children xdg)))
 
 (defmethod xdg-surface:get-toplevel ((xdg xdg-surface) id)
   (let ((display (wl:get-display xdg)))
@@ -63,7 +61,6 @@ The main purpose here is to define that child/parent relationships between the f
   (when parent (setf (grab-child parent) xdg))
   (xdg-popup:send-configure xdg (x positioner) (y positioner) (width positioner) (height positioner))
   (xdg-surface:send-configure xdg (configure-serial xdg)))
-
 
 ;; NOTE: For now leaving empty - but could be used in some way to finalize
 ;; The configuration sequence. Applying pending state or whatnot. Not sure

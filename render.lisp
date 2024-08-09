@@ -110,8 +110,7 @@
 
 (defun render-popup (output surface active)
   (do-surface-render perform (x y width height texture) output surface active
-    (perform :x (+ x (x (grab-parent surface)))
-	     :y (+ y (y (grab-parent surface))))
+    (perform)
     (render-child output surface active)))
 
 (defun render-child-toplevel (output surface active)

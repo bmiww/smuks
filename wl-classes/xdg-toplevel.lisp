@@ -90,7 +90,7 @@
 (defcontinue xdg-toplevel:set-parent ((toplevel toplevel) parent)
   (when parent
     (setf (grab-child parent) toplevel)
-    (reposition-child-toplevel toplevel)
+    (reposition-children parent)
     (after cl-wl:destroy toplevel
 	   (lambda (toplevel) (declare (ignore toplevel)) (setf (grab-child parent) nil)))))
 

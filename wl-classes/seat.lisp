@@ -71,10 +71,11 @@
 ;; TODO: For now ignoring the group thing - supposedly it indicates a layout change?
 (defmethod notify-kb-modifiers ((seat seat))
   (let* ((display (wl:get-display seat)) (keyboard (seat-keyboard seat)))
-    (wl-keyboard:send-modifiers keyboard
-				(next-serial display)
-				(stupid-xkb-modifier-bitfield display)
-				0 0 0)))
+    (when keyboard
+      (wl-keyboard:send-modifiers keyboard
+				  (next-serial display)
+				  (stupid-xkb-modifier-bitfield display)
+				  0 0 0))))
 
 
 ;; ┌┬┐┌─┐┬ ┬┌─┐┬ ┬

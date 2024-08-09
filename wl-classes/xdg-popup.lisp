@@ -7,27 +7,30 @@
 ;; ╚═╝  ╚═╝╚═════╝  ╚═════╝       ╚═╝      ╚═════╝ ╚═╝      ╚═════╝ ╚═╝
 (in-package :smuks)
 (defclass popup (xdg-popup:dispatch xdg-surface)
-  ())
+  ((relative-x :initform nil :accessor relative-x)
+   (relative-y :initform nil :accessor relative-y)))
 
 (defmethod shared-initialize :after ((popup popup) slot-names &key positioner)
   (declare (ignore slot-names))
   (setup-from-positioner popup positioner))
 
 (defmethod setup-from-positioner ((popup popup) positioner)
-  (with-slots (x y off-x off-y a-width a-height anchor) positioner
-    (incf x off-x) (incf y off-y)
-    (case anchor
-      (:none ())
-      (:top (incf x (floor (/ a-width 2))))
-      (:bottom (incf x (floor (/ a-width 2))))
-      (:left (incf y (floor (/ a-height 2))))
-      (:right (incf y (floor (/ a-height 2))))
-      (:bottom-left (incf y a-height))
-      (:bottom-right (incf x a-width) (incf y a-height))
-      (:top-right (incf x a-width))
-      (:top-left nil))
+  (with-slots (relative-x relative-y) popup
+    (with-slots (x y off-x off-y a-width a-height anchor) positioner
+      (setf relative-x (+ x off-x))
+      (setf relative-y (+ y off-y))
+      (case anchor
+	(:none nil)
+	(:top-left nil)
+	(:top (incf relative-x (floor (/ a-width 2))))
+	(:bottom (incf relative-x (floor (/ a-width 2))))
+	(:left (incf relative-y (floor (/ a-height 2))))
+	(:right (incf relative-y (floor (/ a-height 2))))
+	(:bottom-left (incf relative-y a-height))
+	(:bottom-right (incf relative-x a-width) (incf relative-y a-height))
+	(:top-right (incf relative-x a-width)))
 
-    (setf (x popup) x (y popup) y)))
+      (setf (x popup) relative-x (y popup) relative-y))))
 
 (defmethod xdg-popup:grab ((popup popup) seat serial)
   "Grab here implies keyboard focus. If keyboard focus is lost - TODO"
@@ -61,14 +64,14 @@
    (height :initform 0 :accessor height)
    (a-width :initform 0 :accessor a-width)
    (a-height :initform 0 :accessor a-height)
-   (anchor :initform :bottom-left :accessor anchor)
+   (anchor :initform :none :accessor anchor)
    (gravity :initform :top :accessor gravity)
    (constraint :initform '() :accessor constraint)))
 
 ;; TODO: Not really doing anything with this yet.
 ;; Not sure it is that important for me
 (defmethod xdg-positioner:set-reactive ((positioner positioner))
-  )
+  (log! "Setting reactive"))
 
 
 (defmethod xdg-positioner:set-size ((positioner positioner) width height)
@@ -87,6 +90,7 @@
 
 ;; TODO: Still have no clue what gravity does in this situation
 (defmethod xdg-positioner:set-gravity ((positioner positioner) gravity)
+  (log! "Gravity??? ~a" gravity)
   (setf (gravity positioner) gravity))
 
 (defmethod xdg-positioner:set-offset ((positioner positioner) x y)
@@ -96,13 +100,14 @@
 ;; TODO: Implement constraint handling
 (defmethod xdg-positioner:set-constraint-adjustment ((positioner positioner) constraint)
   "This indicates what to do with the popup surface if it's width/height/x/y is outside the bounds of the parent surface."
+  (log! "Setting constraint adjustment: ~a" constraint)
   (setf (constraint positioner) constraint))
 
 ;; TODO: Implement set parent size - I'm not yet entirely sure what its supposed to achieve.
 ;; Says that this should assume the parent size for popup positioning - but not really resize the parent?
 (defmethod xdg-positioner:set-parent-size ((positioner positioner) width height)
-  )
+  (log! "Setting parent size? ~a ~a" width height))
 
 ;; TODO: Also not implemented. Should be used in conjuction with set-parent-size
 (defmethod xdg-positioner:set-parent-configure ((positioner positioner) serial)
-  )
+  (log! "Setting parent configure? ~a" serial))
