@@ -235,7 +235,7 @@ transform - is the output rotated? is the output flipped?
 
 ;; TODO: Add posibility to name an output - send via name event
 ;; TODO: Add posibility to give outputs a description - send via description event
-(defmethod shared-initialize :after ((output output-dispatch) slots &key)
+(defmethod initialize-instance :after ((output output-dispatch) &key)
   (let ((global (wl:global output)))
     (wl-output:send-geometry output
 			     (output-x global)
@@ -261,9 +261,8 @@ transform - is the output rotated? is the output flipped?
     ;; Scale can also be changed and sent later. Clients assume 1, but we're being explicit.
     (wl-output:send-scale output 1)
 
-    ;; NOTE: For example Weston actually doesn't understand these - since these are for a later version of the protocol
-    ;; TODO: Maybe add a version check.
-    (wl-output:send-name output "Smuks output")
-    (wl-output:send-description output "Smuks output - the best output in the world. But currently just the one. No support for more.")
+    (when (>= (wl:version-want output) 4)
+      (wl-output:send-name output "Smuks output")
+      (wl-output:send-description output "Smuks output - the best output in the world. But currently just the one. No support for more."))
 
     (wl-output:send-done output)))

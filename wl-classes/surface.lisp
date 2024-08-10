@@ -36,9 +36,8 @@
     (setf (slot-value surface 'texture) texture)
     (when texture
       (unless (pending-buffer surface) (error "No pending buffer associated with texture. You probably screwed up the buffer commit order"))
-      (before wl:destroy (pending-buffer surface)
-	      (lambda (buffer)
-		(declare (ignore buffer))
+      (before wl:destroy surface
+	      (lambda (surface)
 		(when (and (texture surface) (eq (texture surface) texture))
 		  (gl:delete-texture (sglutil:tex-id (texture surface)))
 		  (setf (texture surface) nil)))))))

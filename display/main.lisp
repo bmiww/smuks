@@ -91,6 +91,7 @@
 
   (make-instance 'zxdg-output-manager-v1:global :display display :dispatch-impl 'xdg-output-manager)
   (make-instance 'wp-viewporter:global :display display :dispatch-impl 'viewporter)
+
   ;; (make-instance 'xwayland-shell-v1:global :display display :dispatch-impl 'xwayland)
 
   (init-outputs display)
