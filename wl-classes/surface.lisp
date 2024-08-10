@@ -118,7 +118,10 @@
 ;; TODO: This should be double buffered - aka pending/apply on commit
 (defmethod wl-surface:set-input-region ((surface surface) region)
   (setf (input-regions surface) (if region region :none))
-  (after wl:destroy region (lambda (region) (setf (input-regions surface) :none))))
+  (when region
+    (after cl-wl:destroy region
+	   (lambda (region) (declare (ignore region))
+	     (setf (input-regions surface) :none)))))
 
 ;; TODO: Implement to support clients setting higher/lower "dpi"
 (defmethod wl-surface:set-buffer-scale ((surface surface) scale)
