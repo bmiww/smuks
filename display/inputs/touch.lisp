@@ -54,11 +54,13 @@ and then clean the list out"
 
 ;; TODO: Not sure if it would be possible or even make sense to keep a list
 ;; of interested clients instead of broadcasting to all
+;; TODO: The minimum we could do is - only send the touch-frame to all the clients that are
+;; On the touch desktop where the event occured
 (defmethod process ((display display) (type (eql :touch-frame)) (usecase (eql :passthrough)) event)
   "Notify all clients that a touch frame event has occured"
   (declare (ignore usecase))
   (dolist (client (wl:all-clients display))
-    (when (seat-touch (seat client))
+    (when (and client (seat client) (seat-touch (seat client)))
       (touch-frame (seat client)))))
 
 
