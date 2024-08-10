@@ -70,6 +70,7 @@
 	       #:cl-wl.input-method
 	       #:cl-wl.xdg-output
 	       #:cl-wl.viewporter
+	       #:cl-wl.session-lock
 	       #+xwayland
 	       #:cl-wl.xwayland
 
@@ -105,6 +106,7 @@
 		:components ((:file "configure-serial")
 			     (:file "output")
 			     (:file "surface")
+			     (:file "session-lock")
 			     (:file "xdg-wm-base")
 			     (:file "xdg-surface")
 			     (:file "xdg-toplevel")
