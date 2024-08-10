@@ -69,6 +69,7 @@
 	       #:cl-wl.text-input
 	       #:cl-wl.input-method
 	       #:cl-wl.xdg-output
+	       #:cl-wl.viewporter
 	       #+xwayland
 	       #:cl-wl.xwayland
 
@@ -109,6 +110,7 @@
 			     (:file "xdg-toplevel")
 			     (:file "xdg-popup")
 			     (:file "xdg-output")
+			     (:file "viewporter")
 			     (:file "compositor")
 			     (:file "subcompositor")
 			     (:file "region")
