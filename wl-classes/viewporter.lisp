@@ -19,4 +19,4 @@
 ;;  └┘ ┴└─┘└┴┘┴  └─┘┴└─ ┴
 
 (defclass viewport (wp-viewport:dispatch)
-  (surface :initarg :surface :accessor surface))
+  ((surface :initarg :surface :accessor surface)))

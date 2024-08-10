@@ -20,8 +20,6 @@
       (gl:viewport 0 0 (width output) (height output))
       (gl:clear :color-buffer-bit)
 
-      (render-scene output)
-
       (render-desktop display output desktop)
 
       (when (eq output (cursor-screen display))
@@ -123,6 +121,11 @@
 
 ;; TODO: Missing drag surface rendering
 (defun render-desktop (display output desktop)
+  (loop for layer in (bg-layers (compositor display))
+	do (render-layer-surface output layer))
+
+  (render-scene output)
+
   (loop for window in (windows desktop)
 	do (when (and (typep window 'toplevel) (not (closed window)))
 	     (let* ((focus (keyboard-focus display))
@@ -135,5 +138,5 @@
 
   ;; TODO: Layers should also be handled per desktop level.
   ;; Right now this will just render all layers on all outputs
-  (loop for layer in (layers (compositor display))
+  (loop for layer in (other-layers (compositor display))
 	do (render-layer-surface output layer)))

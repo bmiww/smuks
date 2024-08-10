@@ -27,8 +27,12 @@
     (xdg-surface 'surfaces)))
 
 (defun has-texture (surface) (texture surface))
+(defun is-bg (lay) (eq :background (layer lay)))
 
 (defmethod layers ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'layers)))
+(defmethod bg-layers ((compo compo)) (remove-if-not #'is-bg (layers compo)))
+;; TODO: This is for now pretty dumb. There are 4 more layer types, and this is also inefficient
+(defmethod other-layers ((compo compo)) (remove-if #'is-bg (layers compo)))
 (defmethod popups ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'popups)))
 (defmethod cursors ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'cursors)))
 (defmethod subsurfaces ((compo compo)) (remove-if-not #'has-texture (slot-value compo 'subsurfaces)))

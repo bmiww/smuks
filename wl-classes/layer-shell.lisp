@@ -86,7 +86,7 @@
   (setf (anchor surface) (or anchor '(:center)))
 
   ;; NOTE: This transforms the bitfield anchor into a singular value similar to popup anchors
-  (flet ((has? (anchors) (when (listp anchors) (has-anchors? (anchor surface) anchors))))
+  (flet ((has? (anchors) (when (listp (anchor surface)) (has-anchors? (anchor surface) anchors))))
     (when (has? '(:top :bottom :left :right)) (setf (anchor surface) :center))
     (when (has? '(:left :right)) (setf (anchor surface) (rm-anchors (anchor surface) :left :right)))
     (when (has? '(:top :bottom)) (setf (anchor surface) (rm-anchors (anchor surface) :top :bottom)))
