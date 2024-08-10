@@ -31,6 +31,17 @@
    mk-tex tex-id tex-format))
 (in-package :smuks-gl-util)
 
+
+;; ┌┬┐┌─┐─┐ ┬┌┬┐┬ ┬┬─┐┌─┐
+;;  │ ├┤ ┌┴┬┘ │ │ │├┬┘├┤
+;;  ┴ └─┘┴ └─ ┴ └─┘┴└─└─┘
+(defstruct tex id (initd nil) (format nil))
+(defun mk-tex (&optional format)
+  (prog1
+      (make-tex :id (gl:gen-texture) :format (or format :argb8888))
+    (check-gl-error "mk-tex: gen-texture")))
+
+
 ;; ┌─┐┬    ┌─┐┬─┐┌─┐┌─┐
 ;; │ ┬│    ├─┘├┬┘├┤ ├─┘
 ;; └─┘┴─┘  ┴  ┴└─└─┘┴
@@ -58,13 +69,6 @@
     (setf (tex-initd texture) t)
 
     texture))
-
-(defun damage-pointer (ptr dmg width pixel-size)
-  (cffi:inc-pointer
-   ptr
-   (* (+ (* (damage-y dmg) width)
-	 (damage-x dmg))
-      pixel-size)))
 
 (defun create-texture (ptr width height stride &key damage texture format)
   (let* ((texture (or texture (mk-tex format)))
@@ -143,11 +147,13 @@
   (width 0)
   (height 0))
 
-(defstruct tex id (initd nil) (format nil))
-(defun mk-tex (&optional format)
-  (prog1
-      (make-tex :id (gl:gen-texture) :format (or format :argb8888))
-    (check-gl-error "mk-tex: gen-texture")))
+(defun damage-pointer (ptr dmg width pixel-size)
+  (cffi:inc-pointer
+   ptr
+   (* (+ (* (damage-y dmg) width)
+	 (damage-x dmg))
+      pixel-size)))
+
 
 ;; ┌┬┐┌─┐┌┬┐┬─┐┬┌─┐┌─┐┌─┐
 ;; │││├─┤ │ ├┬┘││  ├┤ └─┐
@@ -193,6 +199,8 @@
 
 (defun translation-matrix (x y) (math:mtranslation (math:vec (flo x) (flo y))))
 (defun scaling-matrix (width height) (math:mscaling (math:vec (flo (/ 1 width)) (flo (/ 1 height)))))
+
+
 
 
 ;; ┌┬┐┌─┐┌┐ ┬ ┬┌─┐
