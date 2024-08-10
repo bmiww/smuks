@@ -68,6 +68,7 @@
 	       #:cl-wl.virtual-keyboard
 	       #:cl-wl.text-input
 	       #:cl-wl.input-method
+	       #:cl-wl.xdg-output
 	       #+xwayland
 	       #:cl-wl.xwayland
 
@@ -107,6 +108,7 @@
 			     (:file "xdg-surface")
 			     (:file "xdg-toplevel")
 			     (:file "xdg-popup")
+			     (:file "xdg-output")
 			     (:file "compositor")
 			     (:file "subcompositor")
 			     (:file "region")
