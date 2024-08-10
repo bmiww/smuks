@@ -25,7 +25,7 @@
   ())
 
 (defmethod shared-initialize :after ((output xdg-output) slots &key)
-  (let ((global  (wl:global output)))
+  (let ((global (wl:global output)))
     (zxdg-output-v1:send-logical-position output (screen-x global) (screen-y global))
     (zxdg-output-v1:send-logical-size output (width global) (height global))
     (zxdg-output-v1:send-name output "TODO: Fill name")

@@ -31,6 +31,12 @@
   (print-unreadable-object (toplevel stream :type t)
     (format stream "Client: ~a:::~a" (title toplevel) (app-id toplevel))))
 
+(defmethod shared-initialize :after ((toplevel toplevel) slot-names &key)
+  (when (>= (wl:version-want toplevel) 5)
+    ;; TODO: 3 here stands for - we only support fullscreen capability
+    ;; It's the usual - protocol array without a type specified
+    (xdg-toplevel:send-wm-capabilities toplevel '(3))))
+
 
 ;; ┌┬┐┌─┐┌┬┐┬ ┬
 ;; │││├┤  │ ├─┤
