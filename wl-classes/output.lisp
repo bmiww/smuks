@@ -185,7 +185,7 @@ transform - is the output rotated? is the output flipped?
   (with-accessors ((orientation orientation) (accelerometer accelerometer)) output
     (unless accelerometer (error "No accelerometer connected to output."))
     (let* ((current-orient orientation))
-      (destructuring-bind (x y z) accel
+      (destructuring-bind (x z y) accel
 	(declare (ignore z))
 	(let* ((y-neg (<= y 0)) (x-neg (<= x 0))
 	       (x (abs x)) (y (abs y))
