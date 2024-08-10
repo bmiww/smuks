@@ -118,7 +118,7 @@
   (gl:bind-framebuffer :framebuffer framebuffer)
   (gl:enable :blend)
   (gl:blend-func :src-alpha :one-minus-src-alpha)
-  (gl:clear-color 0.0 0.0 0.2 1.0)
+  (gl:clear-color 0.0 0.0 0.0 1.0)
   (gl:viewport 0 0 width height))
 
 

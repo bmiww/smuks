@@ -25,6 +25,10 @@
 ;; ┬  ┌─┐┬ ┬┌┐┌┌─┐┬ ┬  ┌─┐┌─┐┌─┐┌─┐
 ;; │  ├─┤│ │││││  ├─┤  ├─┤├─┘├─┘└─┐
 ;; ┴─┘┴ ┴└─┘┘└┘└─┘┴ ┴  ┴ ┴┴  ┴  └─┘
+;; Background image daemon
+(uiop:launch-program `("swww-daemon"))
+(uiop:launch-program `("swww" "img" "pics/Kate-dark.png"))
+
 ;; NOTE: uiop is available and can be used to launch external programs on startup.
 ;; In my example - i always want to fire up a new emacs server on startup
 (uiop:launch-program `("emacs" "--daemon" "-q" "-l" "~/.emacs.bmiww.d/init.el"))

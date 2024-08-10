@@ -7,7 +7,7 @@
 ;; ╚═════╝ ╚═╝╚══════╝╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝
 (in-package :smuks)
 
-(defvar *framebuffer-count* 2)
+(defvar *framebuffer-count* 3)
 
 (defclass display (wl:display)
   ;; Not sure we need 32. That's a lot of fingers.

@@ -124,7 +124,7 @@
   (loop for layer in (bg-layers (compositor display))
 	do (render-layer-surface output layer))
 
-  (render-scene output)
+  ;; (render-scene output)
 
   (loop for window in (windows desktop)
 	do (when (and (typep window 'toplevel) (not (closed window)))
