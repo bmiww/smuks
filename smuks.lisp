@@ -136,7 +136,7 @@
 		(when (string=
 		       (format nil "/dev/dri/~a" (udev:dev-sys-name dev))
 		       (sdrm:primary-node (drm *display*)))
-		  (sleep 0.5) (handle-drm-device-event dev)))
+		  (handle-drm-device-event dev)))
 	       ((string= (udev:dev-subsystem dev) "input")
 		(when (string= (udev:dev-action dev) "add")
 		  (process-added-device dev))))))
