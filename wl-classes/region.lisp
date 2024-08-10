@@ -20,10 +20,10 @@
 ;; ││││    ├─┤├─┤│││ │││  ├┤
 ;; └┴┘┴─┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘
 (defmethod wl-region:add ((region region) x y width height)
-  (push (make-add x y width height) (rectangles region)))
+  (push (make-add :x x :y y :width width :height height) (adds region)))
 
 (defmethod wl-region:subtract ((region region) x y width height)
-  (push (make-sub x y width height) (rectangles region)))
+  (push (make-sub :x x :y y :width width :height height) (subs region)))
 
 
 ;; ┌┬┐┌─┐┌┬┐┬ ┬┌─┐┌┬┐┌─┐
