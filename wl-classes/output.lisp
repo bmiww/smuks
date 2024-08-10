@@ -233,6 +233,9 @@ transform - is the output rotated? is the output flipped?
 (defclass output-dispatch (wl-output:dispatch)
   ())
 
+(defmethod output-width ((output output-dispatch)) (output-width (wl:global output)))
+(defmethod output-height ((output output-dispatch)) (output-height (wl:global output)))
+
 ;; TODO: Add posibility to name an output - send via name event
 ;; TODO: Add posibility to give outputs a description - send via description event
 (defmethod initialize-instance :after ((output output-dispatch) &key)

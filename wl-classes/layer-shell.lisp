@@ -19,7 +19,9 @@
   ())
 
 (defmethod zwlr-layer-shell-v1:get-layer-surface ((shell layer-shell) layer-surface surface output layer namespace)
-  (wl:up-if 'layer-surface surface layer-surface :output output :layer layer :namespace namespace))
+  (wl:up-if 'layer-surface surface layer-surface
+	    :output (or output (output (active-desktop (wl:get-display surface))))
+	    :layer layer :namespace namespace))
 
 ;; ┬  ┌─┐┬ ┬┌─┐┬─┐  ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; │  ├─┤└┬┘├┤ ├┬┘  └─┐│ │├┬┘├┤ ├─┤│  ├┤
@@ -42,14 +44,11 @@
 (defmethod wl-surface:commit :before ((surface layer-surface))
   ;; TODO: Maybe possible to use the surface level "new-dimensions?" flag
   (when (new-size? surface)
-    (let* ((display (wl:get-display surface))
-	   (desktop (active-desktop display))
-	   (output (output desktop))
-	   (serial (configure-serial surface)))
+    (let* ((output (output surface)) (serial (configure-serial surface)))
 
       (with-accessors ((width width) (height height) (x x) (y y)) surface
-	(when (or (not width) (zerop width)) (setf width (width desktop)))
-	(when (or (not height) (zerop height)) (setf height (height desktop)))
+	(when (or (not width) (zerop width)) (setf width (output-width output)))
+	(when (or (not height) (zerop height)) (setf height (output-height output)))
 
 	;; TODO: These should probably go into the anchor - or some kind of finalizer function
 	(unless x (setf x (- (/ (output-width output) 2) (/ (width surface) 2))))
@@ -123,21 +122,19 @@
   (reposition-children surface))
 
 (defmethod resolve-position ((surface layer-surface))
-  (let* ((active-desktop (active-desktop (wl:get-display surface)))
-	 (output (output active-desktop)))
-    (with-accessors ((ow output-width) (oh output-height)) output
-      (with-accessors ((x x) (y y) (w width) (h height)) surface
-	(setf (values x y)
-	      (case (anchor surface)
-		(:top-left     (values 0                      0))
-		(:top-right    (values (- ow w)               0))
-		(:bottom-left  (values 0                      (- oh h)))
-		(:bottom-right (values (- ow w)               (- oh h)))
-		(:top          (values (- (/ ow 2) (/ w 2))   0))
-		(:bottom       (values (- (/ ow 2) (/ w 2))   (- oh h)))
-		(:left         (values 0                      (- (/ oh 2) (/ h 2))))
-		(:right        (values (- ow w)               (- (/ oh 2) (/ h 2))))
-		(:center       (values (- (/ ow 2) (/ w 2))   (- (/ oh 2) (/ h 2)))))))))
+  (with-accessors ((ow output-width) (oh output-height)) (output surface)
+    (with-accessors ((x x) (y y) (w width) (h height)) surface
+      (setf (values x y)
+	    (case (anchor surface)
+	      (:top-left     (values 0                      0))
+	      (:top-right    (values (- ow w)               0))
+	      (:bottom-left  (values 0                      (- oh h)))
+	      (:bottom-right (values (- ow w)               (- oh h)))
+	      (:top          (values (- (/ ow 2) (/ w 2))   0))
+	      (:bottom       (values (- (/ ow 2) (/ w 2))   (- oh h)))
+	      (:left         (values 0                      (- (/ oh 2) (/ h 2))))
+	      (:right        (values (- ow w)               (- (/ oh 2) (/ h 2))))
+	      (:center       (values (- (/ ow 2) (/ w 2))   (- (/ oh 2) (/ h 2))))))))
 
   (reposition-children surface))
 
