@@ -40,3 +40,6 @@
   (zwp-input-method-v2:send-surrounding-text input-method "" 0 0)
   ;; NOTE: This is supposed to be double-buffered. In case if errors. You know where.
   (zwp-input-method-v2:send-done input-method))
+
+(defmethod deactivate ((input-method input-method))
+  (zwp-input-method-v2:send-deactivate input-method))
