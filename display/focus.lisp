@@ -35,6 +35,13 @@
 
 (defmethod grab-keyboard-focus ((display display) surface)
   (setf (exclusive-keyboard-focus display) surface)
+  (after wl:change-if surface
+	 (lambda (class surface)
+	   (declare (ignore class))
+	   (when (eq (exclusive-keyboard-focus display) surface)
+	     (unless (typep surface 'layer-surface)
+	       (setf (exclusive-keyboard-focus display) nil)))))
+
   (keyboard-enter (seat surface) surface '()))
 
 (defmethod ungrab-keyboard-focus ((display display) surface)
