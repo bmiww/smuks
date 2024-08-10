@@ -146,6 +146,7 @@
   (init-outputs *display* t))
 
 
+(defun flush-input-events () (smuks::dispatch *libinput* (lambda (event) (wrn! "Ignoring: ~a" event))))
 (defun handle-input (event)
   ;; device removed seems to be called when switching VTs/sessions
   (if (eq (event-type event) :device-removed)
@@ -154,7 +155,8 @@
        (merge-pathnames (format nil "/dev/input/~a"
 				(device-removed@-sys-name event))))
       (restart-case (input *display* (event-type event) event)
-	(abandon-event () :report "Abandoning event"))))
+	(⭐abandon-event () :report "Abandoning event")
+	(⭐flush-events  () (flush-input-events) :report "Flush input event buffer"))))
 
 (defun handle-wayland-event ()
   (let ((result (wl:dispatch-event-loop *display*)))

@@ -88,7 +88,6 @@
   (let ((seat-touch (seat-touch seat)))
     (setf (active-surface seat) surface)
     (setf (aref (slot-surfaces seat-touch) slot) surface)
-    ;; TODO: Might use the time from libinput - not sure if it was ms though
     (wl-touch:send-down seat-touch (next-serial seat)
 			(get-ms) surface slot
 			(- x (x surface)) (- y (y surface)))))

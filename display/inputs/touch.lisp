@@ -71,4 +71,4 @@ and then clean the list out"
   (let ((touch-screen (dsi-output display)))
     (case (orientation touch-screen)
       (:landscape (values y (+ (- (output-height touch-screen) x) (screen-x touch-screen))))
-      (:portrait (- (output-width touch-screen) x)))))
+      (:portrait (values x y)))))
