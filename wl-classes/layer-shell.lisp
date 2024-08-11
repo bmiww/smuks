@@ -20,8 +20,9 @@
 
 (defmethod zwlr-layer-shell-v1:get-layer-surface ((shell layer-shell) layer-surface surface output layer namespace)
   (wl:up-if 'layer-surface surface layer-surface
-	    :output (or output (output (active-desktop (wl:get-display surface))))
+	    :output (if output (wl:global output) (output (active-desktop (wl:get-display surface))))
 	    :layer layer :namespace namespace))
+
 
 ;; ┬  ┌─┐┬ ┬┌─┐┬─┐  ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐
 ;; │  ├─┤└┬┘├┤ ├┬┘  └─┐│ │├┬┘├┤ ├─┤│  ├┤
@@ -41,8 +42,11 @@
    ;; TODO: For now just a quadruple - might make sense to introduce a struct for this
    (margins :initform '(0 0 0 0) :accessor margins)))
 
+
+;; ┬ ┬┬    ┬ ┬┌─┐┌┐┌┌┬┐┬  ┌─┐┬─┐┌─┐
+;; ││││    ├─┤├─┤│││ │││  ├┤ ├┬┘└─┐
+;; └┴┘┴─┘  ┴ ┴┴ ┴┘└┘─┴┘┴─┘└─┘┴└─└─┘
 (defmethod wl-surface:commit :before ((surface layer-surface))
-  ;; TODO: Maybe possible to use the surface level "new-dimensions?" flag
   (when (new-size? surface)
     (let* ((output (output surface)) (serial (configure-serial surface)))
 
