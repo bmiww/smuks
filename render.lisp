@@ -122,21 +122,23 @@
 ;; TODO: Missing drag surface rendering
 (defun render-desktop (display output desktop)
   (loop for layer in (bg-layers (compositor display))
-	do (render-layer-surface output layer))
+	when (eq (output layer) output)
+	  do (render-layer-surface output layer))
 
   ;; (render-scene output)
-
-  (loop for window in (windows desktop)
-	do (when (and (typep window 'toplevel) (not (closed window)))
-	     (let* ((focus (keyboard-focus display))
-		    (active (when (typep focus 'xdg-surface) (eq window (toplevel-of focus)))))
-	       ;; (log! "Rendering client ~a" (wl::ptr (wl:client window)))
-	       (render-toplevel output window active)
-	       (when active
-		 (loop for cursor in (all-cursors (compositor (wl:client window)))
-		       do (render-cursor (wl:get-display output) output cursor))))))
+  (if desktop
+      (loop for window in (windows desktop)
+	    do (when (and (typep window 'toplevel) (not (closed window)))
+		 (let* ((focus (keyboard-focus display))
+			(active (when (typep focus 'xdg-surface) (eq window (toplevel-of focus)))))
+		   ;; (log! "Rendering client ~a" (wl::ptr (wl:client window)))
+		   (render-toplevel output window active)
+		   (when active
+		     (loop for cursor in (all-cursors (compositor (wl:client window)))
+			   do (render-cursor (wl:get-display output) output cursor))))))
+      (wrn! "Somehow output ~a has no desktop" output))
 
   ;; TODO: Layers should also be handled per desktop level.
   ;; Right now this will just render all layers on all outputs
-  (loop for layer in (other-layers (compositor display))
+  (loop for layer in (remove-if-not (lambda (layer) (eq (output layer) output)) (other-layers (compositor display)))
 	do (render-layer-surface output layer)))
