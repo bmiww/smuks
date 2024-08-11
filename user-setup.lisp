@@ -26,8 +26,11 @@
 ;; │  ├─┤│ │││││  ├─┤  ├─┤├─┘├─┘└─┐
 ;; ┴─┘┴ ┴└─┘┘└┘└─┘┴ ┴  ┴ ┴┴  ┴  └─┘
 ;; Background image daemon
-(uiop:launch-program `("swww-daemon"))
-(uiop:launch-program `("swww" "img" "pics/Kate-dark.png"))
+;; TODO: Swww is not working properly. Can't say for sure if it's us or them yet
+;; For now doing swaybg instead
+;; (uiop:launch-program `("swww-daemon"))
+;; (uiop:launch-program `("swww" "img" "pics/Kate-dark.png"))
+(uiop:launch-program `("swaybg" "-i" "pics/Kate-dark.png"))
 
 ;; NOTE: uiop is available and can be used to launch external programs on startup.
 ;; In my example - i always want to fire up a new emacs server on startup
